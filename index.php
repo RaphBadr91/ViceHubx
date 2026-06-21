@@ -54,9 +54,8 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <div class="hero__sky" aria-hidden="true"></div>
-    <div class="hero__sun" aria-hidden="true"></div>
-    <div class="hero__grid" aria-hidden="true"></div>
+    <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
+    <div class="hero__veil" aria-hidden="true"></div>
     <span class="palm palm--l" aria-hidden="true">🌴</span>
     <span class="palm palm--r" aria-hidden="true">🌴</span>
 
@@ -69,6 +68,7 @@ require __DIR__ . '/includes/header.php';
             <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('hero_cta_map')) ?></a>
         </div>
     </div>
+    <div class="scroll-cue" aria-hidden="true"></div>
 </section>
 
 <!-- ============ VICE CITY OS ============ -->

@@ -60,6 +60,19 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
 <body class="<?= e($BODY_CLASS) ?>">
 <a class="skip-link" href="#main"><?= lang() === 'fr' ? 'Aller au contenu' : 'Skip to content' ?></a>
 
+<!-- Écran de chargement -->
+<div class="vh-loader" aria-hidden="true">
+    <div class="vh-loader__logo">Vice<span class="logo-accent">Hub</span><span class="logo-x">X</span></div>
+    <div class="vh-loader__bar"><i></i></div>
+    <div class="vh-loader__tag">Loading Vice City&hellip;</div>
+</div>
+
+<!-- Calques cinéma -->
+<div class="fx-cursor" aria-hidden="true"></div>
+<div class="fx-grain" aria-hidden="true"></div>
+<div class="fx-scan" aria-hidden="true"></div>
+<div class="fx-vignette" aria-hidden="true"></div>
+
 <header class="site-header glass">
     <div class="header-inner">
         <a class="logo" href="<?= e(with_lang(url('index.php'))) ?>">
