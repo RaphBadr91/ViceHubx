@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#150f2e"/>
+      <stop offset="1" stop-color="#07060f"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="20%" r="60%">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="45%" stop-color="#ff7b3d"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <linearGradient id="txt" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff7b3d"/>
+      <stop offset="50%" stop-color="#ff2e88"/>
+      <stop offset="100%" stop-color="#8a3cff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#sky)"/>
+  <circle cx="600" cy="180" r="260" fill="url(#sun)" opacity="0.55"/>
+  <text x="600" y="320" text-anchor="middle" font-family="Orbitron, sans-serif" font-size="96" font-weight="800" fill="#f3f0ff">Vice<tspan fill="url(#txt)">Hub</tspan> X</text>
+  <text x="600" y="390" text-anchor="middle" font-family="Outfit, sans-serif" font-size="34" fill="#a99fce">Enter The Next Generation Of Vice City.</text>
+  <text x="600" y="470" text-anchor="middle" font-family="Outfit, sans-serif" font-size="22" fill="#2bd6ff">News · Guides · Leaks Lab · Trailer Lab · Map Lab</text>
+</svg>

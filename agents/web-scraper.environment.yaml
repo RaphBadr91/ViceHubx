@@ -1,0 +1,9 @@
+# ViceHub X — Environnement Managed Agent (cloud, réseau non restreint).
+# Appliquer via :
+#   ant beta:environments create < agents/web-scraper.environment.yaml
+name: web-scraper-env
+description: Environnement cloud pour l'agent de scraping (egress non restreint).
+config:
+  type: cloud
+  networking:
+    type: unrestricted

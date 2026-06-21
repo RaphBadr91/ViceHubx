@@ -1,0 +1,5 @@
+# Empêche toute exécution de script dans /uploads (sécurité)
+php_flag engine off
+<FilesMatch "\.(php|phtml|php\d|pl|py|cgi|sh)$">
+    Require all denied
+</FilesMatch>

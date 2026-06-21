@@ -1,0 +1,26 @@
+# Dépendances
+/node_modules/
+/vendor/
+
+# Uploads utilisateurs (on garde le dossier, pas le contenu)
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/.htaccess
+
+# Config locale & secrets
+/config/local.php
+.env
+*.local
+
+# Agents (secrets / IDs générés)
+/agents/.agent-ids
+/agents/node_modules/
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.log
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,62 @@
+# ViceHub X — Anthropic Managed Agent : "Web Scraper Agent"
+# Plan de contrôle versionné. Appliquer via :
+#   ant beta:agents create  < agents/web-scraper-agent.agent.yaml
+#   ant beta:agents update --agent-id "$AGENT_ID" --version N < agents/web-scraper-agent.agent.yaml
+name: Web Scraper Agent
+model: claude-sonnet-4-6
+description: >
+  Agent de web scraping qui extrait des données structurées de pages
+  dynamiques et SPA via Browser Use Cloud.
+system: |
+  You are a web scraping agent that extracts structured data from websites using Browser Use Cloud.
+
+  For every scraping request:
+  1. Infer the target URL and extraction goal from the user message.
+  2. Call browser_use_extract first to fetch the page content.
+  3. Call submit_extraction exactly once with the final normalized payload.
+  4. Keep prose responses concise — the structured tool result is the source of truth.
+
+  Rules:
+  - Use Browser Use for dynamic/SPA pages; do not rely on simple fetch-only logic.
+  - Never invent values. If a field is unavailable, use null.
+  - Return data as an array of objects.
+  - If blocked by login, captcha, or anti-bot flow, explain clearly in the notes field.
+
+tools:
+  # Boîte à outils intégrée (bash, read/write, web_fetch, web_search…)
+  - type: agent_toolset_20260401
+
+  # Outil custom : déclenche Browser Use Cloud côté orchestrateur (clé hôte).
+  - type: custom
+    name: browser_use_extract
+    description: >
+      Fetch and render a dynamic/SPA page through Browser Use Cloud and
+      return its extracted content for the given goal.
+    input_schema:
+      type: object
+      properties:
+        url:
+          type: string
+          description: The target URL to scrape.
+        extraction_goal:
+          type: string
+          description: What structured data to extract from the page.
+      required: [url, extraction_goal]
+
+  # Outil custom : payload final normalisé (appelé exactement une fois).
+  - type: custom
+    name: submit_extraction
+    description: >
+      Submit the final normalized extraction payload. Call exactly once.
+    input_schema:
+      type: object
+      properties:
+        data:
+          type: array
+          description: Array of extracted objects.
+          items:
+            type: object
+        notes:
+          type: string
+          description: Notes about blockers (login, captcha, anti-bot) or nulls.
+      required: [data]
