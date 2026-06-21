@@ -50,9 +50,22 @@ index.php      Page d'accueil immersive
    `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`).
 4. **Lancer** le serveur PHP intégré depuis la racine du projet :
    ```bash
+   ./serve.sh           # recommandé (port 8000)
+   # ou directement :
    php -S localhost:8000
    ```
 5. Ouvrir **http://localhost:8000**.
+
+   > 🛠️ **Erreur `Failed opening required '#'` au lancement ?**
+   > Elle vient d'un `php.ini` du système (souvent macOS Homebrew) où
+   > `auto_prepend_file` est cassé — pas du projet. Utilisez `./serve.sh`
+   > (qui neutralise le réglage), ou corrigez la cause :
+   > ```bash
+   > php -i | grep -E 'auto_prepend_file|auto_append_file'   # voir la valeur
+   > php --ini                                               # localiser le fichier .ini
+   > ```
+   > Puis éditez le fichier indiqué et supprimez/commentez la ligne fautive
+   > (rappel : en php.ini les commentaires commencent par `;`, pas `#`).
 6. **Admin** : http://localhost:8000/admin/login.php
    - Identifiant : `admin` · Mot de passe : `vicehubx` *(à changer immédiatement)*
 
