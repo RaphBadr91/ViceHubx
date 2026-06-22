@@ -112,9 +112,16 @@ require __DIR__ . '/includes/header.php';
         </div>
         <a class="link-all" href="<?= e(with_lang(url('pages/trailer-lab.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <?php $trailer_url = trim((string) get_setting('trailer_url', '')); ?>
-    <a class="trailer-hero reveal" href="<?= e($trailer_url !== '' ? $trailer_url : with_lang(url('pages/trailer-lab.php'))) ?>"
-       <?= $trailer_url !== '' ? 'target="_blank" rel="noopener"' : '' ?>>
+    <?php
+    $trailer_url = trim((string) get_setting('trailer_url', ''));
+    // ID YouTube depuis le réglage admin, sinon trailer officiel par défaut
+    $yt_id = 'VQRLujxTm3c';
+    if ($trailer_url !== '' && preg_match('~(?:youtu\.be/|v=|embed/)([A-Za-z0-9_-]{11})~', $trailer_url, $m)) {
+        $yt_id = $m[1];
+    }
+    ?>
+    <a class="trailer-hero reveal" href="https://www.youtube.com/watch?v=<?= e($yt_id) ?>"
+       data-trailer="<?= e($yt_id) ?>" target="_blank" rel="noopener">
         <div class="trailer-hero__bg" aria-hidden="true"></div>
         <div class="trailer-hero__grid" aria-hidden="true"></div>
         <span class="play-btn" aria-hidden="true">▶</span>
@@ -124,6 +131,12 @@ require __DIR__ . '/includes/header.php';
         </div>
     </a>
 </section>
+
+<!-- Lightbox bande-annonce -->
+<div class="lightbox" id="trailer-lightbox" hidden>
+    <button class="lightbox__close" type="button" aria-label="<?= lang() === 'fr' ? 'Fermer' : 'Close' ?>">&times;</button>
+    <div class="lightbox__frame"><div class="video-embed" id="lightbox-embed"></div></div>
+</div>
 
 <?= ad_slot(get_setting('adsense_slot', '')) ?>
 

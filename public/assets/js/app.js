@@ -63,6 +63,38 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   })();
 
+  /* ---------------- Lightbox bande-annonce ---------------- */
+  (function trailerLightbox() {
+    const box = $('#trailer-lightbox');
+    if (!box) return;
+    const embed = $('#lightbox-embed', box);
+    const closeBtn = $('.lightbox__close', box);
+
+    const open = (id) => {
+      embed.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
+        '?autoplay=1&rel=0" title="Trailer" frameborder="0" ' +
+        'allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>';
+      box.hidden = false;
+      requestAnimationFrame(() => box.classList.add('open'));
+      document.body.style.overflow = 'hidden';
+    };
+    const close = () => {
+      box.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => { box.hidden = true; embed.innerHTML = ''; }, 300);
+    };
+
+    $$('[data-trailer]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        const id = el.getAttribute('data-trailer');
+        if (id) { e.preventDefault(); open(id); }
+      });
+    });
+    closeBtn.addEventListener('click', close);
+    box.addEventListener('click', (e) => { if (e.target === box) close(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !box.hidden) close(); });
+  })();
+
   /* ---------------- Menu mobile ---------------- */
   const toggle = $('.nav-toggle');
   const nav = $('.site-nav');
