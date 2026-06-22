@@ -2,15 +2,15 @@
    ViceHub X — Vice City OS theme
    Liquid Glass · Glassmorphism · Néons Miami
    ================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
     /* Palette néon Miami / coucher de soleil */
-    --bg-0: #07060f;
-    --bg-1: #0d0a1c;
-    --bg-2: #150f2e;
-    --ink: #f3f0ff;
-    --muted: #a99fce;
+    --bg-0: #050409;
+    --bg-1: #0a0814;
+    --bg-2: #140e26;
+    --ink: #f5f3ff;
+    --muted: #9b93b8;
 
     --pink: #ff2e88;
     --violet: #8a3cff;
@@ -18,15 +18,17 @@
     --blue: #2bd6ff;
     --gold: #ffd166;
 
-    --glass-bg: rgba(255, 255, 255, 0.06);
-    --glass-brd: rgba(255, 255, 255, 0.14);
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-brd: rgba(255, 255, 255, 0.12);
     --glass-shadow: 0 18px 50px -20px rgba(138, 60, 255, 0.55);
 
     --grad-sunset: linear-gradient(120deg, var(--orange), var(--pink) 45%, var(--violet));
     --grad-neon: linear-gradient(120deg, var(--pink), var(--blue));
+    --grad-logo: linear-gradient(180deg, #ff2e88 0%, #ff6a3d 55%, #ffc24a 100%);
     --radius: 18px;
     --maxw: 1200px;
-    --font-display: 'Orbitron', sans-serif;
+    --font-display: 'Sora', system-ui, sans-serif;
+    --font-poster: 'Anton', 'Sora', sans-serif;
     --font-body: 'Outfit', system-ui, sans-serif;
 }
 
@@ -167,13 +169,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0.02em; line-
     font-size: .8rem; color: var(--ink); margin-bottom: 1.4rem;
     border: 1px solid var(--glass-brd); background: rgba(255,255,255,.05);
 }
-.hero h1 {
-    font-size: clamp(2.6rem, 8vw, 5.2rem); margin: 0 0 1rem;
-    text-shadow: 0 0 30px rgba(138,60,255,.5);
-}
-.hero h1 .grad {
-    background: var(--grad-sunset); -webkit-background-clip: text; background-clip: text; color: transparent;
-}
+.hero h1 { margin: 0 0 .8rem; }
 .hero__sub { font-size: clamp(1rem, 2.2vw, 1.35rem); color: var(--muted); max-width: 620px; margin: 0 auto 2rem; }
 .hero__actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
 .palm { position: absolute; bottom: 0; font-size: clamp(4rem, 12vw, 9rem); z-index: 1; opacity: .9; filter: drop-shadow(0 0 18px rgba(255,46,136,.4)); }
@@ -510,4 +506,97 @@ body.has-cursor .fx-cursor { opacity: 1; }
 @media (max-width: 380px) {
     .cd-sep { display: none; }
     .cd-tile { min-width: 52px; }
+}
+
+/* ==================================================================
+   PREMIUM / CINÉMATIQUE — inspiration éditoriale (GTA VI vibe)
+   ================================================================== */
+
+/* Typo "affiche" condensée */
+.logo, .vh-loader__logo, .hero__wm, .cd-tile b, .eyebrow, .cd-title, .hero__kicker, .play-btn {
+    font-family: var(--font-poster);
+    font-weight: 400;
+}
+.logo { letter-spacing: .04em; }
+
+/* Header : transparent au-dessus du hero, solide au scroll */
+body.is-home .site-header {
+    position: fixed; left: 0; right: 0; top: 0;
+    background: transparent; border-color: transparent; box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    transition: background .35s ease, border-color .35s ease, backdrop-filter .35s ease;
+}
+body.is-home .site-header.scrolled {
+    background: rgba(8,6,16,.72); border-bottom: 1px solid var(--glass-brd);
+    backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* HERO cinématique */
+.hero__kicker {
+    display: inline-block; text-transform: uppercase; letter-spacing: .34em;
+    font-size: clamp(.7rem, 1.6vw, .9rem); color: var(--blue); margin-bottom: 1rem;
+    text-shadow: 0 0 18px rgba(43,214,255,.4);
+}
+.hero__wm {
+    margin: 0 0 .8rem; line-height: .82; text-transform: uppercase;
+    font-size: clamp(4rem, 17vw, 12rem); letter-spacing: .005em;
+    display: flex; gap: .12em; justify-content: center; align-items: baseline; flex-wrap: wrap;
+    filter: drop-shadow(0 14px 40px rgba(0,0,0,.55));
+}
+.hero__wm b { font-weight: 400; }
+.hero__wm .grad {
+    background: var(--grad-logo); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 26px rgba(255,46,136,.45));
+}
+.hero__release {
+    font-family: var(--font-poster); text-transform: uppercase; letter-spacing: .18em;
+    font-size: clamp(.95rem, 2.4vw, 1.5rem); margin: 0 0 1.4rem; color: var(--ink);
+}
+.hero__release b { background: var(--grad-logo); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero__sub { font-family: var(--font-body); }
+
+/* Titres de section éditoriaux */
+.section { padding-block: clamp(2.6rem, 8vh, 5.5rem); }
+.section-head h2 { font-size: clamp(1.7rem, 4.2vw, 3rem); text-transform: uppercase; letter-spacing: .01em; }
+.eyebrow { letter-spacing: .28em; font-size: .76rem; }
+
+/* Section bande-annonce */
+.trailer-hero {
+    position: relative; display: block; border-radius: 22px; overflow: hidden;
+    aspect-ratio: 16 / 7; min-height: 280px; isolation: isolate;
+}
+.trailer-hero__bg {
+    position: absolute; inset: 0; z-index: 0;
+    background:
+        radial-gradient(60% 80% at 30% 20%, rgba(255,46,136,.5), transparent 60%),
+        radial-gradient(70% 90% at 80% 90%, rgba(43,214,255,.4), transparent 60%),
+        linear-gradient(120deg, #1a0b2e, #2a0f3f);
+    transition: transform .6s ease, filter .6s ease;
+}
+.trailer-hero:hover .trailer-hero__bg { transform: scale(1.06); filter: saturate(1.2); }
+.trailer-hero__grid {
+    position: absolute; inset: 0; z-index: 1; opacity: .25;
+    background-image: linear-gradient(rgba(255,255,255,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.18) 1px, transparent 1px);
+    background-size: 46px 46px; mask-image: radial-gradient(circle at 50% 50%, #000, transparent 75%);
+}
+.trailer-hero .play-btn {
+    position: absolute; inset: 0; margin: auto; z-index: 2;
+    width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center;
+    background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.55); color: #fff;
+    font-size: 2rem; padding-left: 6px; backdrop-filter: blur(6px);
+    box-shadow: 0 0 0 0 rgba(255,46,136,.5); animation: playPulse 2.4s ease-out infinite;
+}
+@keyframes playPulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,46,136,.55); }
+    70% { box-shadow: 0 0 0 28px rgba(255,46,136,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,46,136,0); }
+}
+.trailer-hero__cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: clamp(1.2rem, 4vw, 2.4rem); background: linear-gradient(transparent, rgba(5,4,9,.85)); }
+.trailer-hero__cap .eyebrow { color: var(--blue); margin-bottom: .4rem; }
+.trailer-hero__cap h2 { margin: 0; font-size: clamp(1.4rem, 4vw, 2.4rem); text-transform: uppercase; }
+
+@media (max-width: 680px) {
+    .hero__wm { font-size: clamp(3.4rem, 22vw, 6rem); }
+    .trailer-hero { aspect-ratio: 4 / 3; }
+    .trailer-hero .play-btn { width: 74px; height: 74px; font-size: 1.6rem; }
 }

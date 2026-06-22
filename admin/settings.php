@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         set_setting('adsense_client', trim((string) ($_POST['adsense_client'] ?? '')));
         set_setting('hero_video', trim((string) ($_POST['hero_video'] ?? '')));
+        set_setting('trailer_url', trim((string) ($_POST['trailer_url'] ?? '')));
         $rd = trim((string) ($_POST['release_date'] ?? ''));
         if ($rd !== '') {
             // datetime-local -> ISO
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $adsense = (string) get_setting('adsense_client', '');
 $video   = (string) get_setting('hero_video', '');
+$trailer = (string) get_setting('trailer_url', '');
 $release = (string) release_date();
 // ISO -> valeur datetime-local (YYYY-MM-DDTHH:MM)
 $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
@@ -50,6 +52,12 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Vidéo de fond du hero (URL .mp4 / .webm)</label>
         <input type="url" name="hero_video" value="<?= e($video) ?>" placeholder="https://… ou /public/assets/video/hero.mp4">
         <small class="muted">Laissez vide pour garder l’animation synthwave (route néon). Si renseigné, la vidéo remplace le canvas.</small>
+    </div>
+
+    <div>
+        <label>URL de la bande-annonce</label>
+        <input type="url" name="trailer_url" value="<?= e($trailer) ?>" placeholder="https://www.youtube.com/watch?v=…">
+        <small class="muted">Lien ouvert par le bloc « Bande-annonce ». Vide = renvoie vers Trailer Lab.</small>
     </div>
 
     <button class="btn btn--primary" type="submit">Enregistrer</button>

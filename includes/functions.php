@@ -276,6 +276,23 @@ function release_date(): string
     return get_setting('release_date', RELEASE_DATE) ?: RELEASE_DATE;
 }
 
+/** Date de sortie formatée et localisée (ex. "Disponible le 19 novembre 2026"). */
+function release_human(): string
+{
+    $ts = strtotime(release_date());
+    if (!$ts) {
+        return '';
+    }
+    $d = (int) date('j', $ts);
+    $m = (int) date('n', $ts);
+    $y = date('Y', $ts);
+    $fr = [1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    $en = [1 => 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return lang() === 'fr'
+        ? "Disponible le {$d} {$fr[$m]} {$y}"
+        : "Coming {$en[$m]} {$d}, {$y}";
+}
+
 /* ================================================================== */
 /*  Publicité / Google AdSense                                        */
 /* ================================================================== */

@@ -69,8 +69,9 @@ require __DIR__ . '/includes/header.php';
     <span class="palm palm--r" aria-hidden="true">🌴</span>
 
     <div class="hero__content">
-        <span class="hero__badge">✦ <?= e(t('hero_badge')) ?></span>
-        <h1>Vice<span class="grad">Hub</span> X</h1>
+        <span class="hero__kicker">✦ <?= e(t('hero_badge')) ?></span>
+        <h1 class="hero__wm"><span>ViceHub</span><b class="grad">X</b></h1>
+        <p class="hero__release"><?= e(release_human()) ?></p>
         <p class="hero__sub"><?= e(lang() === 'fr' ? APP_SLOGAN_FR : APP_SLOGAN_EN) ?></p>
 
         <!-- Compte à rebours jusqu'à la sortie -->
@@ -89,11 +90,33 @@ require __DIR__ . '/includes/header.php';
         </div>
 
         <div class="hero__actions">
-            <a class="btn btn--primary" href="<?= e(with_lang(url('pages/news.php'))) ?>"><?= e(t('hero_cta_news')) ?></a>
-            <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('hero_cta_map')) ?></a>
+            <a class="btn btn--primary" href="#trailer">▶ <?= e(t('cta_trailer')) ?></a>
+            <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/news.php'))) ?>"><?= e(t('hero_cta_news')) ?></a>
         </div>
     </div>
     <div class="scroll-cue" aria-hidden="true"></div>
+</section>
+
+<!-- ============ BANDE-ANNONCE ============ -->
+<section class="section" id="trailer">
+    <div class="section-head">
+        <div>
+            <span class="eyebrow"><?= lang() === 'fr' ? 'À ne pas manquer' : "Don't miss it" ?></span>
+            <h2><?= e(t('trailer_section')) ?></h2>
+        </div>
+        <a class="link-all" href="<?= e(with_lang(url('pages/trailer-lab.php'))) ?>"><?= e(t('view_all')) ?> →</a>
+    </div>
+    <?php $trailer_url = trim((string) get_setting('trailer_url', '')); ?>
+    <a class="trailer-hero reveal" href="<?= e($trailer_url !== '' ? $trailer_url : with_lang(url('pages/trailer-lab.php'))) ?>"
+       <?= $trailer_url !== '' ? 'target="_blank" rel="noopener"' : '' ?>>
+        <div class="trailer-hero__bg" aria-hidden="true"></div>
+        <div class="trailer-hero__grid" aria-hidden="true"></div>
+        <span class="play-btn" aria-hidden="true">▶</span>
+        <div class="trailer-hero__cap">
+            <span class="eyebrow"><?= lang() === 'fr' ? 'Bande-annonce officielle' : 'Official trailer' ?></span>
+            <h2><?= lang() === 'fr' ? 'Bienvenue à Vice City' : 'Welcome to Vice City' ?></h2>
+        </div>
+    </a>
 </section>
 
 <?= ad_slot('', lang() === 'fr' ? 'Publicité' : 'Advertisement') ?>

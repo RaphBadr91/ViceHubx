@@ -20,7 +20,8 @@ return [
     // Hero
     'hero_cta_news'   => 'Dernières News',
     'hero_cta_map'    => 'Explorer la carte',
-    'hero_badge'      => 'Portail nouvelle génération',
+    'hero_badge'      => 'Le portail nouvelle génération',
+    'cta_trailer'     => 'Voir le trailer',
 
     // Compte à rebours
     'cd_title'        => 'Sortie dans',

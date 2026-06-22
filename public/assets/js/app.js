@@ -54,6 +54,15 @@
     const timer = setInterval(tick, 1000);
   })();
 
+  /* ---------------- Header transparent → solide au scroll ---------------- */
+  (function header() {
+    const h = $('.site-header');
+    if (!h) return;
+    const onScroll = () => h.classList.toggle('scrolled', window.scrollY > 30);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
+
   /* ---------------- Menu mobile ---------------- */
   const toggle = $('.nav-toggle');
   const nav = $('.site-nav');

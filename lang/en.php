@@ -20,7 +20,8 @@ return [
     // Hero
     'hero_cta_news'   => 'Latest News',
     'hero_cta_map'    => 'Explore The Map',
-    'hero_badge'      => 'Next-gen portal',
+    'hero_badge'      => 'The next-gen portal',
+    'cta_trailer'     => 'Watch the trailer',
 
     // Countdown
     'cd_title'        => 'Releases in',

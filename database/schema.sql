@@ -275,6 +275,7 @@ INSERT INTO settings (`key`, value) VALUES
 ('site_tagline_en', 'Enter The Next Generation Of Vice City.'),
 ('adsense_client', ''),
 ('hero_video', ''),
+('trailer_url', ''),
 ('release_date', '2026-11-19T00:00:00');
 
 INSERT INTO seo_pages (path, title, description) VALUES
