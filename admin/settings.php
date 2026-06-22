@@ -11,6 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('adsense_slot', trim((string) ($_POST['adsense_slot'] ?? '')));
         set_setting('hero_video', trim((string) ($_POST['hero_video'] ?? '')));
         set_setting('trailer_url', trim((string) ($_POST['trailer_url'] ?? '')));
+        set_setting('map_url', trim((string) ($_POST['map_url'] ?? '')));
         $rd = trim((string) ($_POST['release_date'] ?? ''));
         if ($rd !== '') {
             // datetime-local -> ISO
@@ -24,6 +25,7 @@ $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
 $trailer = (string) get_setting('trailer_url', '');
+$map_url = (string) get_setting('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00');
 $release = (string) release_date();
 // ISO -> valeur datetime-local (YYYY-MM-DDTHH:MM)
 $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
@@ -66,6 +68,12 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>URL de la bande-annonce</label>
         <input type="url" name="trailer_url" value="<?= e($trailer) ?>" placeholder="https://www.youtube.com/watch?v=…">
         <small class="muted">Lien ouvert par le bloc « Bande-annonce ». Vide = renvoie vers Trailer Lab.</small>
+    </div>
+
+    <div>
+        <label>URL de la carte interactive (Map Lab)</label>
+        <input type="url" name="map_url" value="<?= e($map_url) ?>" placeholder="https://map.stateofleonida.net/?map=vi">
+        <small class="muted">Carte intégrée en iframe sur Map Lab. Vide = masque l’iframe (garde la carte stylisée).</small>
     </div>
 
     <button class="btn btn--primary" type="submit">Enregistrer</button>

@@ -277,6 +277,7 @@ INSERT INTO settings (`key`, value) VALUES
 ('adsense_slot', ''),
 ('hero_video', ''),
 ('trailer_url', ''),
+('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00'),
 ('release_date', '2026-11-19T00:00:00');
 
 INSERT INTO seo_pages (path, title, description) VALUES
