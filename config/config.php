@@ -7,6 +7,36 @@
 declare(strict_types=1);
 
 /* ------------------------------------------------------------------ */
+/*  Chargement d'un fichier .env (hébergement mutualisé : O2Switch…)   */
+/*  Sur un mutualisé on ne peut pas définir de variables système ;     */
+/*  on lit donc un fichier .env (non versionné) à la racine du projet. */
+/* ------------------------------------------------------------------ */
+$__envFile = dirname(__DIR__) . '/.env';
+if (is_file($__envFile)) {
+    foreach (file($__envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $__line) {
+        $__line = trim($__line);
+        if ($__line === '' || $__line[0] === '#') {
+            continue;
+        }
+        $__parts = explode('=', $__line, 2);
+        $__k = trim($__parts[0]);
+        $__v = trim($__parts[1] ?? '');
+        // Retire des guillemets éventuels autour de la valeur
+        if (strlen($__v) >= 2 && ($__v[0] === '"' || $__v[0] === "'") && $__v[strlen($__v) - 1] === $__v[0]) {
+            $__v = substr($__v, 1, -1);
+        }
+        if ($__k !== '' && getenv($__k) === false) {
+            putenv("$__k=$__v");
+            $_ENV[$__k] = $__v;
+            $_SERVER[$__k] = $__v;
+        }
+    }
+    unset($__line, $__parts, $__k, $__v);
+}
+unset($__envFile);
+
+
+/* ------------------------------------------------------------------ */
 /*  Environnement                                                      */
 /* ------------------------------------------------------------------ */
 define('APP_NAME', 'ViceHub X');

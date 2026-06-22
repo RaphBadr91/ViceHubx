@@ -1,0 +1,44 @@
+# ViceHub X — Configuration Apache / LiteSpeed (O2Switch)
+# La racine web pointe sur ce dossier ; index.php est le point d'entrée.
+
+DirectoryIndex index.php
+Options -Indexes
+AddDefaultCharset UTF-8
+
+# --- Sécurité : on bloque l'accès HTTP aux dossiers internes ---
+# (PHP continue de les inclure côté serveur ; seul l'accès direct est interdit.)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(config|database|includes|scripts|scripts-python|agents|seo|lang)/ - [F,L]
+</IfModule>
+
+# --- Sécurité : fichiers sensibles inaccessibles depuis le web ---
+<FilesMatch "(^\.|\.(env|sql|sh|log|ini|md|lock|json|yml|yaml)$)">
+    Require all denied
+</FilesMatch>
+# On laisse passer les manifestes utiles éventuels (décommentez si besoin)
+# <Files "site.webmanifest">
+#     Require all granted
+# </Files>
+
+# --- Cache des assets statiques ---
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/png            "access plus 30 days"
+    ExpiresByType image/jpeg           "access plus 30 days"
+    ExpiresByType image/webp           "access plus 30 days"
+    ExpiresByType video/mp4            "access plus 30 days"
+    ExpiresByType text/css             "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+</IfModule>
+
+# --- En-têtes de sécurité ---
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # STAGING UNIQUEMENT : décommentez sur le sous-domaine de préversion
+    # pour empêcher l'indexation Google. À NE PAS activer en production.
+    # Header always set X-Robots-Tag "noindex, nofollow"
+</IfModule>
