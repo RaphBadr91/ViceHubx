@@ -14,7 +14,6 @@ CDN="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E"
 
 # --- Plans du montage (ordre = rythme) ---
 CLIPS=(
-  "$CDN/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4"  # Night drive néon (9s)
   "$CDN/hf_20260622_131132_beb29382-3ff9-4429-933e-f3fdd03a9f55.mp4"  # Police-poursuite (8s)
   "$CDN/hf_20260622_131652_09f2e6b7-a3b4-482a-bc81-da676ae5e614.mp4"  # Hélicoptère de nuit (8s)
   "$CDN/hf_20260622_093513_c9a90c6d-7340-4dfd-8963-410993e23456.mp4"  # Cruise plage golden hour (8s)
