@@ -14,12 +14,13 @@ CDN="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E"
 
 # --- Plans du montage (ordre = rythme) ---
 CLIPS=(
+  "$CDN/hf_20260622_163349_83ec4749-81dc-406e-a59c-bd961d63db73.mp4"  # Boulevard de nuit : trafic dense + passants (5s)
   "$CDN/hf_20260622_131132_beb29382-3ff9-4429-933e-f3fdd03a9f55.mp4"  # Police-poursuite (8s)
   "$CDN/hf_20260622_131652_09f2e6b7-a3b4-482a-bc81-da676ae5e614.mp4"  # Hélicoptère de nuit (8s)
   "$CDN/hf_20260622_093513_c9a90c6d-7340-4dfd-8963-410993e23456.mp4"  # Cruise plage golden hour (8s)
   "$CDN/hf_20260622_093551_0ec3d71f-b1a6-4ca4-9284-873fd2e1f381.mp4"  # Survol aérien métropole (8s)
 )
-POSTER_URL="$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
+POSTER_URL="$CDN/hf_20260622_130727_e28cfd20-aeab-4f18-9e8f-cace0ad0de40.png"  # poster (police, dynamique)
 
 # --- Visuels de la galerie "Univers" (nom_local|url) — 8 scènes ---
 SCENES=(
