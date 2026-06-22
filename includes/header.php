@@ -56,6 +56,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php if (!empty($JSONLD)): ?>
     <script type="application/ld+json"><?= json_encode($JSONLD, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
     <?php endif; ?>
+
+    <?php if ($ac = adsense_client()): ?>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= e($ac) ?>"
+            crossorigin="anonymous"></script>
+    <?php endif; ?>
 </head>
 <body class="<?= e($BODY_CLASS) ?>">
 <a class="skip-link" href="#main"><?= lang() === 'fr' ? 'Aller au contenu' : 'Skip to content' ?></a>

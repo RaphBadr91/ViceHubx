@@ -19,6 +19,41 @@
   // filet de sécurité
   setTimeout(hideLoader, 2200);
 
+  /* ---------------- Compte à rebours ---------------- */
+  (function countdown() {
+    const el = $('.countdown');
+    if (!el) return;
+    const deadline = new Date(el.dataset.deadline).getTime();
+    if (isNaN(deadline)) return;
+    const out = {
+      d: el.querySelector('[data-cd="d"]'), h: el.querySelector('[data-cd="h"]'),
+      m: el.querySelector('[data-cd="m"]'), s: el.querySelector('[data-cd="s"]'),
+    };
+    let lastS = -1;
+    const pad = (n) => String(n).padStart(2, '0');
+    function tick() {
+      let diff = deadline - Date.now();
+      if (diff <= 0) { el.classList.add('is-done'); clearInterval(timer); return; }
+      const d = Math.floor(diff / 86400000); diff %= 86400000;
+      const h = Math.floor(diff / 3600000); diff %= 3600000;
+      const m = Math.floor(diff / 60000); diff %= 60000;
+      const s = Math.floor(diff / 1000);
+      if (out.d) out.d.textContent = String(d);
+      if (out.h) out.h.textContent = pad(h);
+      if (out.m) out.m.textContent = pad(m);
+      if (out.s) {
+        out.s.textContent = pad(s);
+        if (s !== lastS) {
+          const tile = out.s.parentElement;
+          tile.classList.remove('flip'); void tile.offsetWidth; tile.classList.add('flip');
+          lastS = s;
+        }
+      }
+    }
+    tick();
+    const timer = setInterval(tick, 1000);
+  })();
+
   /* ---------------- Menu mobile ---------------- */
   const toggle = $('.nav-toggle');
   const nav = $('.site-nav');
@@ -141,8 +176,8 @@
 
   function startSynthwave(canvas) {
     const ctx = canvas.getContext('2d');
-    let w = 0, h = 0, dpr = 1, t = 0;
-    const stars = [], embers = [];
+    let w = 0, h = 0, dpr = 1, t = 0, nextSpawn = 0;
+    const stars = [], embers = [], cars = [];
 
     const newEmber = () => ({
       x: Math.random() * w, y: h + Math.random() * 60,
@@ -182,6 +217,60 @@
         const y = horizon + Math.pow(p, 2.3) * (h - horizon);
         ctx.strokeStyle = 'rgba(43,214,255,' + (0.05 + p * 0.4) + ')';
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Route néon + phares qui foncent vers le joueur */
+    const yAt = (horizon, p) => horizon + Math.pow(p, 2.3) * (h - horizon);
+    const roadHalf = (p) => {
+      const topHW = Math.max(6, w * 0.012), botHW = w * 0.46;
+      return topHW + (botHW - topHW) * Math.pow(p, 2.3);
+    };
+    function road(horizon) {
+      const cx = w / 2, topHW = Math.max(6, w * 0.012), botHW = w * 0.46;
+      // asphalte
+      ctx.beginPath();
+      ctx.moveTo(cx - topHW, horizon); ctx.lineTo(cx + topHW, horizon);
+      ctx.lineTo(cx + botHW, h); ctx.lineTo(cx - botHW, h); ctx.closePath();
+      const g = ctx.createLinearGradient(0, horizon, 0, h);
+      g.addColorStop(0, '#0b0820'); g.addColorStop(1, '#181230');
+      ctx.fillStyle = g; ctx.fill();
+      // bords néon
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.shadowBlur = 16;
+      ctx.strokeStyle = 'rgba(255,46,136,.9)'; ctx.shadowColor = '#ff2e88';
+      ctx.beginPath(); ctx.moveTo(cx - topHW, horizon); ctx.lineTo(cx - botHW, h); ctx.stroke();
+      ctx.strokeStyle = 'rgba(43,214,255,.9)'; ctx.shadowColor = '#2bd6ff';
+      ctx.beginPath(); ctx.moveTo(cx + topHW, horizon); ctx.lineTo(cx + botHW, h); ctx.stroke();
+      ctx.restore();
+      // marquage central défilant
+      ctx.save(); ctx.fillStyle = 'rgba(255,209,102,.85)';
+      const scroll = (t * 0.6) % 1;
+      for (let i = 0; i < 16; i++) {
+        const p = (i + scroll) / 16;
+        const y0 = yAt(horizon, p), y1 = yAt(horizon, Math.min(1, p + 0.55 / 16));
+        const wd = 2 + p * p * 16;
+        ctx.fillRect(cx - wd / 2, y0, wd, Math.max(2, (y1 - y0) * 0.6));
+      }
+      ctx.restore();
+      // voitures (paires de phares)
+      if (t > nextSpawn) {
+        cars.push({ p: 0, sp: 0.0016 + Math.random() * 0.0027, lane: (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.2) });
+        nextSpawn = t + 0.6 + Math.random() * 1.2;
+      }
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      for (let i = cars.length - 1; i >= 0; i--) {
+        const c = cars[i]; c.p += c.sp;
+        if (c.p > 1.08) { cars.splice(i, 1); continue; }
+        const y = yAt(horizon, c.p), rh = roadHalf(c.p), x0 = cx + c.lane * rh;
+        const size = 1.4 + Math.pow(c.p, 1.7) * 11, sep = 3 + Math.pow(c.p, 1.6) * size * 1.3, al = Math.min(1, c.p + 0.2);
+        for (const s of [-1, 1]) {
+          const x = x0 + s * sep;
+          const gr = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+          gr.addColorStop(0, 'rgba(255,250,225,' + al + ')'); gr.addColorStop(0.3, 'rgba(255,209,102,.55)'); gr.addColorStop(1, 'transparent');
+          ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, size * 3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,' + al + ')'; ctx.beginPath(); ctx.arc(x, y, size * 0.5, 0, Math.PI * 2); ctx.fill();
+        }
       }
       ctx.restore();
     }
@@ -231,6 +320,7 @@
       ctx.restore();
 
       grid(horizon);
+      road(horizon);
 
       // braises montantes
       ctx.save();

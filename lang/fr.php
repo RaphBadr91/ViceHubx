@@ -22,6 +22,14 @@ return [
     'hero_cta_map'    => 'Explorer la carte',
     'hero_badge'      => 'Portail nouvelle génération',
 
+    // Compte à rebours
+    'cd_title'        => 'Sortie dans',
+    'cd_days'         => 'Jours',
+    'cd_hours'        => 'Heures',
+    'cd_min'          => 'Min',
+    'cd_sec'          => 'Sec',
+    'cd_released'     => '🎉 Disponible maintenant !',
+
     // Sections homepage
     'os_title'        => 'Vice City OS',
     'os_subtitle'     => 'Vos modules immersifs, en un clic',

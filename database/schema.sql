@@ -273,7 +273,9 @@ INSERT INTO poll_options (poll_id, label) VALUES
 INSERT INTO settings (`key`, value) VALUES
 ('site_tagline_fr', 'Entrez dans la nouvelle génération de Vice City.'),
 ('site_tagline_en', 'Enter The Next Generation Of Vice City.'),
-('adsense_client', '');
+('adsense_client', ''),
+('hero_video', ''),
+('release_date', '2026-11-19T00:00:00');
 
 INSERT INTO seo_pages (path, title, description) VALUES
 ('/index.php', 'ViceHub X — GTA6 News', 'News, guides, leaks et analyses de trailers GTA VI.'),

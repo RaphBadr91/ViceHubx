@@ -29,6 +29,9 @@ $zones    = array_slice(get_map_zones(), 0, 4);
 $vehicles = array_slice(get_vehicles(), 0, 3);
 $deals    = get_deals();
 
+$hero_video = trim((string) get_setting('hero_video', ''));
+$deadline   = release_date();
+
 $modules = [
     ['🧠', 'News AI',     'news.php'],
     ['🗺️', 'Map Lab',     'map.php'],
@@ -54,7 +57,13 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
+    <?php if ($hero_video !== ''): ?>
+        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="<?= e($hero_video) ?>">
+        </video>
+    <?php else: ?>
+        <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
+    <?php endif; ?>
     <div class="hero__veil" aria-hidden="true"></div>
     <span class="palm palm--l" aria-hidden="true">🌴</span>
     <span class="palm palm--r" aria-hidden="true">🌴</span>
@@ -63,6 +72,22 @@ require __DIR__ . '/includes/header.php';
         <span class="hero__badge">✦ <?= e(t('hero_badge')) ?></span>
         <h1>Vice<span class="grad">Hub</span> X</h1>
         <p class="hero__sub"><?= e(lang() === 'fr' ? APP_SLOGAN_FR : APP_SLOGAN_EN) ?></p>
+
+        <!-- Compte à rebours jusqu'à la sortie -->
+        <div class="countdown" data-deadline="<?= e($deadline) ?>" role="timer" aria-label="<?= e(t('cd_title')) ?>">
+            <span class="cd-title"><?= e(t('cd_title')) ?></span>
+            <div class="cd-tiles">
+                <div class="cd-tile"><b data-cd="d">--</b><i><?= e(t('cd_days')) ?></i></div>
+                <div class="cd-sep">:</div>
+                <div class="cd-tile"><b data-cd="h">--</b><i><?= e(t('cd_hours')) ?></i></div>
+                <div class="cd-sep">:</div>
+                <div class="cd-tile"><b data-cd="m">--</b><i><?= e(t('cd_min')) ?></i></div>
+                <div class="cd-sep">:</div>
+                <div class="cd-tile"><b data-cd="s">--</b><i><?= e(t('cd_sec')) ?></i></div>
+            </div>
+            <span class="cd-done"><?= e(t('cd_released')) ?></span>
+        </div>
+
         <div class="hero__actions">
             <a class="btn btn--primary" href="<?= e(with_lang(url('pages/news.php'))) ?>"><?= e(t('hero_cta_news')) ?></a>
             <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('hero_cta_map')) ?></a>
@@ -70,6 +95,8 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="scroll-cue" aria-hidden="true"></div>
 </section>
+
+<?= ad_slot('', lang() === 'fr' ? 'Publicité' : 'Advertisement') ?>
 
 <!-- ============ VICE CITY OS ============ -->
 <section class="section">
@@ -137,6 +164,8 @@ require __DIR__ . '/includes/header.php';
         <?php endforeach; ?>
     </div>
 </section>
+
+<?= ad_slot('', lang() === 'fr' ? 'Publicité' : 'Advertisement') ?>
 
 <!-- ============ LEAKS LAB ============ -->
 <section class="section">

@@ -13,6 +13,9 @@ define('APP_NAME', 'ViceHub X');
 define('APP_SLOGAN_EN', 'Enter The Next Generation Of Vice City.');
 define('APP_SLOGAN_FR', 'Entrez dans la nouvelle génération de Vice City.');
 
+// Date de sortie GTA VI (compte à rebours). Surchargée par le réglage "release_date".
+define('RELEASE_DATE', '2026-11-19T00:00:00');
+
 // Chemins
 define('ROOT_PATH', dirname(__DIR__));
 define('BASE_URL', getenv('VICEHUB_BASE_URL') ?: '');           // vide => racine du serveur

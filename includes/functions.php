@@ -256,6 +256,56 @@ function get_setting(string $key, ?string $default = null): ?string
     return $row['value'] ?? $default;
 }
 
+/** Enregistre/écrase un réglage. */
+function set_setting(string $key, string $value): void
+{
+    $stmt = db()->prepare(
+        'INSERT INTO settings (`key`, value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE value = VALUES(value)'
+    );
+    $stmt->execute([$key, $value]);
+}
+
+/* ================================================================== */
+/*  Date de sortie & compte à rebours                                 */
+/* ================================================================== */
+
+/** Date de sortie GTA VI (surchargée par le réglage release_date). */
+function release_date(): string
+{
+    return get_setting('release_date', RELEASE_DATE) ?: RELEASE_DATE;
+}
+
+/* ================================================================== */
+/*  Publicité / Google AdSense                                        */
+/* ================================================================== */
+
+/** Identifiant client AdSense (ca-pub-...) ou null. */
+function adsense_client(): ?string
+{
+    $c = trim((string) get_setting('adsense_client', ''));
+    return $c !== '' ? $c : null;
+}
+
+/**
+ * Emplacement publicitaire. Affiche le bloc AdSense si configuré,
+ * sinon une zone "réservée pub" discrète (utile en dev).
+ */
+function ad_slot(string $slotId = '', string $label = 'Publicité'): string
+{
+    $client = adsense_client();
+    if ($client && $slotId !== '') {
+        return '<div class="ad-slot"><ins class="adsbygoogle" style="display:block"'
+            . ' data-ad-client="' . e($client) . '"'
+            . ' data-ad-slot="' . e($slotId) . '"'
+            . ' data-ad-format="auto" data-full-width-responsive="true"></ins>'
+            . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script></div>';
+    }
+    // Placeholder (aucune pub configurée)
+    return '<div class="ad-slot ad-slot--ph" aria-hidden="true"><span>' . e($label)
+        . '</span><small>Emplacement Google AdSense</small></div>';
+}
+
 /* ================================================================== */
 /*  Niveaux d'importance (Trailer Lab)                                */
 /* ================================================================== */

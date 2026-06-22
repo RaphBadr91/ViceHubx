@@ -22,6 +22,14 @@ return [
     'hero_cta_map'    => 'Explore The Map',
     'hero_badge'      => 'Next-gen portal',
 
+    // Countdown
+    'cd_title'        => 'Releases in',
+    'cd_days'         => 'Days',
+    'cd_hours'        => 'Hours',
+    'cd_min'          => 'Min',
+    'cd_sec'          => 'Sec',
+    'cd_released'     => '🎉 Available now!',
+
     // Homepage sections
     'os_title'        => 'Vice City OS',
     'os_subtitle'     => 'Your immersive modules, one click away',
