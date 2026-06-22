@@ -16,17 +16,21 @@ CDN="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E"
 CLIPS=(
   "$CDN/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4"  # Night drive néon (9s)
   "$CDN/hf_20260622_131132_beb29382-3ff9-4429-933e-f3fdd03a9f55.mp4"  # Police-poursuite (8s)
+  "$CDN/hf_20260622_131652_09f2e6b7-a3b4-482a-bc81-da676ae5e614.mp4"  # Hélicoptère de nuit (8s)
   "$CDN/hf_20260622_093513_c9a90c6d-7340-4dfd-8963-410993e23456.mp4"  # Cruise plage golden hour (8s)
   "$CDN/hf_20260622_093551_0ec3d71f-b1a6-4ca4-9284-873fd2e1f381.mp4"  # Survol aérien métropole (8s)
 )
 POSTER_URL="$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
 
-# --- Visuels de la galerie "Univers" (nom_local|url) ---
+# --- Visuels de la galerie "Univers" (nom_local|url) — 8 scènes ---
 SCENES=(
   "night.png|$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
   "beach-cruise.png|$CDN/hf_20260622_093428_1b56209f-dc8e-4d0c-90f9-940c7eef4a14.png"
   "aerial.png|$CDN/hf_20260622_093430_c3918a3d-0345-4e6f-95ba-fbd3f76002bb.png"
   "police.png|$CDN/hf_20260622_130727_e28cfd20-aeab-4f18-9e8f-cace0ad0de40.png"
+  "heli.png|$CDN/hf_20260622_130728_b0a5ded5-d988-4809-8a23-58ac81d030ae.png"
+  "plane.png|$CDN/hf_20260622_130844_81ba4d71-ed7e-4fdd-b9e2-4536e5daa40e.png"
+  "marina.png|$CDN/hf_20260622_130830_b4ff6360-6bf4-41a0-a68c-2414f21752a3.png"
   "beachlife.png|$CDN/hf_20260622_130831_13fde152-b662-485a-9258-94fc8cc5b2c5.png"
 )
 
