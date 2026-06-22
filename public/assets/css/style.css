@@ -600,3 +600,17 @@ body.is-home .site-header.scrolled {
     .trailer-hero { aspect-ratio: 4 / 3; }
     .trailer-hero .play-btn { width: 74px; height: 74px; font-size: 1.6rem; }
 }
+
+/* --- Corps d'article (contenu généré, SEO) --- */
+.article-body { font-size: 1.06rem; line-height: 1.75; color: #e9e5fb; }
+.article-body h2 { font-family: var(--font-display); font-size: clamp(1.3rem, 3vw, 1.8rem); margin: 2rem 0 .8rem; }
+.article-body h3 { font-family: var(--font-display); font-size: 1.15rem; margin: 1.4rem 0 .6rem; color: var(--blue); }
+.article-body p { margin: 0 0 1.1rem; }
+.article-body ul, .article-body ol { margin: 0 0 1.2rem; padding-left: 1.3rem; }
+.article-body li { margin: .35rem 0; }
+.article-body strong { color: #fff; }
+.article-body blockquote { border-left: 3px solid var(--pink); margin: 1.2rem 0; padding: .4rem 0 .4rem 1rem; color: var(--muted); }
+
+/* Titres de carte cliquables */
+.card__title a { color: inherit; }
+.card__title a:hover { color: var(--pink); }

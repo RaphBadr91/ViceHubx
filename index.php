@@ -30,6 +30,11 @@ $vehicles = array_slice(get_vehicles(), 0, 3);
 $deals    = get_deals();
 
 $hero_video = trim((string) get_setting('hero_video', ''));
+// Vidéo locale générée : utilisée par défaut si présente (réglage admin prioritaire)
+if ($hero_video === '' && is_file(ROOT_PATH . '/public/assets/video/hero.mp4')) {
+    $hero_video = asset('video/hero.mp4');
+}
+$hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset('img/hero-poster.png') : '';
 $deadline   = release_date();
 
 $modules = [
@@ -58,7 +63,8 @@ require __DIR__ . '/includes/header.php';
 <!-- ============ HERO ============ -->
 <section class="hero">
     <?php if ($hero_video !== ''): ?>
-        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+        <video class="hero__video" autoplay muted loop playsinline preload="auto"
+               <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
             <source src="<?= e($hero_video) ?>">
         </video>
     <?php else: ?>
@@ -119,7 +125,7 @@ require __DIR__ . '/includes/header.php';
     </a>
 </section>
 
-<?= ad_slot('', lang() === 'fr' ? 'Publicité' : 'Advertisement') ?>
+<?= ad_slot(get_setting('adsense_slot', '')) ?>
 
 <!-- ============ VICE CITY OS ============ -->
 <section class="section">
@@ -152,7 +158,7 @@ require __DIR__ . '/includes/header.php';
                 <div class="card__media"><span aria-hidden="true">🌆</span></div>
                 <div class="card__body">
                     <span class="card__cat"><?= e($a['category_name'] ?? 'News') ?></span>
-                    <h3 class="card__title"><?= e($a['title']) ?></h3>
+                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
                     <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
                     <div class="card__meta">
                         <?= badge_html($a['badge']) ?>
@@ -179,7 +185,7 @@ require __DIR__ . '/includes/header.php';
                 <div class="card__media"><span aria-hidden="true">🧭</span></div>
                 <div class="card__body">
                     <span class="card__cat"><?= e(t('nav_guides')) ?></span>
-                    <h3 class="card__title"><?= e($a['title']) ?></h3>
+                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
                     <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
                     <span class="card__date"><?= e(fmt_date($a['published_at'])) ?></span>
                 </div>
@@ -201,7 +207,7 @@ require __DIR__ . '/includes/header.php';
             <article class="card glass reveal">
                 <div class="card__body">
                     <?= badge_html($a['badge']) ?>
-                    <h3 class="card__title"><?= e($a['title']) ?></h3>
+                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
                     <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
                 </div>
             </article>

@@ -305,22 +305,20 @@ function adsense_client(): ?string
 }
 
 /**
- * Emplacement publicitaire. Affiche le bloc AdSense si configuré,
- * sinon une zone "réservée pub" discrète (utile en dev).
+ * Emplacement publicitaire. Affiche le bloc AdSense uniquement si configuré
+ * (client + slot). Sinon : rien (aucune zone "réservée" visible).
  */
 function ad_slot(string $slotId = '', string $label = 'Publicité'): string
 {
     $client = adsense_client();
-    if ($client && $slotId !== '') {
-        return '<div class="ad-slot"><ins class="adsbygoogle" style="display:block"'
-            . ' data-ad-client="' . e($client) . '"'
-            . ' data-ad-slot="' . e($slotId) . '"'
-            . ' data-ad-format="auto" data-full-width-responsive="true"></ins>'
-            . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script></div>';
+    if (!$client || $slotId === '') {
+        return ''; // pas de pub configurée → on n'affiche rien
     }
-    // Placeholder (aucune pub configurée)
-    return '<div class="ad-slot ad-slot--ph" aria-hidden="true"><span>' . e($label)
-        . '</span><small>Emplacement Google AdSense</small></div>';
+    return '<div class="ad-slot"><ins class="adsbygoogle" style="display:block"'
+        . ' data-ad-client="' . e($client) . '"'
+        . ' data-ad-slot="' . e($slotId) . '"'
+        . ' data-ad-format="auto" data-full-width-responsive="true"></ins>'
+        . '<script>(adsbygoogle = window.adsbygoogle || []).push({});</script></div>';
 }
 
 /* ================================================================== */

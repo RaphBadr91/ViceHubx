@@ -25,7 +25,7 @@ require ROOT_PATH . '/includes/header.php';
             <article class="card glass reveal">
                 <div class="card__body">
                     <?= badge_html($a['badge']) ?>
-                    <h3 class="card__title"><?= e($a['title']) ?></h3>
+                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
                     <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
                     <span class="card__date"><?= e(fmt_date($a['published_at'])) ?></span>
                 </div>

@@ -274,6 +274,7 @@ INSERT INTO settings (`key`, value) VALUES
 ('site_tagline_fr', 'Entrez dans la nouvelle génération de Vice City.'),
 ('site_tagline_en', 'Enter The Next Generation Of Vice City.'),
 ('adsense_client', ''),
+('adsense_slot', ''),
 ('hero_video', ''),
 ('trailer_url', ''),
 ('release_date', '2026-11-19T00:00:00');

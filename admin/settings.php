@@ -8,6 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = ['err', 'Jeton CSRF invalide.'];
     } else {
         set_setting('adsense_client', trim((string) ($_POST['adsense_client'] ?? '')));
+        set_setting('adsense_slot', trim((string) ($_POST['adsense_slot'] ?? '')));
         set_setting('hero_video', trim((string) ($_POST['hero_video'] ?? '')));
         set_setting('trailer_url', trim((string) ($_POST['trailer_url'] ?? '')));
         $rd = trim((string) ($_POST['release_date'] ?? ''));
@@ -20,6 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $adsense = (string) get_setting('adsense_client', '');
+$adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
 $trailer = (string) get_setting('trailer_url', '');
 $release = (string) release_date();
@@ -45,7 +47,13 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
     <div>
         <label>Google AdSense — identifiant client</label>
         <input type="text" name="adsense_client" value="<?= e($adsense) ?>" placeholder="ca-pub-0000000000000000">
-        <small class="muted">Laissez vide pour masquer les pubs (zones « réservées » en dev). Renseignez votre <code>ca-pub-…</code> pour activer.</small>
+        <small class="muted">Vide = <strong>aucune pub affichée</strong> (rien, pas de zone réservée). Renseignez <code>ca-pub-…</code> + un slot pour activer.</small>
+    </div>
+
+    <div>
+        <label>Google AdSense — ID d'emplacement (slot)</label>
+        <input type="text" name="adsense_slot" value="<?= e($adslot) ?>" placeholder="1234567890">
+        <small class="muted">Les pubs n'apparaissent que si le client <em>et</em> le slot sont renseignés.</small>
     </div>
 
     <div>

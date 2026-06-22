@@ -17,7 +17,7 @@ require ROOT_PATH . '/includes/header.php';
                 <div class="card__media"><span aria-hidden="true">🌆</span></div>
                 <div class="card__body">
                     <span class="card__cat"><?= e($a['category_name'] ?? 'News') ?></span>
-                    <h3 class="card__title"><?= e($a['title']) ?></h3>
+                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
                     <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
                     <div class="card__meta">
                         <?= badge_html($a['badge']) ?>
