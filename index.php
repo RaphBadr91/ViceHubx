@@ -77,7 +77,7 @@ require __DIR__ . '/includes/header.php';
     <div class="hero__content">
         <span class="hero__kicker">✦ <?= e(t('hero_badge')) ?></span>
         <h1 class="hero__wm"><span>ViceHub</span><b class="grad">X</b></h1>
-        <p class="hero__release"><?= e(release_human()) ?></p>
+        <p class="hero__release"><b>GTA VI</b> — <?= e(release_human()) ?></p>
         <p class="hero__sub"><?= e(lang() === 'fr' ? APP_SLOGAN_FR : APP_SLOGAN_EN) ?></p>
 
         <!-- Compte à rebours jusqu'à la sortie -->

@@ -12,7 +12,32 @@ require ROOT_PATH . '/includes/header.php';
     <h1><?= e(t('page_trailer_title')) ?></h1>
     <p class="muted" style="max-width:680px"><?= e(t('page_trailer_intro')) ?></p>
 
-    <div style="margin-top:1.6rem">
+    <?php
+    $official_trailers = [
+        ['VQRLujxTm3c', lang() === 'fr' ? 'Bande-annonce officielle' : 'Official trailer'],
+        ['EiQEBYDox_k', lang() === 'fr' ? 'Révélation de la jaquette officielle' : 'Official Cover Art Reveal Trailer'],
+    ];
+    ?>
+    <h2 style="margin-top:2rem"><?= lang() === 'fr' ? 'Bandes-annonces officielles' : 'Official trailers' ?></h2>
+    <div class="trailers-official">
+        <?php foreach ($official_trailers as [$vid, $label]): ?>
+            <figure class="vtrailer glass reveal">
+                <div class="video-embed">
+                    <iframe src="https://www.youtube-nocookie.com/embed/<?= e($vid) ?>?rel=0"
+                            title="<?= e($label) ?>" loading="lazy" frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                </div>
+                <figcaption>
+                    <span class="badge badge--official"><?= lang() === 'fr' ? 'Officiel' : 'Official' ?></span>
+                    <?= e($label) ?>
+                </figcaption>
+            </figure>
+        <?php endforeach; ?>
+    </div>
+
+    <h2 style="margin-top:2.4rem"><?= lang() === 'fr' ? 'Analyses image par image' : 'Frame-by-frame analysis' ?></h2>
+    <div style="margin-top:1rem">
         <?php foreach ($rows as $row): ?>
             <div class="trailer-row glass reveal">
                 <span class="timecode"><?= e($row['timecode']) ?></span>
