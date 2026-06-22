@@ -1,61 +1,72 @@
 #!/usr/bin/env bash
 # ==================================================================
-#  ViceHub X — Assemble la vidéo de fond du hero (~25 s, monde GTA6)
-#  Télécharge 3 plans cinématiques (générés par IA) et les monte en
-#  une seule vidéo via ffmpeg, puis la place dans public/assets/.
-#  La vidéo s'active automatiquement sur la page d'accueil.
+#  ViceHub X — Vidéo de fond du hero (~30s, monde GTA6) + visuels de
+#  la galerie "Univers". Télécharge les plans cinématiques générés
+#  par IA, les monte avec ffmpeg, et récupère les images de scènes.
+#  Tout s'active AUTOMATIQUEMENT sur la page d'accueil.
 #
 #  Prérequis : ffmpeg  (sur Mac :  brew install ffmpeg)
 #  Usage     : bash scripts/make-hero-video.sh
 # ==================================================================
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
+CDN="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E"
 
-# --- Plans générés (ordre du montage) ---
-CLIP1_URL="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4"   # Night drive — boulevard néon (9s)
-CLIP2_URL="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260622_093513_c9a90c6d-7340-4dfd-8963-410993e23456.mp4"   # Cruise plage — golden hour (8s)
-CLIP3_URL="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260622_093551_0ec3d71f-b1a6-4ca4-9284-873fd2e1f381.mp4"   # Survol aérien — métropole néon (8s)
-POSTER_URL="https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
+# --- Plans du montage (ordre = rythme) ---
+CLIPS=(
+  "$CDN/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4"  # Night drive néon (9s)
+  "$CDN/hf_20260622_131132_beb29382-3ff9-4429-933e-f3fdd03a9f55.mp4"  # Police-poursuite (8s)
+  "$CDN/hf_20260622_093513_c9a90c6d-7340-4dfd-8963-410993e23456.mp4"  # Cruise plage golden hour (8s)
+  "$CDN/hf_20260622_093551_0ec3d71f-b1a6-4ca4-9284-873fd2e1f381.mp4"  # Survol aérien métropole (8s)
+)
+POSTER_URL="$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
+
+# --- Visuels de la galerie "Univers" (nom_local|url) ---
+SCENES=(
+  "night.png|$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png"
+  "beach-cruise.png|$CDN/hf_20260622_093428_1b56209f-dc8e-4d0c-90f9-940c7eef4a14.png"
+  "aerial.png|$CDN/hf_20260622_093430_c3918a3d-0345-4e6f-95ba-fbd3f76002bb.png"
+  "police.png|$CDN/hf_20260622_130727_e28cfd20-aeab-4f18-9e8f-cace0ad0de40.png"
+  "beachlife.png|$CDN/hf_20260622_130831_13fde152-b662-485a-9258-94fc8cc5b2c5.png"
+)
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
   echo "✗ ffmpeg requis. Installez-le :  brew install ffmpeg"; exit 1
 fi
 
-mkdir -p public/assets/video public/assets/img
+mkdir -p public/assets/video public/assets/img public/assets/img/scenes
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 
-echo "→ Téléchargement des 3 plans…"
-curl -fSL "$CLIP1_URL" -o "$TMP/c1.mp4"
-curl -fSL "$CLIP2_URL" -o "$TMP/c2.mp4"
-curl -fSL "$CLIP3_URL" -o "$TMP/c3.mp4"
+echo "→ Téléchargement des ${#CLIPS[@]} plans…"
+inputs=(); i=0
+for url in "${CLIPS[@]}"; do
+  i=$((i+1)); curl -fSL "$url" -o "$TMP/c$i.mp4"; inputs+=(-i "$TMP/c$i.mp4")
+done
+
 echo "→ Image poster…"
 curl -fSL "$POSTER_URL" -o public/assets/img/hero-poster.png
 
-echo "→ Montage (1280x720, 30 fps, fondus enchaînés)…"
-# Fondus enchaînés (xfade) entre les plans pour un rendu premium.
-ffmpeg -y -loglevel error \
-  -i "$TMP/c1.mp4" -i "$TMP/c2.mp4" -i "$TMP/c3.mp4" \
-  -filter_complex "\
-[0:v]scale=1280:720,setsar=1,fps=30,format=yuv420p[v0];\
-[1:v]scale=1280:720,setsar=1,fps=30,format=yuv420p[v1];\
-[2:v]scale=1280:720,setsar=1,fps=30,format=yuv420p[v2];\
-[v0][v1]xfade=transition=fade:duration=0.8:offset=8.2[x1];\
-[x1][v2]xfade=transition=fade:duration=0.8:offset=15.4[outv]" \
+echo "→ Visuels de la galerie Univers…"
+for entry in "${SCENES[@]}"; do
+  name="${entry%%|*}"; url="${entry#*|}"
+  curl -fSL "$url" -o "public/assets/img/scenes/$name" && echo "   ✓ $name" || echo "   ⚠ $name (ignoré)"
+done
+
+echo "→ Montage (1280x720, 30 fps)…"
+# Normalise chaque plan puis concatène (cuts nets, robuste).
+fc=""
+for n in $(seq 0 $(( ${#CLIPS[@]} - 1 ))); do
+  fc+="[$n:v]scale=1280:720,setsar=1,fps=30,format=yuv420p[v$n];"
+done
+for n in $(seq 0 $(( ${#CLIPS[@]} - 1 ))); do fc+="[v$n]"; done
+fc+="concat=n=${#CLIPS[@]}:v=1:a=0[outv]"
+
+ffmpeg -y -loglevel error "${inputs[@]}" -filter_complex "$fc" \
   -map "[outv]" -an -c:v libx264 -crf 20 -preset medium -movflags +faststart \
-  public/assets/video/hero.mp4 || {
-    echo "⚠ Fondus indisponibles, montage simple…"
-    ffmpeg -y -loglevel error \
-      -i "$TMP/c1.mp4" -i "$TMP/c2.mp4" -i "$TMP/c3.mp4" \
-      -filter_complex "\
-[0:v]scale=1280:720,setsar=1,fps=30[a];\
-[1:v]scale=1280:720,setsar=1,fps=30[b];\
-[2:v]scale=1280:720,setsar=1,fps=30[c];\
-[a][b][c]concat=n=3:v=1:a=0[outv]" \
-      -map "[outv]" -an -c:v libx264 -crf 20 -pix_fmt yuv420p -movflags +faststart \
-      public/assets/video/hero.mp4
-  }
+  public/assets/video/hero.mp4
 
 echo
-echo "✓ Vidéo prête : public/assets/video/hero.mp4 ($(du -h public/assets/video/hero.mp4 | cut -f1))"
-echo "  Elle s'active automatiquement sur la home. Recharge avec Cmd+Shift+R."
-echo "  Pense à committer : git add public/assets && git commit -m 'hero video'"
+echo "✓ Vidéo : public/assets/video/hero.mp4 ($(du -h public/assets/video/hero.mp4 | cut -f1))"
+echo "✓ Galerie : public/assets/img/scenes/ (${#SCENES[@]} visuels)"
+echo "  Tout s'active automatiquement. Recharge avec Cmd+Shift+R."
+echo "  Commit :  git add public/assets && git commit -m 'hero video + scenes'"
