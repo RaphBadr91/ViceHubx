@@ -161,6 +161,7 @@ CREATE TABLE vehicles (
     speed    VARCHAR(60),
     use_case VARCHAR(160),
     rarity   ENUM('common','rare','epic','legendary') NOT NULL DEFAULT 'common',
+    image    VARCHAR(255),
     lang     ENUM('fr','en') NOT NULL DEFAULT 'fr'
 ) ENGINE=InnoDB;
 
@@ -235,12 +236,12 @@ INSERT INTO trailer_analyses (timecode, description, clue, importance, lang) VAL
 ('01:23','Intérieur d’un nightclub néon','Logo d’une station radio inédite au mur',2,'fr');
 
 -- Véhicules (5)
-INSERT INTO vehicles (name, type, speed, use_case, rarity, lang) VALUES
-('Infernus Neo','Supercar','340 km/h','Courses et fuites rapides','legendary','fr'),
-('Sabre Coastline','Muscle car','255 km/h','Polyvalente, idéale en ville','rare','fr'),
-('Marina Cruiser','Bateau','120 km/h','Exploration des zones côtières','epic','fr'),
-('Swamp Runner','4x4','165 km/h','Terrains boueux et marécages','common','fr'),
-('Skyline VTOL','Aéronef','420 km/h','Déplacements rapides longue distance','legendary','fr');
+INSERT INTO vehicles (name, type, speed, use_case, rarity, image, lang) VALUES
+('Infernus Neo','Supercar','340 km/h','Courses et fuites rapides','legendary','/public/assets/img/scenes/veh-supercar.png','fr'),
+('Sabre Coastline','Muscle car','255 km/h','Polyvalente, idéale en ville','rare','/public/assets/img/scenes/veh-muscle.png','fr'),
+('Marina Cruiser','Bateau','120 km/h','Exploration des zones côtières','epic','/public/assets/img/scenes/veh-boat.png','fr'),
+('Swamp Runner','4x4','165 km/h','Terrains boueux et marécages','common','/public/assets/img/scenes/veh-swamp.png','fr'),
+('Skyline VTOL','Aéronef','420 km/h','Déplacements rapides longue distance','legendary','/public/assets/img/scenes/veh-vtol.png','fr');
 
 -- Personnages (4)
 INSERT INTO characters (name, role, description, theories, lang) VALUES

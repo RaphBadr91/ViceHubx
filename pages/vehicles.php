@@ -16,7 +16,7 @@ require ROOT_PATH . '/includes/header.php';
     <div class="cards" style="margin-top:1.5rem">
         <?php foreach ($vehicles as $v): ?>
             <article class="card glass reveal">
-                <div class="card__media"><span aria-hidden="true">🏎️</span></div>
+                <?= media_html($v['image'] ?? '', '🏎️') ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e($v['type']) ?></span>
                     <h3 class="card__title"><?= e($v['name']) ?></h3>

@@ -263,12 +263,14 @@ require __DIR__ . '/includes/header.php';
         <h2>🗺️ <?= e(t('map_section')) ?></h2>
         <a class="link-all" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <?php $map_img = is_file(ROOT_PATH . '/public/assets/img/scenes/map.png') ? asset('img/scenes/map.png') : ''; ?>
-    <div class="map-wrap glass<?= $map_img ? ' has-map' : '' ?>"<?= $map_img ? ' style="--map:url(\'' . e($map_img) . '\')"' : '' ?>>
-        <div class="map-canvas" aria-hidden="true"></div>
-        <div class="map-grid" aria-hidden="true"></div>
-        <div class="map-scan" aria-hidden="true"></div>
-        <div class="map-zones">
+    <?php $map_url = trim((string) get_setting('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00')); ?>
+    <?php if ($map_url !== ''): ?>
+        <div class="map-embed glass" style="height:min(62vh,560px)">
+            <iframe src="<?= e($map_url) ?>" title="Carte interactive GTA VI — Leonida"
+                    loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <a class="map-embed__open btn btn--ghost" href="<?= e($map_url) ?>" target="_blank" rel="noopener"><?= lang() === 'fr' ? 'Plein écran' : 'Fullscreen' ?> ↗</a>
+        </div>
+        <div class="map-zones map-zones--row">
             <?php foreach ($zones as $z): ?>
                 <button class="zone" aria-expanded="false">
                     <h3>📍 <?= e($z['name']) ?></h3>
@@ -277,7 +279,23 @@ require __DIR__ . '/includes/header.php';
                 </button>
             <?php endforeach; ?>
         </div>
-    </div>
+    <?php else: ?>
+        <?php $map_img = is_file(ROOT_PATH . '/public/assets/img/scenes/map.png') ? asset('img/scenes/map.png') : ''; ?>
+        <div class="map-wrap glass<?= $map_img ? ' has-map' : '' ?>"<?= $map_img ? ' style="--map:url(\'' . e($map_img) . '\')"' : '' ?>>
+            <div class="map-canvas" aria-hidden="true"></div>
+            <div class="map-grid" aria-hidden="true"></div>
+            <div class="map-scan" aria-hidden="true"></div>
+            <div class="map-zones">
+                <?php foreach ($zones as $z): ?>
+                    <button class="zone" aria-expanded="false">
+                        <h3>📍 <?= e($z['name']) ?></h3>
+                        <p><?= e($z['description']) ?></p>
+                        <div class="zone-info"><?= e($z['info']) ?></div>
+                    </button>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </section>
 
 <!-- ============ VEHICLES ============ -->
@@ -289,7 +307,7 @@ require __DIR__ . '/includes/header.php';
     <div class="cards">
         <?php foreach ($vehicles as $v): ?>
             <article class="card glass reveal">
-                <div class="card__media"><span aria-hidden="true">🏎️</span></div>
+                <?= media_html($v['image'] ?? '', '🏎️') ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e($v['type']) ?></span>
                     <h3 class="card__title"><?= e($v['name']) ?></h3>

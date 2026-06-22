@@ -33,6 +33,11 @@ SCENES=(
   "marina.png|$CDN/hf_20260622_130830_b4ff6360-6bf4-41a0-a68c-2414f21752a3.png"
   "beachlife.png|$CDN/hf_20260622_130831_13fde152-b662-485a-9258-94fc8cc5b2c5.png"
   "map.png|$CDN/hf_20260622_170731_cf090cac-cc1f-4236-b4d1-02e1a91b544e.png"
+  "veh-supercar.png|$CDN/hf_20260622_221229_4a7dd5a9-3bd6-4c05-a01d-8f1731e6b58e.png"
+  "veh-muscle.png|$CDN/hf_20260622_221231_d13edf33-58a7-4409-91d1-66526e8ab0ac.png"
+  "veh-boat.png|$CDN/hf_20260622_221413_6620c79c-ce34-4e6e-bfb6-f85868a62be7.png"
+  "veh-swamp.png|$CDN/hf_20260622_221415_dc91409f-d15d-4d6e-9d6d-739c52d3b0f3.png"
+  "veh-vtol.png|$CDN/hf_20260622_221417_f592d488-c0b3-4de3-aba5-91762ab1495c.png"
 )
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
