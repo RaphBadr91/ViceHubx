@@ -614,3 +614,48 @@ body.is-home .site-header.scrolled {
 /* Titres de carte cliquables */
 .card__title a { color: inherit; }
 .card__title a:hover { color: var(--pink); }
+
+/* ==================================================================
+   SECTION UNIVERS — galerie cinématique "monde GTA6" (bas de page)
+   ================================================================== */
+.universe { position: relative; }
+.universe .section-head h2 { font-family: var(--font-poster); font-size: clamp(2rem, 6vw, 4rem); }
+.scene-grid {
+    display: grid; gap: 1rem;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 180px;
+}
+.scene {
+    position: relative; overflow: hidden; border-radius: 18px;
+    border: 1px solid var(--glass-brd); display: block; isolation: isolate;
+    background-size: cover; background-position: center;
+    transition: transform .4s cubic-bezier(.2,.8,.2,1), box-shadow .4s ease;
+}
+.scene::before { content: ''; position: absolute; inset: 0; z-index: 1; background: var(--scene-grad, linear-gradient(135deg, #1a0b2e, #2a0f3f)); opacity: var(--scene-op, 1); }
+.scene::after { content: ''; position: absolute; inset: 0; z-index: 2; background: linear-gradient(transparent 35%, rgba(5,4,9,.85)); }
+.scene > .scene-bg { position: absolute; inset: 0; z-index: 0; background-size: cover; background-position: center; transition: transform .6s ease; }
+.scene:hover { transform: translateY(-6px); box-shadow: 0 30px 70px -30px rgba(255,46,136,.6); border-color: rgba(255,46,136,.5); }
+.scene:hover > .scene-bg { transform: scale(1.08); }
+.scene .scene-cap { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 1rem 1.1rem; }
+.scene .scene-tag { font-family: var(--font-poster); font-size: .7rem; letter-spacing: .22em; text-transform: uppercase; color: var(--blue); display: block; margin-bottom: .25rem; }
+.scene .scene-title { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+/* Bento : la 1re tuile plus grande */
+.scene--feat { grid-column: span 2; grid-row: span 2; }
+/* Dégradés de repli (si pas d'image) */
+.scene--night   { --scene-grad: radial-gradient(120% 120% at 30% 20%, #ff2e88, transparent 55%), linear-gradient(160deg,#16082b,#070610); }
+.scene--police  { --scene-grad: radial-gradient(120% 120% at 70% 30%, #2bd6ff, transparent 55%), linear-gradient(160deg,#1a0033,#0a0618); }
+.scene--heli    { --scene-grad: radial-gradient(120% 120% at 50% 0%, #8a3cff, transparent 60%), linear-gradient(160deg,#120a26,#06040f); }
+.scene--plane   { --scene-grad: linear-gradient(160deg,#ff7b3d,#ff2e88 60%,#8a3cff); }
+.scene--marina  { --scene-grad: linear-gradient(160deg,#19d3da,#2b6bff 70%); }
+.scene--beachlife { --scene-grad: linear-gradient(160deg,#ffd166,#ff7b3d 60%,#ff2e88); }
+.scene--aerial  { --scene-grad: radial-gradient(120% 120% at 50% 100%, #ff2e88, transparent 60%), linear-gradient(160deg,#1b1030,#06040f); }
+.scene--beach-cruise { --scene-grad: linear-gradient(160deg,#ffb03a,#ff5d7a 70%); }
+
+@media (max-width: 900px) { .scene-grid { grid-template-columns: repeat(2, 1fr); } .scene--feat { grid-column: span 2; grid-row: span 1; } }
+@media (max-width: 520px) { .scene-grid { grid-template-columns: 1fr; grid-auto-rows: 160px; } .scene--feat { grid-column: span 1; } }
+
+/* Bandeau référence (E-E-A-T) */
+.refband { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; }
+.refband .ref { border-radius: 16px; padding: 1.4rem; text-align: center; }
+.refband .ref .big { font-family: var(--font-poster); font-size: 1.8rem; background: var(--grad-logo); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.refband .ref small { color: var(--muted); }

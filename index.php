@@ -277,6 +277,61 @@ require __DIR__ . '/includes/header.php';
     </div>
 </section>
 
+<!-- ============ UNIVERS DE VICE CITY ============ -->
+<?php
+$scene_dir = ROOT_PATH . '/public/assets/img/scenes';
+$scene_defs = [
+    ['night',        'Vice City la nuit',   'Vice City by night',  'Night drive'],
+    ['beach-cruise', 'Boulevard côtier',    'Coastal boulevard',   'Golden hour'],
+    ['aerial',       'Leonida vue du ciel', 'Leonida from above',  'Aérien'],
+    ['police',       'Avis de recherche',   'Wanted',              'Police'],
+    ['heli',         'Soutien aérien',      'Air support',         'Hélico'],
+    ['plane',        'Survol côtier',       'Coastal flyover',     'Avion'],
+    ['marina',       'Marina & yachts',     'Marina & yachts',     'Bateau'],
+    ['beachlife',    'Vie de plage',        'Beach life',          'Plage'],
+];
+$scene_img = static function (string $dir, string $key): ?string {
+    foreach (['jpg', 'jpeg', 'png', 'webp'] as $ext) {
+        $g = glob($dir . '/*' . $key . '*.' . $ext);
+        if ($g) return $g[0];
+    }
+    return null;
+};
+$days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
+?>
+<section class="section universe" id="univers">
+    <div class="section-head">
+        <div>
+            <span class="eyebrow"><?= lang() === 'fr' ? "Plonge dans l'ambiance" : 'Step into the vibe' ?></span>
+            <h2><?= lang() === 'fr' ? 'L’univers de Vice City' : 'The world of Vice City' ?></h2>
+        </div>
+        <a class="link-all" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('hero_cta_map')) ?> →</a>
+    </div>
+
+    <div class="scene-grid">
+        <?php foreach ($scene_defs as $i => [$key, $fr, $en, $tag]):
+            $img = ($scene_img)($scene_dir, $key); ?>
+            <div class="scene scene--<?= e($key) ?><?= $i === 0 ? ' scene--feat' : '' ?>"<?= $img ? ' style="--scene-op:0"' : '' ?>>
+                <?php if ($img): ?>
+                    <span class="scene-bg" style="background-image:url('<?= e(asset('img/scenes/' . basename($img))) ?>')"></span>
+                <?php endif; ?>
+                <div class="scene-cap">
+                    <span class="scene-tag"><?= e($tag) ?></span>
+                    <span class="scene-title"><?= e(lang() === 'fr' ? $fr : $en) ?></span>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <!-- Bandeau référence (E-E-A-T) -->
+    <div class="refband" style="margin-top:1.6rem">
+        <div class="ref glass"><div class="big"><?= $days_left ?></div><small><?= lang() === 'fr' ? 'jours avant la sortie' : 'days until launch' ?></small></div>
+        <div class="ref glass"><div class="big">100%</div><small><?= lang() === 'fr' ? 'Indépendant & non officiel' : 'Independent & unofficial' ?></small></div>
+        <div class="ref glass"><div class="big">FR · EN</div><small><?= lang() === 'fr' ? 'Site bilingue' : 'Bilingual site' ?></small></div>
+        <div class="ref glass"><div class="big">SEO</div><small><?= lang() === 'fr' ? 'Optimisé pour Google' : 'Search-optimised' ?></small></div>
+    </div>
+</section>
+
 <!-- ============ NEWSLETTER ============ -->
 <section class="section">
     <div class="banner glass reveal">
