@@ -32,6 +32,7 @@ SCENES=(
   "plane.png|$CDN/hf_20260622_130844_81ba4d71-ed7e-4fdd-b9e2-4536e5daa40e.png"
   "marina.png|$CDN/hf_20260622_130830_b4ff6360-6bf4-41a0-a68c-2414f21752a3.png"
   "beachlife.png|$CDN/hf_20260622_130831_13fde152-b662-485a-9258-94fc8cc5b2c5.png"
+  "map.png|$CDN/hf_20260622_170731_cf090cac-cc1f-4236-b4d1-02e1a91b544e.png"
 )
 
 if ! command -v ffmpeg >/dev/null 2>&1; then

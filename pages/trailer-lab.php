@@ -22,12 +22,11 @@ require ROOT_PATH . '/includes/header.php';
     <div class="trailers-official">
         <?php foreach ($official_trailers as [$vid, $label]): ?>
             <figure class="vtrailer glass reveal">
-                <div class="video-embed">
-                    <iframe src="https://www.youtube-nocookie.com/embed/<?= e($vid) ?>?rel=0"
-                            title="<?= e($label) ?>" loading="lazy" frameborder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-                </div>
+                <button class="yt-facade" data-yt="<?= e($vid) ?>" type="button" aria-label="<?= e($label) ?>">
+                    <img src="<?= e(yt_thumb($vid)) ?>" alt="<?= e($label) ?>" loading="lazy"
+                         onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/<?= e($vid) ?>/hqdefault.jpg'">
+                    <span class="yt-play" aria-hidden="true">▶</span>
+                </button>
                 <figcaption>
                     <span class="badge badge--official"><?= lang() === 'fr' ? 'Officiel' : 'Official' ?></span>
                     <?= e($label) ?>

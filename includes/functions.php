@@ -334,6 +334,54 @@ function importance_label(int $level): string
 }
 
 /* ================================================================== */
+/*  Médias de carte (vraie image + repli)                             */
+/* ================================================================== */
+
+/** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
+function media_html(?string $img, string $emoji): string
+{
+    $img = trim((string) $img);
+    $out = '<div class="card__media"><span class="card__emoji" aria-hidden="true">' . $emoji . '</span>';
+    if ($img !== '') {
+        $out .= '<img class="card__img" src="' . e($img) . '" alt="" loading="lazy" onerror="this.remove()">';
+    }
+    return $out . '</div>';
+}
+
+/** Indice de fiabilité (0-100) associé à un badge, pour la jauge Leaks Lab. */
+function badge_reliability(?string $key): int
+{
+    return [
+        'confirmed' => 100, 'official' => 100, 'probable' => 72,
+        'analysis' => 58, 'leak' => 46, 'rumor' => 34, 'fake' => 6,
+    ][$key] ?? 50;
+}
+
+/** Icône SVG inline pour un module (24x24, stroke currentColor). */
+function os_icon(string $key): string
+{
+    $p = [
+        'news'       => '<path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>',
+        'map'        => '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
+        'trailer'    => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>',
+        'leaks'      => '<path d="M9 3h6M10 3v5l-4 9a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-9V3"/>',
+        'vehicles'   => '<path d="M3 13l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v5h-3M6 18H3v-5M6 18a2 2 0 1 0 4 0M18 18a2 2 0 1 0-4 0"/>',
+        'characters' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+        'community'  => '<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/>',
+        'deals'      => '<path d="M3 8a2 2 0 0 1 2-2h9l7 7-7 7-9-9z"/><circle cx="8" cy="11" r="1.4"/>',
+    ];
+    $d = $p[$key] ?? '<circle cx="12" cy="12" r="9"/>';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" '
+        . 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $d . '</svg>';
+}
+
+/** Miniature YouTube (maxres) pour un ID donné. */
+function yt_thumb(string $id): string
+{
+    return 'https://i.ytimg.com/vi/' . rawurlencode($id) . '/maxresdefault.jpg';
+}
+
+/* ================================================================== */
 /*  Upload d'image sécurisé (admin)                                   */
 /* ================================================================== */
 

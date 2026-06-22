@@ -250,9 +250,15 @@ foreach ($topics as $topic) {
         $status = $publish ? 'published' : 'draft';
         $pub = $publish ? date('Y-m-d H:i:s') : null;
 
+        // Visuel : image générée par IA (récupérée via make-hero-video.sh)
+        $scene_pool = $cat === 'guides'
+            ? ['beach-cruise', 'marina', 'night']
+            : ['aerial', 'night', 'marina', 'plane', 'heli', 'police'];
+        $image = '/public/assets/img/scenes/' . $scene_pool[array_rand($scene_pool)] . '.png';
+
         $stmt = db()->prepare(
-            'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, status, published_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, image, status, published_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $catId, $lang,
@@ -260,7 +266,7 @@ foreach ($topics as $topic) {
             $slug,
             mb_substr((string) ($a['excerpt'] ?? ''), 0, 400),
             (string) ($a['body_html'] ?? ''),
-            $badge, $status, $pub,
+            $badge, $image, $status, $pub,
         ]);
         $id = (int) db()->lastInsertId();
 

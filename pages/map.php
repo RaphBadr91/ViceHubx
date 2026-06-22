@@ -12,8 +12,11 @@ require ROOT_PATH . '/includes/header.php';
     <h1><?= e(t('page_map_title')) ?></h1>
     <p class="muted" style="max-width:680px"><?= e(t('page_map_intro')) ?></p>
 
-    <div class="map-wrap glass" style="margin-top:1.6rem">
+    <?php $map_img = is_file(ROOT_PATH . '/public/assets/img/scenes/map.png') ? asset('img/scenes/map.png') : ''; ?>
+    <div class="map-wrap glass<?= $map_img ? ' has-map' : '' ?>" style="margin-top:1.6rem<?= $map_img ? ";--map:url('" . e($map_img) . "')" : '' ?>">
+        <div class="map-canvas" aria-hidden="true"></div>
         <div class="map-grid" aria-hidden="true"></div>
+        <div class="map-scan" aria-hidden="true"></div>
         <div class="map-zones">
             <?php foreach ($zones as $z): ?>
                 <button class="zone" aria-expanded="false">

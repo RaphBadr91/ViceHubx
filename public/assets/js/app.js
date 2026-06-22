@@ -95,6 +95,18 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !box.hidden) close(); });
   })();
 
+  /* ---------------- Façades YouTube (Trailer Lab) ---------------- */
+  $$('.yt-facade[data-yt]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-yt');
+      if (!id || el.dataset.loaded) return;
+      el.dataset.loaded = '1';
+      el.innerHTML = '<iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(id) +
+        '?autoplay=1&rel=0" title="Trailer" frameborder="0" ' +
+        'allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>';
+    });
+  });
+
   /* ---------------- Menu mobile ---------------- */
   const toggle = $('.nav-toggle');
   const nav = $('.site-nav');
@@ -157,7 +169,7 @@
 
   /* ---------------- Tilt 3D + lueur (cartes & modules) ---------------- */
   if (!isTouch) {
-    $$('.card, .os-module').forEach((card) => {
+    $$('.card, .os-module, .os-card, .leak-card').forEach((card) => {
       let raf = null;
       card.addEventListener('pointermove', (e) => {
         const r = card.getBoundingClientRect();

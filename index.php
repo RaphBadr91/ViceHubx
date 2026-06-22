@@ -38,14 +38,14 @@ $hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset
 $deadline   = release_date();
 
 $modules = [
-    ['🧠', 'News AI',     'news.php'],
-    ['🗺️', 'Map Lab',     'map.php'],
-    ['🎬', 'Trailer Lab', 'trailer-lab.php'],
-    ['🔬', 'Leaks Lab',   'leaks-lab.php'],
-    ['🚗', 'Vehicles',    'vehicles.php'],
-    ['🎭', 'Characters',  'characters.php'],
-    ['💬', 'Community',   'community.php'],
-    ['🎮', 'Deals',       'deals.php'],
+    ['news',       'News AI',     'Actus & analyses',        'News & analysis',     'news.php'],
+    ['map',        'Map Lab',     'La carte de Leonida',     'The Leonida map',     'map.php'],
+    ['trailer',    'Trailer Lab', 'Décryptage des trailers', 'Trailer breakdowns',  'trailer-lab.php'],
+    ['leaks',      'Leaks Lab',   'Fuites & fiabilité',      'Leaks & reliability', 'leaks-lab.php'],
+    ['vehicles',   'Vehicles',    'Véhicules & conduite',    'Vehicles & driving',  'vehicles.php'],
+    ['characters', 'Characters',  'Jason, Lucia & cie',      'Jason, Lucia & co',   'characters.php'],
+    ['community',  'Community',   'Sondages & débats',       'Polls & debates',     'community.php'],
+    ['deals',      'Deals',       'Bons plans gaming',       'Gaming deals',        'deals.php'],
 ];
 
 $BODY_CLASS = 'is-home';
@@ -120,9 +120,9 @@ require __DIR__ . '/includes/header.php';
         $yt_id = $m[1];
     }
     ?>
-    <a class="trailer-hero reveal" href="https://www.youtube.com/watch?v=<?= e($yt_id) ?>"
+    <a class="trailer-hero has-thumb reveal" href="https://www.youtube.com/watch?v=<?= e($yt_id) ?>"
        data-trailer="<?= e($yt_id) ?>" target="_blank" rel="noopener">
-        <div class="trailer-hero__bg" aria-hidden="true"></div>
+        <div class="trailer-hero__bg" style="background-image:url('<?= e(yt_thumb($yt_id)) ?>')" aria-hidden="true"></div>
         <div class="trailer-hero__grid" aria-hidden="true"></div>
         <span class="play-btn" aria-hidden="true">▶</span>
         <div class="trailer-hero__cap">
@@ -138,27 +138,7 @@ require __DIR__ . '/includes/header.php';
     <div class="lightbox__frame"><div class="video-embed" id="lightbox-embed"></div></div>
 </div>
 
-<?= ad_slot(get_setting('adsense_slot', '')) ?>
-
-<!-- ============ VICE CITY OS ============ -->
-<section class="section">
-    <div class="section-head">
-        <div>
-            <span class="eyebrow"><?= e(t('os_subtitle')) ?></span>
-            <h2><span class="accent"><?= e(t('os_title')) ?></span></h2>
-        </div>
-    </div>
-    <div class="os-grid">
-        <?php foreach ($modules as [$ico, $name, $href]): ?>
-            <a class="os-module glass reveal" href="<?= e(with_lang(url('pages/' . $href))) ?>">
-                <span class="ico" aria-hidden="true"><?= $ico ?></span>
-                <span class="name"><?= e($name) ?></span>
-            </a>
-        <?php endforeach; ?>
-    </div>
-</section>
-
-<!-- ============ BREAKING NEWS ============ -->
+<!-- ============ BREAKING NEWS (juste sous le trailer) ============ -->
 <section class="section">
     <div class="section-head">
         <h2>🔴 <?= e(t('breaking')) ?></h2>
@@ -168,7 +148,7 @@ require __DIR__ . '/includes/header.php';
     <div class="cards">
         <?php foreach ($breaking as $a): ?>
             <article class="card glass reveal">
-                <div class="card__media"><span aria-hidden="true">🌆</span></div>
+                <?= media_html($a['image'] ?? '', '🌆') ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e($a['category_name'] ?? 'News') ?></span>
                     <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
@@ -186,6 +166,30 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </section>
 
+<?= ad_slot(get_setting('adsense_slot', '')) ?>
+
+<!-- ============ VICE CITY OS ============ -->
+<section class="section">
+    <div class="section-head">
+        <div>
+            <span class="eyebrow"><?= e(t('os_subtitle')) ?></span>
+            <h2><span class="accent"><?= e(t('os_title')) ?></span></h2>
+        </div>
+    </div>
+    <div class="os-grid">
+        <?php foreach ($modules as $i => [$key, $name, $descFr, $descEn, $href]): ?>
+            <a class="os-card os--<?= e($key) ?> glass reveal" style="--i:<?= $i ?>" href="<?= e(with_lang(url('pages/' . $href))) ?>">
+                <span class="os-card__icon"><?= os_icon($key) ?></span>
+                <span class="os-card__txt">
+                    <span class="os-card__name"><?= e($name) ?></span>
+                    <span class="os-card__desc"><?= e(lang() === 'fr' ? $descFr : $descEn) ?></span>
+                </span>
+                <span class="os-card__arrow" aria-hidden="true">→</span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+
 <!-- ============ GUIDES ============ -->
 <section class="section">
     <div class="section-head">
@@ -195,7 +199,7 @@ require __DIR__ . '/includes/header.php';
     <div class="cards">
         <?php foreach ($guides as $a): ?>
             <article class="card glass reveal">
-                <div class="card__media"><span aria-hidden="true">🧭</span></div>
+                <?= media_html($a['image'] ?? '', '🧭') ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e(t('nav_guides')) ?></span>
                     <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
@@ -215,15 +219,18 @@ require __DIR__ . '/includes/header.php';
         <h2>🔬 <?= e(t('leaks_section')) ?></h2>
         <a class="link-all" href="<?= e(with_lang(url('pages/leaks-lab.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <div class="cards">
-        <?php foreach ($leaks as $a): ?>
-            <article class="card glass reveal">
-                <div class="card__body">
+    <div class="leak-grid">
+        <?php foreach ($leaks as $a): $rel = badge_reliability($a['badge']); ?>
+            <a class="leak-card glass reveal" href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>">
+                <div class="leak-card__top">
                     <?= badge_html($a['badge']) ?>
-                    <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
-                    <p class="card__excerpt"><?= e($a['excerpt']) ?></p>
+                    <span class="leak-rel"><?= $rel ?><small>%</small></span>
                 </div>
-            </article>
+                <h3 class="leak-card__title"><?= e($a['title']) ?></h3>
+                <p class="leak-card__txt"><?= e($a['excerpt']) ?></p>
+                <div class="leak-gauge" style="--rel:<?= $rel ?>%"><span></span></div>
+                <span class="leak-foot"><?= lang() === 'fr' ? 'Indice de fiabilité' : 'Reliability score' ?></span>
+            </a>
         <?php endforeach; ?>
     </div>
 </section>
@@ -256,12 +263,15 @@ require __DIR__ . '/includes/header.php';
         <h2>🗺️ <?= e(t('map_section')) ?></h2>
         <a class="link-all" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <div class="map-wrap glass">
+    <?php $map_img = is_file(ROOT_PATH . '/public/assets/img/scenes/map.png') ? asset('img/scenes/map.png') : ''; ?>
+    <div class="map-wrap glass<?= $map_img ? ' has-map' : '' ?>"<?= $map_img ? ' style="--map:url(\'' . e($map_img) . '\')"' : '' ?>>
+        <div class="map-canvas" aria-hidden="true"></div>
         <div class="map-grid" aria-hidden="true"></div>
+        <div class="map-scan" aria-hidden="true"></div>
         <div class="map-zones">
             <?php foreach ($zones as $z): ?>
                 <button class="zone" aria-expanded="false">
-                    <h3><?= e($z['name']) ?></h3>
+                    <h3>📍 <?= e($z['name']) ?></h3>
                     <p><?= e($z['description']) ?></p>
                     <div class="zone-info"><?= e($z['info']) ?></div>
                 </button>

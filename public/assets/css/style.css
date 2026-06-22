@@ -690,3 +690,85 @@ body.is-home .site-header.scrolled {
 }
 .lightbox__close:hover { background: var(--pink); border-color: var(--pink); transform: rotate(90deg); }
 .trailer-hero { cursor: pointer; }
+
+/* ==================================================================
+   REFONTE v2 — modules, leaks, images de cartes, carte animée, trailer
+   ================================================================== */
+
+/* --- Vraies images dans les cartes --- */
+.card__media { position: relative; overflow: hidden; }
+.card__emoji { position: absolute; inset: 0; display: grid; place-items: center; font-size: 2.6rem; opacity: .5; z-index: 0; }
+.card__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; transition: transform .55s ease; }
+.card:hover .card__img { transform: scale(1.06); }
+
+/* --- Vice City OS : cartes premium (icône + description) --- */
+.os-grid { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.os-card {
+    display: flex; align-items: center; gap: .9rem; text-align: left;
+    padding: 1.1rem 1.2rem; border-radius: 16px; position: relative; overflow: hidden;
+    transform: perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(var(--ty,0));
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .3s ease, border-color .3s ease;
+    will-change: transform;
+}
+.os-card::before { content: ''; position: absolute; inset: 0; z-index: 0; opacity: .10; background: var(--os-accent, var(--grad-neon)); }
+.os-card__icon {
+    position: relative; z-index: 1; width: 48px; height: 48px; flex: 0 0 auto; border-radius: 13px;
+    display: grid; place-items: center; color: #fff; background: var(--os-accent, var(--grad-neon));
+    box-shadow: 0 10px 24px -10px var(--os-glow, rgba(255,46,136,.8));
+}
+.os-card__icon svg { width: 24px; height: 24px; }
+.os-card__txt { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .15rem; flex: 1; min-width: 0; }
+.os-card__name { font-family: var(--font-display); font-weight: 700; font-size: 1.02rem; }
+.os-card__desc { font-size: .82rem; color: var(--muted); }
+.os-card__arrow { position: relative; z-index: 1; color: var(--muted); font-size: 1.2rem; transition: transform .25s ease, color .25s ease; }
+.os-card:hover { transform: translateY(-6px); border-color: var(--os-line, rgba(255,46,136,.5)); box-shadow: 0 26px 60px -30px var(--os-glow, rgba(255,46,136,.6)); }
+.os-card:hover .os-card__arrow { transform: translateX(5px); color: var(--ink); }
+.os--news       { --os-accent: linear-gradient(135deg,#2bd6ff,#8a3cff); --os-glow: rgba(43,214,255,.7);  --os-line: rgba(43,214,255,.5); }
+.os--map        { --os-accent: linear-gradient(135deg,#19d3da,#2b6bff); --os-glow: rgba(25,211,218,.7);  --os-line: rgba(25,211,218,.5); }
+.os--trailer    { --os-accent: linear-gradient(135deg,#ff2e88,#8a3cff); --os-glow: rgba(255,46,136,.7);  --os-line: rgba(255,46,136,.5); }
+.os--leaks      { --os-accent: linear-gradient(135deg,#8a3cff,#ff2e88); --os-glow: rgba(138,60,255,.7);  --os-line: rgba(138,60,255,.5); }
+.os--vehicles   { --os-accent: linear-gradient(135deg,#ff7b3d,#ff2e88); --os-glow: rgba(255,123,61,.7);  --os-line: rgba(255,123,61,.5); }
+.os--characters { --os-accent: linear-gradient(135deg,#ffd166,#ff7b3d); --os-glow: rgba(255,209,102,.7); --os-line: rgba(255,209,102,.5); }
+.os--community  { --os-accent: linear-gradient(135deg,#3dffa3,#2bd6ff); --os-glow: rgba(61,255,163,.6);  --os-line: rgba(61,255,163,.5); }
+.os--deals      { --os-accent: linear-gradient(135deg,#ff2e88,#ffd166); --os-glow: rgba(255,46,136,.7);  --os-line: rgba(255,46,136,.5); }
+
+/* --- Leaks Lab : dossiers avec jauge de fiabilité --- */
+.leak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; }
+.leak-card { display: flex; flex-direction: column; gap: .7rem; padding: 1.3rem 1.4rem 1.2rem; border-radius: 18px; position: relative; overflow: hidden; transition: transform .25s ease, box-shadow .3s ease, border-color .3s ease; }
+.leak-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--grad-neon); }
+.leak-card:hover { transform: translateY(-6px); border-color: rgba(255,46,136,.5); box-shadow: 0 26px 60px -30px rgba(255,46,136,.6); }
+.leak-card__top { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.leak-rel { font-family: var(--font-poster); font-size: 1.6rem; line-height: 1; }
+.leak-rel small { font-size: .85rem; color: var(--muted); margin-left: 1px; }
+.leak-card__title { font-family: var(--font-display); font-size: 1.12rem; margin: 0; }
+.leak-card__txt { color: var(--muted); font-size: .92rem; margin: 0; flex: 1; }
+.leak-gauge { height: 8px; border-radius: 8px; background: rgba(255,255,255,.08); overflow: hidden; }
+.leak-gauge span { display: block; height: 100%; width: var(--rel, 50%); border-radius: 8px; background: linear-gradient(90deg, #ff5d5d, #ffd166 55%, #3dffa3); box-shadow: 0 0 12px rgba(255,46,136,.4); }
+.leak-foot { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* --- Bloc bande-annonce : miniature réelle --- */
+.trailer-hero.has-thumb { background: linear-gradient(135deg, #1a0b2e, #2a0f3f); }
+.trailer-hero.has-thumb .trailer-hero__bg { background-size: cover; background-position: center; opacity: .9; }
+.trailer-hero.has-thumb:hover .trailer-hero__bg { opacity: 1; }
+
+/* --- Carte animée (fond image généré) --- */
+.map-canvas { position: absolute; inset: -6%; z-index: 0; background-image: var(--map); background-size: cover; background-position: center; filter: saturate(1.1) contrast(1.04); animation: mapPan 38s ease-in-out infinite alternate; }
+.map-wrap:not(.has-map) .map-canvas { display: none; }
+.map-wrap.has-map { background: #06040f; }
+.map-wrap.has-map .map-grid { opacity: .22; }
+.map-scan { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: repeating-linear-gradient(transparent 0 3px, rgba(0,0,0,.18) 3px 4px); mix-blend-mode: overlay; opacity: .5; }
+.map-wrap:not(.has-map) .map-scan { display: none; }
+.map-zones { position: relative; z-index: 3; }
+@keyframes mapPan { 0% { transform: scale(1.06) translate(-1%, -1%); } 100% { transform: scale(1.15) translate(2%, 1.5%); } }
+
+/* --- Trailer Lab : façade miniature (clic → lecture) --- */
+.yt-facade { position: relative; display: block; width: 100%; aspect-ratio: 16/9; border: 0; padding: 0; margin: 0; cursor: pointer; background: #000; overflow: hidden; }
+.yt-facade img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }
+.yt-facade:hover img { transform: scale(1.05); }
+.yt-facade::after { content: ''; position: absolute; inset: 0; background: linear-gradient(transparent 55%, rgba(0,0,0,.45)); }
+.yt-facade .yt-play {
+    position: absolute; inset: 0; margin: auto; z-index: 2; width: 80px; height: 80px; border-radius: 50%;
+    display: grid; place-items: center; color: #fff; font-size: 1.7rem; padding-left: 5px;
+    background: rgba(255,46,136,.85); border: 0; box-shadow: 0 0 0 0 rgba(255,46,136,.5); animation: playPulse 2.4s ease-out infinite;
+}
+.yt-facade iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }

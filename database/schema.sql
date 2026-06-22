@@ -282,3 +282,11 @@ INSERT INTO settings (`key`, value) VALUES
 INSERT INTO seo_pages (path, title, description) VALUES
 ('/index.php', 'ViceHub X — GTA6 News', 'News, guides, leaks et analyses de trailers GTA VI.'),
 ('/pages/news.php', 'News GTA6 — ViceHub X', 'Toute l’actualité GTA VI en continu.');
+
+-- Images réelles (visuels générés par IA, récupérés via scripts/make-hero-video.sh)
+UPDATE articles SET image='/public/assets/img/scenes/aerial.png'       WHERE slug IN ('vice-city-revient-tout-ce-que-lon-sait','vice-city-is-back-everything-we-know');
+UPDATE articles SET image='/public/assets/img/scenes/marina.png'       WHERE slug IN ('une-map-plus-grande-que-jamais','a-bigger-map-than-ever');
+UPDATE articles SET image='/public/assets/img/scenes/night.png'        WHERE slug IN ('le-moteur-rage-pousse-les-curseurs','the-rage-engine-raises-the-bar');
+UPDATE articles SET image='/public/assets/img/scenes/beach-cruise.png' WHERE slug='guide-bien-demarrer-dans-vice-city';
+UPDATE articles SET image='/public/assets/img/scenes/police.png'       WHERE slug='guide-gagner-de-largent-rapidement';
+UPDATE articles SET image='/public/assets/img/scenes/plane.png'        WHERE slug='guide-maitriser-la-conduite';
