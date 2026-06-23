@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // --- Boutique / Stripe ---
         set_setting('stripe_publishable_key', trim((string) ($_POST['stripe_publishable_key'] ?? '')));
         set_setting('shop_currency', strtoupper(trim((string) ($_POST['shop_currency'] ?? 'EUR'))) ?: 'EUR');
+        set_setting('shop_currency_en', strtoupper(trim((string) ($_POST['shop_currency_en'] ?? 'USD'))) ?: 'USD');
         // Clés secrètes : remplacées uniquement si un nouveau champ est saisi.
         $sk = trim((string) ($_POST['stripe_secret_key'] ?? ''));
         if ($sk !== '') { set_setting('stripe_secret_key', $sk); }
@@ -36,6 +37,7 @@ $trailer = (string) get_setting('trailer_url', '');
 $map_url = (string) get_setting('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00');
 $stripe_pk  = (string) get_setting('stripe_publishable_key', '');
 $shop_cur   = (string) get_setting('shop_currency', 'EUR');
+$shop_cur_en = (string) get_setting('shop_currency_en', 'USD');
 $has_secret = stripe_secret() !== '';
 $has_whsec  = stripe_webhook_secret() !== '';
 $release = (string) release_date();
@@ -97,18 +99,28 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <strong><?= stripe_enabled() ? '🟢 Paiement activé' : '⚪ Non configuré' ?></strong>
     </p>
 
-    <div style="display:grid;grid-template-columns:1fr 140px;gap:1rem">
+    <div>
+        <label>Clé publiable Stripe (pk_…)</label>
+        <input type="text" name="stripe_publishable_key" value="<?= e($stripe_pk) ?>" placeholder="pk_live_… ou pk_test_…">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div>
-            <label>Clé publiable Stripe (pk_…)</label>
-            <input type="text" name="stripe_publishable_key" value="<?= e($stripe_pk) ?>" placeholder="pk_live_… ou pk_test_…">
-        </div>
-        <div>
-            <label>Devise</label>
+            <label>Devise — visiteurs francophones (FR)</label>
             <select name="shop_currency">
                 <?php foreach (['EUR', 'USD', 'GBP', 'CAD', 'CHF'] as $cv): ?>
                     <option value="<?= $cv ?>"<?= $shop_cur === $cv ? ' selected' : '' ?>><?= $cv ?></option>
                 <?php endforeach; ?>
             </select>
+            <small class="muted">Affichée en € par défaut (5&nbsp;€).</small>
+        </div>
+        <div>
+            <label>Devise — visiteurs anglophones (EN)</label>
+            <select name="shop_currency_en">
+                <?php foreach (['USD', 'EUR', 'GBP', 'CAD', 'CHF'] as $cv): ?>
+                    <option value="<?= $cv ?>"<?= $shop_cur_en === $cv ? ' selected' : '' ?>><?= $cv ?></option>
+                <?php endforeach; ?>
+            </select>
+            <small class="muted">Affichée en $ par défaut (5&nbsp;$). La devise suit la langue du site.</small>
         </div>
     </div>
     <div>

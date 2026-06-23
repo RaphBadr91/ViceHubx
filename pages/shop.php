@@ -33,7 +33,7 @@ foreach ($products as $i => $p) {
         $item['offers'] = [
             '@type'         => 'Offer',
             'price'         => number_format((float) $p['price'], 2, '.', ''),
-            'priceCurrency' => $p['currency'] ?: 'EUR',
+            'priceCurrency' => active_currency(),
             'availability'  => 'https://schema.org/InStock',
             'url'           => $p['url'],
         ];
@@ -84,7 +84,7 @@ require ROOT_PATH . '/includes/header.php';
                     </h3>
                     <p class="product__desc"><?= e($p['description']) ?></p>
                     <div class="product__foot">
-                        <span class="product__price"><?= price_html($p['price'], $p['currency']) ?></span>
+                        <span class="product__price"><?= price_html($p['price'], active_currency()) ?></span>
                         <?= product_buy_button($p) ?>
                     </div>
                 </div>

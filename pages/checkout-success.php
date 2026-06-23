@@ -5,7 +5,7 @@ $session_id = trim((string) ($_GET['session_id'] ?? ''));
 $paid = false;
 $email = '';
 $amount = null;
-$cur = shop_currency();
+$cur = active_currency();
 
 // On capture le panier AVANT de le vider (pour l'enregistrement de la commande)
 $lines = cart_lines();

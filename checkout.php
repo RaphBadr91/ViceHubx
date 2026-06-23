@@ -24,7 +24,7 @@ $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' :
 $origin = BASE_URL !== '' ? rtrim(BASE_URL, '/') : $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 $abs = static fn(string $p): string => str_starts_with($p, 'http') ? $p : $origin . '/' . ltrim($p, '/');
 
-$cur = strtolower(shop_currency());
+$cur = strtolower(active_currency());
 $has_physical = false;
 $line_items = [];
 foreach ($lines as $l) {

@@ -459,6 +459,18 @@ function shop_currency(): string
 {
     return strtoupper((string) (get_setting('shop_currency', 'EUR') ?: 'EUR'));
 }
+/**
+ * Devise affichée/encaissée selon l'audience :
+ *   francophones (fr) → EUR (5 €) · anglophones & autres (en) → USD (5 $).
+ * Même montant, devise différente. Surchargeable via le réglage 'shop_currency_en'.
+ */
+function active_currency(): string
+{
+    if (lang() === 'fr') {
+        return 'EUR';
+    }
+    return strtoupper((string) (get_setting('shop_currency_en', 'USD') ?: 'USD'));
+}
 function stripe_secret(): string
 {
     return (string) (getenv('STRIPE_SECRET_KEY') ?: get_setting('stripe_secret_key', ''));

@@ -426,7 +426,7 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
                         <a href="<?= e(with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])))) ?>"><?= e($p['name']) ?></a>
                     </h3>
                     <div class="product__foot">
-                        <span class="product__price"><?= price_html($p['price'], $p['currency']) ?></span>
+                        <span class="product__price"><?= price_html($p['price'], active_currency()) ?></span>
                         <?= product_buy_button($p) ?>
                     </div>
                 </div>

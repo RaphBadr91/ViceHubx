@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $lines = cart_lines();
 $total = cart_total();
-$cur   = shop_currency();
+$cur   = active_currency();
 $flash = $_SESSION['cart_flash'] ?? null;
 unset($_SESSION['cart_flash']);
 
@@ -64,7 +64,7 @@ require ROOT_PATH . '/includes/header.php';
                         </div>
                         <div class="cart-line__info">
                             <h3><?= e($l['name']) ?></h3>
-                            <span class="muted"><?= price_html($l['price'], $l['currency']) ?> <?= lang() === 'fr' ? 'l’unité' : 'each' ?></span>
+                            <span class="muted"><?= price_html($l['price'], $cur) ?> <?= lang() === 'fr' ? 'l’unité' : 'each' ?></span>
                         </div>
                         <form method="post" class="cart-line__qty">
                             <?= csrf_field() ?>
@@ -72,7 +72,7 @@ require ROOT_PATH . '/includes/header.php';
                             <input type="hidden" name="id" value="<?= (int) $l['id'] ?>">
                             <input type="number" name="qty" min="0" max="20" value="<?= (int) $l['qty'] ?>" aria-label="Quantité" onchange="this.form.submit()">
                         </form>
-                        <div class="cart-line__total"><?= price_html($l['line_total'], $l['currency']) ?></div>
+                        <div class="cart-line__total"><?= price_html($l['line_total'], $cur) ?></div>
                         <form method="post" class="cart-line__rm">
                             <?= csrf_field() ?>
                             <input type="hidden" name="action" value="remove">

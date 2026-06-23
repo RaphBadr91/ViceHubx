@@ -43,7 +43,7 @@ if ($product['price'] !== null && $product['price'] !== '') {
     $JSONLD['offers'] = [
         '@type'         => 'Offer',
         'price'         => number_format((float) $product['price'], 2, '.', ''),
-        'priceCurrency' => $product['currency'] ?: 'EUR',
+        'priceCurrency' => active_currency(),
         'availability'  => 'https://schema.org/InStock',
         'url'           => $product['url'],
         'seller'        => ['@type' => 'Organization', 'name' => $product['merchant'] ?: APP_NAME],
@@ -71,7 +71,7 @@ require ROOT_PATH . '/includes/header.php';
             <span class="product__cat"><?= e($cats[$product['category']] ?? $product['category']) ?></span>
             <h1><?= e($product['name']) ?></h1>
             <?php if ($product['price'] !== null && $product['price'] !== ''): ?>
-                <p class="product-detail__price"><?= price_html($product['price'], $product['currency']) ?></p>
+                <p class="product-detail__price"><?= price_html($product['price'], active_currency()) ?></p>
             <?php endif; ?>
             <p class="product-detail__desc"><?= e($product['description']) ?></p>
             <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center">
@@ -119,7 +119,7 @@ require ROOT_PATH . '/includes/header.php';
                         <a href="<?= e(with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])))) ?>"><?= e($p['name']) ?></a>
                     </h3>
                     <div class="product__foot">
-                        <span class="product__price"><?= price_html($p['price'], $p['currency']) ?></span>
+                        <span class="product__price"><?= price_html($p['price'], active_currency()) ?></span>
                     </div>
                 </div>
             </article>

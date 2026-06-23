@@ -423,7 +423,8 @@ INSERT INTO settings (`key`, value) VALUES
 ('stripe_publishable_key', ''),
 ('stripe_secret_key', ''),
 ('stripe_webhook_secret', ''),
-('shop_currency', 'EUR');
+('shop_currency', 'EUR'),
+('shop_currency_en', 'USD');
 
 INSERT INTO seo_pages (path, title, description) VALUES
 ('/index.php', 'ViceHub X — GTA6 News', 'News, guides, leaks et analyses de trailers GTA VI.'),
