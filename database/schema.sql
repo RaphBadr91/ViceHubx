@@ -439,3 +439,6 @@ UPDATE articles SET image='/public/assets/img/scenes/night.png'        WHERE slu
 UPDATE articles SET image='/public/assets/img/scenes/beach-cruise.png' WHERE slug='guide-bien-demarrer-dans-vice-city';
 UPDATE articles SET image='/public/assets/img/scenes/police.png'       WHERE slug='guide-gagner-de-largent-rapidement';
 UPDATE articles SET image='/public/assets/img/scenes/plane.png'        WHERE slug='guide-maitriser-la-conduite';
+UPDATE articles SET image='/public/assets/img/scenes/downtown.png'     WHERE slug='leak-mode-cooperatif-au-lancement';
+UPDATE articles SET image='/public/assets/img/scenes/nightlife.png'    WHERE slug='leak-bande-son-partiellement-devoilee';
+UPDATE articles SET image='/public/assets/img/scenes/graffiti.png'     WHERE slug='leak-visuel-serait-un-fake';

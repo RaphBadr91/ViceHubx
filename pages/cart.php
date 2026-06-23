@@ -60,7 +60,7 @@ require ROOT_PATH . '/includes/header.php';
                     <div class="cart-line glass">
                         <div class="cart-line__media">
                             <span class="card__emoji" aria-hidden="true">🛍️</span>
-                            <?php if (!empty($l['image'])): ?><img src="<?= e($l['image']) ?>" alt="<?= e($l['name']) ?>" loading="lazy" onerror="this.remove()"><?php endif; ?>
+                            <?php if (!empty($l['image'])): ?><img src="<?= e(img_src($l['image'])) ?>" alt="<?= e($l['name']) ?>" loading="lazy" onerror="this.remove()"><?php endif; ?>
                         </div>
                         <div class="cart-line__info">
                             <h3><?= e($l['name']) ?></h3>

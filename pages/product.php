@@ -64,7 +64,7 @@ require ROOT_PATH . '/includes/header.php';
             <?php if (!empty($product['badge'])): ?><span class="product__badge"><?= e($product['badge']) ?></span><?php endif; ?>
             <span class="card__emoji" aria-hidden="true" style="font-size:4rem"><?= $cat_emoji[$product['category']] ?? '🛍️' ?></span>
             <?php if (!empty($product['image'])): ?>
-                <img src="<?= e($product['image']) ?>" alt="<?= e($product['name']) ?>" loading="eager" onerror="this.remove()">
+                <img src="<?= e(img_src($product['image'])) ?>" alt="<?= e($product['name']) ?>" loading="eager" onerror="this.remove()">
             <?php endif; ?>
         </div>
         <div class="product-detail__info">
@@ -110,7 +110,7 @@ require ROOT_PATH . '/includes/header.php';
                     <?php if (!empty($p['badge'])): ?><span class="product__badge"><?= e($p['badge']) ?></span><?php endif; ?>
                     <span class="card__emoji" aria-hidden="true"><?= $cat_emoji[$p['category']] ?? '🛍️' ?></span>
                     <?php if (!empty($p['image'])): ?>
-                        <img class="product__img" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.remove()">
+                        <img class="product__img" src="<?= e(img_src($p['image'])) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.remove()">
                     <?php endif; ?>
                 </a>
                 <div class="product__body">

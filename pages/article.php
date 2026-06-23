@@ -37,7 +37,7 @@ $related = array_slice($related, 0, 3);
 
 $SEO_TITLE    = $article['title'] . ' — ' . APP_NAME;
 $SEO_DESC     = $article['excerpt'] ?: APP_NAME;
-$SEO_OG_IMAGE = $article['image'] ?: asset('img/og-default.svg');
+$SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : asset('img/og-default.svg');
 
 $JSONLD = [
     '@context' => 'https://schema.org',
@@ -64,7 +64,7 @@ require ROOT_PATH . '/includes/header.php';
     <p class="muted" style="font-size:1.1rem;margin-bottom:1.6rem"><?= e($article['excerpt']) ?></p>
 
     <?php if (!empty($article['image'])): ?>
-        <img src="<?= e($article['image']) ?>" alt="<?= e($article['title']) ?>" style="width:100%;border-radius:18px;margin-bottom:1.6rem">
+        <img src="<?= e(img_src($article['image'])) ?>" alt="<?= e($article['title']) ?>" loading="eager" style="width:100%;border-radius:18px;margin-bottom:1.6rem">
     <?php endif; ?>
 
     <div class="article-body"><?= $safe_body ?></div>

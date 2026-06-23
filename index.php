@@ -380,10 +380,10 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
 
     <div class="scene-grid">
         <?php foreach ($scene_defs as $i => [$key, $fr, $en, $tag]):
-            $img = ($scene_img)($scene_dir, $key); ?>
+            $img = img_src('/public/assets/img/scenes/' . $key . '.png'); ?>
             <div class="scene scene--<?= e($key) ?><?= $i === 0 ? ' scene--feat' : '' ?>"<?= $img ? ' style="--scene-op:0"' : '' ?>>
                 <?php if ($img): ?>
-                    <span class="scene-bg" style="background-image:url('<?= e(asset('img/scenes/' . basename($img))) ?>')"></span>
+                    <span class="scene-bg" style="background-image:url('<?= e($img) ?>')"></span>
                 <?php endif; ?>
                 <div class="scene-cap">
                     <span class="scene-tag"><?= e($tag) ?></span>
@@ -417,7 +417,7 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
                     <?php if (!empty($p['badge'])): ?><span class="product__badge"><?= e($p['badge']) ?></span><?php endif; ?>
                     <span class="card__emoji" aria-hidden="true"><?= $cat_emoji[$p['category']] ?? '🛍️' ?></span>
                     <?php if (!empty($p['image'])): ?>
-                        <img class="product__img" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.remove()">
+                        <img class="product__img" src="<?= e(img_src($p['image'])) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.remove()">
                     <?php endif; ?>
                 </a>
                 <div class="product__body">

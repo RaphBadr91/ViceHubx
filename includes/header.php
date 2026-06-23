@@ -12,8 +12,17 @@ $SEO_TITLE    = $SEO_TITLE    ?? (APP_NAME . ' — ' . (lang() === 'fr' ? APP_SL
 $SEO_DESC     = $SEO_DESC     ?? (lang() === 'fr'
     ? 'ViceHub X : news, guides, leaks et analyses de trailers GTA VI dans une interface immersive Vice City OS.'
     : 'ViceHub X: GTA VI news, guides, leaks and trailer analysis in an immersive Vice City OS interface.');
-$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? asset('img/og-default.svg');
+$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (cdn_url('aerial.png') ?: asset('img/og-default.svg'));
 $BODY_CLASS   = $BODY_CLASS   ?? '';
+
+// Base absolue du site (pour canonical, og:url, hreflang, JSON-LD)
+$__scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$site_base  = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : $__scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+$path_only  = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+$canonical  = $site_base . $path_only;
+$og_image_abs = (function ($img) use ($site_base) {
+    return preg_match('#^https?://#', (string) $img) ? $img : $site_base . '/' . ltrim((string) $img, '/');
+})($SEO_OG_IMAGE);
 
 $nav = [
     ['label' => lang() === 'fr' ? 'Actus' : 'News', 'children' => [
@@ -51,14 +60,20 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="description" content="<?= e($SEO_DESC) ?>">
     <?php if (!empty($ROBOTS)): ?><meta name="robots" content="<?= e($ROBOTS) ?>"><?php endif; ?>
     <meta name="theme-color" content="#0a0a16">
-    <link rel="canonical" href="<?= e($current_uri) ?>">
+    <link rel="canonical" href="<?= e($canonical) ?>">
+    <!-- Versions linguistiques (hreflang) -->
+    <link rel="alternate" hreflang="fr" href="<?= e($site_base . $path_only . '?lang=fr') ?>">
+    <link rel="alternate" hreflang="en" href="<?= e($site_base . $path_only . '?lang=en') ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e($site_base . $path_only) ?>">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="<?= e(APP_NAME) ?>">
     <meta property="og:title" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:description" content="<?= e($SEO_DESC) ?>">
-    <meta property="og:image" content="<?= e($SEO_OG_IMAGE) ?>">
+    <meta property="og:image" content="<?= e($og_image_abs) ?>">
+    <meta property="og:url" content="<?= e($canonical) ?>">
+    <meta property="og:locale" content="<?= lang() === 'fr' ? 'fr_FR' : 'en_US' ?>">
     <meta name="twitter:card" content="summary_large_image">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -68,6 +83,35 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php if (!empty($JSONLD)): ?>
     <script type="application/ld+json"><?= json_encode($JSONLD, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
     <?php endif; ?>
+    <!-- Organisation + WebSite (SEO global) -->
+    <script type="application/ld+json"><?= json_encode([
+        '@context' => 'https://schema.org',
+        '@graph'   => [
+            [
+                '@type' => 'Organization',
+                '@id'   => $site_base . '/#org',
+                'name'  => APP_NAME,
+                'url'   => $site_base . '/',
+                'logo'  => $og_image_abs,
+                'description' => lang() === 'fr'
+                    ? 'Média indépendant non officiel dédié à GTA VI et Vice City.'
+                    : 'Independent unofficial media about GTA VI and Vice City.',
+            ],
+            [
+                '@type' => 'WebSite',
+                '@id'   => $site_base . '/#website',
+                'name'  => APP_NAME,
+                'url'   => $site_base . '/',
+                'inLanguage' => lang(),
+                'publisher'  => ['@id' => $site_base . '/#org'],
+                'potentialAction' => [
+                    '@type'       => 'SearchAction',
+                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $site_base . '/pages/news.php?q={search_term_string}'],
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ],
+        ],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
 
     <?php if ($ac = adsense_client()): ?>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=<?= e($ac) ?>"

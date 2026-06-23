@@ -674,13 +674,100 @@ function importance_label(int $level): string
 /*  Médias de carte (vraie image + repli)                             */
 /* ================================================================== */
 
-/** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
-function media_html(?string $img, string $emoji): string
+/** Petit GET HTTP (curl si dispo, sinon file_get_contents). */
+function http_get(string $url): ?string
 {
-    $img = trim((string) $img);
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_TIMEOUT => 20, CURLOPT_SSL_VERIFYPEER => true]);
+        $data = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($data !== false && $code < 400) {
+            return (string) $data;
+        }
+    }
+    if (ini_get('allow_url_fopen')) {
+        $data = @file_get_contents($url);
+        if ($data !== false) {
+            return $data;
+        }
+    }
+    return null;
+}
+
+/**
+ * Chemin local du fichier propre d'un wallpaper. S'il est absent, on tente de
+ * le télécharger depuis le CDN (config/wallpapers.php) et de le mettre en cache.
+ */
+function wallpaper_path(string $name): ?string
+{
+    $name = preg_replace('/[^a-z0-9_-]/i', '', $name);
+    if ($name === '') {
+        return null;
+    }
+    foreach (['png', 'jpg', 'jpeg', 'webp'] as $ext) {
+        $p = ROOT_PATH . '/storage/wallpapers/' . $name . '.' . $ext;
+        if (is_file($p)) {
+            return $p;
+        }
+    }
+    // Amorçage depuis le CDN
+    static $sources = null;
+    if ($sources === null) {
+        $f = ROOT_PATH . '/config/wallpapers.php';
+        $sources = is_file($f) ? (require $f) : [];
+    }
+    $src = $sources[$name] ?? '';
+    if ($src !== '') {
+        $data = http_get($src);
+        if ($data !== null && strlen($data) > 1000) {
+            $dest = ROOT_PATH . '/storage/wallpapers/' . $name . '.png';
+            if (is_dir(dirname($dest)) && is_writable(dirname($dest)) && @file_put_contents($dest, $data) !== false) {
+                return $dest;
+            }
+        }
+    }
+    return null;
+}
+
+/** URL CDN d'un visuel à partir de son nom de fichier (ou '' si inconnu). */
+function cdn_url(string $filename): string
+{
+    static $map = null;
+    if ($map === null) {
+        $f = ROOT_PATH . '/config/cdn_map.php';
+        $map = is_file($f) ? (require $f) : [];
+    }
+    return $map[$filename] ?? '';
+}
+
+/**
+ * Résout la source d'une image : fichier local s'il existe, sinon CDN public,
+ * sinon le chemin d'origine. Les URL absolues et /preview.php sont laissées telles quelles.
+ */
+function img_src(?string $path): string
+{
+    $path = trim((string) $path);
+    if ($path === '' || preg_match('#^https?://#', $path) || str_starts_with($path, '/preview.php')) {
+        return $path;
+    }
+    $rel = ltrim($path, '/');
+    if (is_file(ROOT_PATH . '/' . $rel)) {
+        return $path; // fichier local présent
+    }
+    $cdn = cdn_url(basename($rel));
+    return $cdn !== '' ? $cdn : $path;
+}
+
+/** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
+function media_html(?string $img, string $emoji, string $alt = ''): string
+{
+    $src = img_src($img);
+    $alt = $alt !== '' ? $alt : 'Illustration GTA VI — ViceHub X';
     $out = '<div class="card__media"><span class="card__emoji" aria-hidden="true">' . $emoji . '</span>';
-    if ($img !== '') {
-        $out .= '<img class="card__img" src="' . e($img) . '" alt="" loading="lazy" onerror="this.remove()">';
+    if ($src !== '') {
+        $out .= '<img class="card__img" src="' . e($src) . '" alt="' . e($alt) . '" loading="lazy" onerror="this.remove()">';
     }
     return $out . '</div>';
 }

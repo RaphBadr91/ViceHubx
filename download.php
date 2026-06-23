@@ -38,6 +38,12 @@ if (!$file) {
     exit('Ce fichier ne fait pas partie de votre commande.');
 }
 
+// Amorçage : si le fichier propre n'est pas encore en local, on le récupère depuis le CDN
+$wallName = pathinfo($file, PATHINFO_FILENAME);
+if (!is_file(ROOT_PATH . '/' . ltrim($file, '/'))) {
+    wallpaper_path($wallName);
+}
+
 // Chemin sûr, confiné à /storage
 $path = realpath(ROOT_PATH . '/' . ltrim($file, '/'));
 $base = realpath(ROOT_PATH . '/storage');

@@ -14,14 +14,8 @@ if ($p === '') {
     exit;
 }
 
-$srcDir = ROOT_PATH . '/storage/wallpapers/';
-$src = '';
-foreach (['png', 'jpg', 'jpeg', 'webp'] as $ext) {
-    if (is_file($srcDir . $p . '.' . $ext)) {
-        $src = $srcDir . $p . '.' . $ext;
-        break;
-    }
-}
+// Fichier propre (téléchargé depuis le CDN au besoin)
+$src = wallpaper_path($p) ?? '';
 
 $cacheDir = ROOT_PATH . '/public/assets/img/shop/cache/';
 $cache = $cacheDir . $p . '.jpg';
