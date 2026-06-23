@@ -9,18 +9,21 @@ CREATE DATABASE IF NOT EXISTS vicehubx
 USE vicehubx;
 
 SET FOREIGN_KEY_CHECKS = 0;
-DROP TABLE IF EXISTS poll_votes, poll_options, polls, article_tags, tags,
+DROP TABLE IF EXISTS forum_posts, forum_threads, forum_categories,
+    poll_votes, poll_options, polls, article_tags, tags,
     comments, articles, categories, newsletter_subscribers, media, ads,
     affiliate_links, products, orders, seo_pages, settings, vehicles, characters, map_zones,
     trailer_analyses, users;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ---------- Utilisateurs (admin) ----------
+-- ---------- Utilisateurs (admin + contributeurs + membres) ----------
 CREATE TABLE users (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     username      VARCHAR(64) NOT NULL UNIQUE,
+    email         VARCHAR(190) UNIQUE,
+    display_name  VARCHAR(80),
     password_hash VARCHAR(255) NOT NULL,
-    role          ENUM('admin','editor') NOT NULL DEFAULT 'admin',
+    role          ENUM('admin','editor','contributor','member') NOT NULL DEFAULT 'member',
     created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -42,7 +45,8 @@ CREATE TABLE articles (
     body         MEDIUMTEXT,
     badge        VARCHAR(20) DEFAULT NULL,
     image        VARCHAR(255) DEFAULT NULL,
-    status       ENUM('draft','published') NOT NULL DEFAULT 'draft',
+    author_id    INT DEFAULT NULL,
+    status       ENUM('draft','pending','published') NOT NULL DEFAULT 'draft',
     published_at DATETIME DEFAULT NULL,
     created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_articles_cat FOREIGN KEY (category_id)
@@ -148,6 +152,42 @@ CREATE TABLE orders (
     created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+-- ---------- Forum communautaire ----------
+CREATE TABLE forum_categories (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(120) NOT NULL,
+    slug        VARCHAR(140) NOT NULL UNIQUE,
+    description VARCHAR(300),
+    icon        VARCHAR(12),
+    sort        INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+CREATE TABLE forum_threads (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT NOT NULL,
+    user_id     INT,
+    title       VARCHAR(200) NOT NULL,
+    slug        VARCHAR(220) NOT NULL,
+    pinned      TINYINT(1) NOT NULL DEFAULT 0,
+    locked      TINYINT(1) NOT NULL DEFAULT 0,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_post_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES forum_categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_cat (category_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE forum_posts (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    thread_id  INT NOT NULL,
+    user_id    INT,
+    body       TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_thread (thread_id)
+) ENGINE=InnoDB;
+
 -- ---------- SEO ----------
 CREATE TABLE seo_pages (
     id          INT AUTO_INCREMENT PRIMARY KEY,
@@ -234,8 +274,10 @@ CREATE TABLE trailer_analyses (
 -- ==================================================================
 
 -- Admin : identifiant "admin" / mot de passe "vicehubx" (à changer !)
-INSERT INTO users (username, password_hash, role) VALUES
-('admin', '$2y$12$KSEQS1g76KeHzzgEt6Gn8OJ0vDPkwLHTNKMo2Y9.58Vgp0VZXrYzi', 'admin');
+INSERT INTO users (username, email, display_name, password_hash, role) VALUES
+('admin', 'admin@vicehubx.test', 'Admin', '$2y$12$KSEQS1g76KeHzzgEt6Gn8OJ0vDPkwLHTNKMo2Y9.58Vgp0VZXrYzi', 'admin'),
+-- Contributeur de démo — identifiant : contributeur / mot de passe : vicehubx
+('contributeur', 'contrib@vicehubx.test', 'Tommy V.', '$2y$12$KSEQS1g76KeHzzgEt6Gn8OJ0vDPkwLHTNKMo2Y9.58Vgp0VZXrYzi', 'contributor');
 
 INSERT INTO categories (name, slug) VALUES
 ('News', 'news'),
@@ -332,6 +374,20 @@ INSERT INTO polls (question, lang, active) VALUES
 INSERT INTO poll_options (poll_id, label) VALUES
 (1, 'Lucia'), (1, 'Jason'), (1, 'Les deux !');
 
+-- Forum : catégories + sujet de démonstration
+INSERT INTO forum_categories (name, slug, description, icon, sort) VALUES
+('Discussions générales', 'general', 'Parlez de tout autour de GTA VI et de Vice City.', '💬', 10),
+('Théories & Leaks', 'theories-leaks', 'Débattez des rumeurs, indices et théories de la communauté.', '🕵️', 20),
+('Guides & Astuces', 'guides-astuces', 'Partagez vos conseils, builds et bons plans.', '🧭', 30),
+('Véhicules & Customs', 'vehicules-customs', 'Vos voitures préférées, réglages et tunings.', '🏎️', 40),
+('Hors-sujet', 'hors-sujet', 'Tout le reste : jeux, musique, vie du serveur.', '🎲', 50);
+
+INSERT INTO forum_threads (id, category_id, user_id, title, slug, pinned, created_at, last_post_at) VALUES
+(1, 1, 1, 'Bienvenue sur le forum ViceHub X ! 🌴', 'bienvenue-sur-le-forum-vicehubx', 1, NOW(), NOW());
+INSERT INTO forum_posts (thread_id, user_id, body) VALUES
+(1, 1, 'Bienvenue dans la communauté ViceHub X ! Présentez-vous, partagez vos théories sur GTA VI et restez courtois. Bon jeu à Vice City. 🩷'),
+(1, 2, 'Hâte d’y être ! Le compte à rebours tourne, on se retrouve à Leonida le 19 novembre 2026. 🔥');
+
 -- Réglages & SEO
 INSERT INTO settings (`key`, value) VALUES
 ('site_tagline_fr', 'Entrez dans la nouvelle génération de Vice City.'),
@@ -350,7 +406,8 @@ INSERT INTO settings (`key`, value) VALUES
 INSERT INTO seo_pages (path, title, description) VALUES
 ('/index.php', 'ViceHub X — GTA6 News', 'News, guides, leaks et analyses de trailers GTA VI.'),
 ('/pages/news.php', 'News GTA6 — ViceHub X', 'Toute l’actualité GTA VI en continu.'),
-('/pages/shop.php', 'Boutique GTA6 — ViceHub X', 'Affiches IA, jeux, consoles et goodies GTA VI. Boutique officielle ViceHub X.');
+('/pages/shop.php', 'Boutique GTA6 — ViceHub X', 'Affiches IA, jeux, consoles et goodies GTA VI. Boutique officielle ViceHub X.'),
+('/pages/forum.php', 'Forum GTA6 — ViceHub X', 'Forum communautaire GTA VI : discussions, théories, guides et entraide entre fans.');
 
 -- Images réelles (visuels générés par IA, récupérés via scripts/make-hero-video.sh)
 UPDATE articles SET image='/public/assets/img/scenes/aerial.png'       WHERE slug IN ('vice-city-revient-tout-ce-que-lon-sait','vice-city-is-back-everything-we-know');

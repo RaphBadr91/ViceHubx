@@ -155,17 +155,167 @@ function current_user(): ?array
     if (!is_logged_in()) {
         return null;
     }
-    $stmt = db()->prepare('SELECT id, username, role FROM users WHERE id = ? LIMIT 1');
+    static $cache = null;
+    if ($cache !== null && (int) $cache['id'] === (int) $_SESSION['user_id']) {
+        return $cache;
+    }
+    $stmt = db()->prepare('SELECT id, username, email, display_name, role FROM users WHERE id = ? LIMIT 1');
     $stmt->execute([$_SESSION['user_id']]);
-    return $stmt->fetch() ?: null;
+    return $cache = ($stmt->fetch() ?: null);
 }
 
-/** Garde-fou : impose une session admin valide. */
+function user_role(): string
+{
+    return current_user()['role'] ?? '';
+}
+/** Membre du staff (peut accéder à l'admin). */
+function is_admin(): bool
+{
+    return in_array(user_role(), ['admin', 'editor'], true);
+}
+/** Nom affiché public d'un utilisateur. */
+function display_name(?array $u = null): string
+{
+    $u = $u ?? current_user();
+    if (!$u) {
+        return 'Anonyme';
+    }
+    return $u['display_name'] ?: $u['username'];
+}
+
+/** Garde-fou admin : session valide ET rôle staff. */
 function require_admin(): void
 {
     if (!is_logged_in()) {
         redirect(url('admin/login.php'));
     }
+    if (!is_admin()) {
+        redirect(with_lang(url('pages/account.php')));
+    }
+}
+/** Garde-fou membre : impose une connexion (toute rôle). */
+function require_login(): void
+{
+    if (!is_logged_in()) {
+        redirect(with_lang(url('pages/login.php')));
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Comptes membres / contributeurs                                    */
+/* ------------------------------------------------------------------ */
+function register_user(string $username, string $email, string $password, string $display = ''): int
+{
+    $username = trim($username);
+    $email = trim(mb_strtolower($email));
+    if (!preg_match('/^[a-zA-Z0-9_.-]{3,64}$/', $username)) {
+        throw new RuntimeException('Identifiant invalide (3-64 caractères : lettres, chiffres, . _ -).');
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new RuntimeException('Adresse e-mail invalide.');
+    }
+    if (strlen($password) < 8) {
+        throw new RuntimeException('Le mot de passe doit faire au moins 8 caractères.');
+    }
+    $stmt = db()->prepare('SELECT 1 FROM users WHERE username = ? OR email = ? LIMIT 1');
+    $stmt->execute([$username, $email]);
+    if ($stmt->fetch()) {
+        throw new RuntimeException('Cet identifiant ou cet e-mail est déjà utilisé.');
+    }
+    $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $ins = db()->prepare('INSERT INTO users (username, email, display_name, password_hash, role) VALUES (?, ?, ?, ?, ?)');
+    $ins->execute([$username, $email, $display !== '' ? $display : $username, $hash, 'member']);
+    return (int) db()->lastInsertId();
+}
+
+/** Authentifie par identifiant OU e-mail. Retourne l'utilisateur ou null. */
+function login_attempt(string $login, string $password): ?array
+{
+    $login = trim($login);
+    $stmt = db()->prepare('SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1');
+    $stmt->execute([$login, mb_strtolower($login)]);
+    $user = $stmt->fetch();
+    if ($user && password_verify($password, $user['password_hash'])) {
+        return $user;
+    }
+    return null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Forum communautaire                                                */
+/* ------------------------------------------------------------------ */
+function get_forum_categories(): array
+{
+    return db()->query(
+        "SELECT c.*,
+            (SELECT COUNT(*) FROM forum_threads t WHERE t.category_id = c.id) AS thread_count,
+            (SELECT COUNT(*) FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id WHERE t.category_id = c.id) AS post_count,
+            (SELECT MAX(t.last_post_at) FROM forum_threads t WHERE t.category_id = c.id) AS last_at
+         FROM forum_categories c ORDER BY c.sort ASC, c.id ASC"
+    )->fetchAll();
+}
+function get_forum_category(string $slug): ?array
+{
+    $stmt = db()->prepare('SELECT * FROM forum_categories WHERE slug = ? LIMIT 1');
+    $stmt->execute([$slug]);
+    return $stmt->fetch() ?: null;
+}
+function get_threads(int $categoryId): array
+{
+    $stmt = db()->prepare(
+        "SELECT t.*, u.username, u.display_name,
+            (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id) AS reply_count
+         FROM forum_threads t LEFT JOIN users u ON u.id = t.user_id
+         WHERE t.category_id = ? ORDER BY t.pinned DESC, t.last_post_at DESC"
+    );
+    $stmt->execute([$categoryId]);
+    return $stmt->fetchAll();
+}
+function get_thread(int $id): ?array
+{
+    $stmt = db()->prepare(
+        'SELECT t.*, c.name AS cat_name, c.slug AS cat_slug, u.username, u.display_name
+         FROM forum_threads t JOIN forum_categories c ON c.id = t.category_id
+         LEFT JOIN users u ON u.id = t.user_id WHERE t.id = ? LIMIT 1'
+    );
+    $stmt->execute([$id]);
+    return $stmt->fetch() ?: null;
+}
+function get_thread_posts(int $threadId): array
+{
+    $stmt = db()->prepare(
+        'SELECT p.*, u.username, u.display_name, u.role FROM forum_posts p
+         LEFT JOIN users u ON u.id = p.user_id WHERE p.thread_id = ? ORDER BY p.created_at ASC, p.id ASC'
+    );
+    $stmt->execute([$threadId]);
+    return $stmt->fetchAll();
+}
+function create_thread(int $categoryId, int $userId, string $title, string $body): int
+{
+    $title = trim($title);
+    $body  = trim($body);
+    if (mb_strlen($title) < 4) {
+        throw new RuntimeException('Le titre doit faire au moins 4 caractères.');
+    }
+    if (mb_strlen($body) < 4) {
+        throw new RuntimeException('Le message doit faire au moins 4 caractères.');
+    }
+    $slug = slugify($title) . '-' . base_convert((string) time(), 10, 36);
+    $stmt = db()->prepare('INSERT INTO forum_threads (category_id, user_id, title, slug) VALUES (?, ?, ?, ?)');
+    $stmt->execute([$categoryId, $userId, mb_substr($title, 0, 200), $slug]);
+    $tid = (int) db()->lastInsertId();
+    add_post($tid, $userId, $body);
+    return $tid;
+}
+function add_post(int $threadId, int $userId, string $body): void
+{
+    $body = trim($body);
+    if (mb_strlen($body) < 2) {
+        throw new RuntimeException('Message trop court.');
+    }
+    db()->prepare('INSERT INTO forum_posts (thread_id, user_id, body) VALUES (?, ?, ?)')
+        ->execute([$threadId, $userId, mb_substr($body, 0, 5000)]);
+    db()->prepare('UPDATE forum_threads SET last_post_at = NOW() WHERE id = ?')->execute([$threadId]);
 }
 
 /* ================================================================== */

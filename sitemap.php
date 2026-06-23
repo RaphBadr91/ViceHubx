@@ -24,6 +24,7 @@ $urls = [
     ['pages/vehicles.php', 'monthly', '0.6'],
     ['pages/characters.php', 'monthly', '0.6'],
     ['pages/community.php', 'daily', '0.6'],
+    ['pages/forum.php', 'daily', '0.7'],
     ['pages/shop.php', 'weekly', '0.8'],
     ['pages/deals.php', 'weekly', '0.6'],
     ['pages/contact.php', 'yearly', '0.3'],
@@ -42,6 +43,13 @@ try {
 } catch (Throwable $e) {
     $prods = [];
 }
+// Forum : catégories + sujets
+try {
+    $fcats = db()->query("SELECT slug FROM forum_categories ORDER BY sort ASC")->fetchAll(PDO::FETCH_COLUMN);
+    $fthreads = db()->query("SELECT id FROM forum_threads ORDER BY last_post_at DESC LIMIT 500")->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) {
+    $fcats = $fthreads = [];
+}
 
 header('Content-Type: application/xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
@@ -56,6 +64,12 @@ foreach ($arts as $a) {
 }
 foreach ($prods as $p) {
     echo '  <url><loc>' . e($abs('pages/product.php?slug=' . urlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
+}
+foreach ($fcats as $slug) {
+    echo '  <url><loc>' . e($abs('pages/forum-category.php?cat=' . urlencode($slug))) . "</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n";
+}
+foreach ($fthreads as $tid) {
+    echo '  <url><loc>' . e($abs('pages/forum-thread.php?id=' . (int) $tid)) . "</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>\n";
 }
 
 echo '</urlset>' . "\n";

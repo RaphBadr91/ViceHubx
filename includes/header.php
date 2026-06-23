@@ -27,7 +27,10 @@ $nav = [
         ['vehicles.php',   t('nav_vehicles')],
         ['characters.php', t('nav_characters')],
     ]],
-    ['href' => 'community.php', 'label' => t('nav_community')],
+    ['label' => t('nav_community'), 'children' => [
+        ['forum.php',     'Forum'],
+        ['community.php', lang() === 'fr' ? 'Sondages & débats' : 'Polls & debates'],
+    ]],
     ['label' => t('nav_shop'), 'children' => [
         ['shop.php',  lang() === 'fr' ? 'La Boutique' : 'The Shop'],
         ['deals.php', t('nav_deals')],
@@ -120,7 +123,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
                 🛒<?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
             </a>
             <a class="lang-switch" href="<?= e($current_uri . '?lang=' . $other_lang) ?>"><?= e(t('lang_switch')) ?></a>
-            <a class="btn btn--ghost" href="<?= e(with_lang(url('admin/login.php'))) ?>"><?= e(t('nav_admin')) ?></a>
+            <?php if (is_logged_in()): ?>
+                <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/account.php'))) ?>">👤 <?= e(mb_strimwidth(display_name(), 0, 14, '…')) ?></a>
+            <?php else: ?>
+                <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/login.php'))) ?>"><?= lang() === 'fr' ? 'Connexion' : 'Login' ?></a>
+            <?php endif; ?>
         </div>
     </div>
 </header>

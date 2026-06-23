@@ -11,6 +11,7 @@ $admin_nav = [
     ['article-create.php', t('admin_new')],
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],
+    ['users.php',     'Membres'],
     ['settings.php',  'Réglages'],
 ];
 $ADMIN_TITLE = $ADMIN_TITLE ?? (APP_NAME . ' — Admin');
