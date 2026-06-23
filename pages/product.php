@@ -17,7 +17,7 @@ if (!$product) {
 }
 
 $cats = product_categories();
-$cat_emoji = ['poster' => '🖼️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
+$cat_emoji = ['poster' => '🖼️', 'wallpaper' => '🖥️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
 $related = array_values(array_filter(
     get_products($product['category']),
     fn($p) => $p['id'] !== $product['id']
@@ -81,9 +81,13 @@ require ROOT_PATH . '/includes/header.php';
                 <?php endif; ?>
             </div>
             <p class="muted" style="font-size:.82rem;margin-top:1rem">
-                <?php if (($product['sale_type'] ?? 'external') === 'stripe'): ?>
+                <?php if (!empty($product['digital_file'])): ?>
                     <?= lang() === 'fr'
-                        ? '🔒 Paiement sécurisé par Stripe. Produit expedié par ViceHub X.'
+                        ? '🔒 Paiement sécurisé par Stripe. ⬇️ Téléchargement immédiat du fichier après paiement.'
+                        : '🔒 Secure payment by Stripe. ⬇️ Instant file download after payment.' ?>
+                <?php elseif (($product['sale_type'] ?? 'external') === 'stripe'): ?>
+                    <?= lang() === 'fr'
+                        ? '🔒 Paiement sécurisé par Stripe. Produit expédié par ViceHub X.'
                         : '🔒 Secure payment by Stripe. Shipped by ViceHub X.' ?>
                 <?php else: ?>
                     <?= lang() === 'fr'

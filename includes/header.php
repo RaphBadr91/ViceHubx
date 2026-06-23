@@ -18,6 +18,7 @@ $BODY_CLASS   = $BODY_CLASS   ?? '';
 $nav = [
     ['label' => lang() === 'fr' ? 'Actus' : 'News', 'children' => [
         ['news.php',        t('nav_news')],
+        ['blog.php',        'Blog'],
         ['guides.php',      t('nav_guides')],
         ['leaks-lab.php',   t('nav_leaks')],
         ['trailer-lab.php', t('nav_trailer')],

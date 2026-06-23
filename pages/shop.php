@@ -13,7 +13,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Boutique ViceHub X : affiches GTA VI générées par IA, jeux, consoles, vêtements et goodies. Sélection officielle de fans.'
     : 'ViceHub X shop: AI-generated GTA VI posters, games, consoles, apparel and goodies. Official fan picks.';
 
-$cat_emoji = ['poster' => '🖼️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
+$cat_emoji = ['poster' => '🖼️', 'wallpaper' => '🖥️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
 
 // JSON-LD : liste de produits
 $ld_items = [];

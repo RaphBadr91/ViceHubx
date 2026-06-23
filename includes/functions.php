@@ -436,8 +436,8 @@ function get_product_by_slug(string $slug): ?array
 function product_categories(): array
 {
     return lang() === 'fr'
-        ? ['poster' => 'Affiches', 'game' => 'Jeux', 'console' => 'Consoles', 'apparel' => 'Vêtements', 'accessory' => 'Accessoires', 'collectible' => 'Collectors']
-        : ['poster' => 'Posters', 'game' => 'Games', 'console' => 'Consoles', 'apparel' => 'Apparel', 'accessory' => 'Accessories', 'collectible' => 'Collectibles'];
+        ? ['poster' => 'Affiches', 'wallpaper' => 'Wallpapers', 'game' => 'Jeux', 'console' => 'Consoles', 'apparel' => 'Vêtements', 'accessory' => 'Accessoires', 'collectible' => 'Collectors']
+        : ['poster' => 'Posters', 'wallpaper' => 'Wallpapers', 'game' => 'Games', 'console' => 'Consoles', 'apparel' => 'Apparel', 'accessory' => 'Accessories', 'collectible' => 'Collectibles'];
 }
 
 /** Prix formaté (ex. « 24,90 € »). */

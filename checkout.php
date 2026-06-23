@@ -25,8 +25,12 @@ $origin = BASE_URL !== '' ? rtrim(BASE_URL, '/') : $scheme . '://' . ($_SERVER['
 $abs = static fn(string $p): string => str_starts_with($p, 'http') ? $p : $origin . '/' . ltrim($p, '/');
 
 $cur = strtolower(shop_currency());
+$has_physical = false;
 $line_items = [];
 foreach ($lines as $l) {
+    if (empty($l['digital_file'])) {
+        $has_physical = true;
+    }
     if (!empty($l['stripe_price_id'])) {
         $line_items[] = ['price' => $l['stripe_price_id'], 'quantity' => $l['qty']];
         continue;
@@ -44,10 +48,11 @@ $params = [
     'success_url'                => $abs('pages/checkout-success.php') . '?session_id={CHECKOUT_SESSION_ID}',
     'cancel_url'                 => $abs('pages/checkout-cancel.php'),
     'billing_address_collection' => 'auto',
-    'shipping_address_collection'=> ['allowed_countries' => ['FR', 'BE', 'CH', 'LU', 'CA', 'MC']],
-    'phone_number_collection'    => ['enabled' => 'true'],
-    'automatic_tax'              => ['enabled' => 'false'],
 ];
+// Adresse de livraison uniquement si un produit physique est présent (pas pour les wallpapers)
+if ($has_physical) {
+    $params['shipping_address_collection'] = ['allowed_countries' => ['FR', 'BE', 'CH', 'LU', 'CA', 'MC']];
+}
 
 try {
     $session = stripe_api('POST', 'checkout/sessions', $params);

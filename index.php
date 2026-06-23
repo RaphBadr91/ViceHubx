@@ -409,7 +409,7 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
         <h2>🛍️ <?= e(t('shop_section')) ?></h2>
         <a class="link-all" href="<?= e(with_lang(url('pages/shop.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <?php $cat_emoji = ['poster' => '🖼️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆']; ?>
+    <?php $cat_emoji = ['poster' => '🖼️', 'wallpaper' => '🖥️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆']; ?>
     <div class="shop-teaser-grid">
         <?php foreach ($featured_products as $p): ?>
             <article class="product glass reveal">

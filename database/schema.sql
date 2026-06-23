@@ -123,7 +123,7 @@ CREATE TABLE products (
     name            VARCHAR(160) NOT NULL,
     slug            VARCHAR(180) NOT NULL UNIQUE,
     description     VARCHAR(400),
-    category        ENUM('poster','game','console','apparel','accessory','collectible') NOT NULL DEFAULT 'accessory',
+    category        ENUM('poster','wallpaper','game','console','apparel','accessory','collectible') NOT NULL DEFAULT 'accessory',
     price           DECIMAL(8,2),
     currency        VARCHAR(8) NOT NULL DEFAULT 'EUR',
     image           VARCHAR(255),
@@ -131,6 +131,7 @@ CREATE TABLE products (
     sale_type       ENUM('external','stripe') NOT NULL DEFAULT 'external',
     url             VARCHAR(500),            -- lien externe (si sale_type='external')
     stripe_price_id VARCHAR(120),            -- ID de prix Stripe (optionnel ; sinon price+currency)
+    digital_file    VARCHAR(255),            -- fichier livré après achat (produit numérique)
     merchant        VARCHAR(60),
     badge           VARCHAR(40),
     featured        TINYINT(1) NOT NULL DEFAULT 0,
@@ -283,7 +284,8 @@ INSERT INTO categories (name, slug) VALUES
 ('News', 'news'),
 ('Guides', 'guides'),
 ('Leaks', 'leaks'),
-('Trailers', 'trailers');
+('Trailers', 'trailers'),
+('Blog', 'blog');
 
 -- Articles News (3 FR + 3 EN)
 INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, status, published_at) VALUES
@@ -328,6 +330,15 @@ INSERT INTO vehicles (name, type, speed, use_case, rarity, image, lang) VALUES
 ('Swamp Runner','4x4','165 km/h','Terrains boueux et marécages','common','/public/assets/img/scenes/veh-swamp.png','fr'),
 ('Skyline VTOL','Aéronef','420 km/h','Déplacements rapides longue distance','legendary','/public/assets/img/scenes/veh-vtol.png','fr');
 
+-- Blog (6 articles SEO, catégorie 5 = blog)
+INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, author_id, status, published_at) VALUES
+(5,'fr','GTA VI : date de sortie, plateformes et tout ce que l’on sait','gta-vi-date-de-sortie-plateformes','Date, consoles, prix : le récap complet avant la sortie de Grand Theft Auto VI.','<p><strong>Grand Theft Auto VI</strong> est attendu pour le <strong>19 novembre 2026</strong>. Le jeu sortira d’abord sur consoles next-gen, une version PC étant fortement pressentie quelques mois plus tard.</p><h2>Ce que l’on sait</h2><ul><li>Retour à <strong>Vice City</strong> et dans l’État fictif de Leonida.</li><li>Deux protagonistes jouables : <strong>Lucia</strong> et <strong>Jason</strong>.</li><li>Une carte gigantesque mêlant ville, plages et marécages.</li></ul><p>On fait le point régulièrement sur ViceHub X : gardez un œil sur le compte à rebours en page d’accueil. 🕒</p>','/public/assets/img/scenes/aerial.png',1,'published','2026-05-20 09:00:00'),
+(5,'fr','Vice City & Leonida : le guide des quartiers','vice-city-leonida-guide-quartiers','Plages, centre-ville, marina, marécages : tour d’horizon de la carte de GTA VI.','<p>La carte de <strong>Leonida</strong> s’annonce comme la plus vaste de la saga. Tour d’horizon des zones emblématiques que vous arpenterez dans <strong>GTA VI</strong>.</p><h2>Les zones clés</h2><ul><li><strong>Beachfront</strong> : plages, néons et vie nocturne.</li><li><strong>Downtown</strong> : gratte-ciels et missions à enjeux.</li><li><strong>Marina</strong> : yachts, planques et virées en mer.</li><li><strong>Everglades</strong> : marécages sauvages et courses tout-terrain.</li></ul><p>Explorez la carte interactive directement sur notre page d’accueil. 🗺️</p>','/public/assets/img/scenes/marina.png',1,'published','2026-05-21 09:00:00'),
+(5,'fr','Lucia & Jason : ce que l’on sait des protagonistes','lucia-jason-protagonistes-gta6','Pour la première fois, GTA met en scène un duo. Découvrez Lucia et Jason.','<p>Pour la première fois dans la saga, <strong>GTA VI</strong> propose un <strong>duo de protagonistes</strong> : Lucia et Jason. Une dynamique inédite qui rappelle les grands duos du cinéma.</p><p><strong>Lucia</strong>, ancienne détenue, cherche un nouveau départ. <strong>Jason</strong>, débrouillard et impulsif, l’accompagne dans une spirale d’ambition et de danger. Leur relation sera au cœur du scénario.</p><p>De nombreuses théories circulent déjà : on les décrypte dans notre Leaks Lab. 🕵️</p>','/public/assets/img/scenes/night.png',1,'published','2026-05-22 09:00:00'),
+(5,'fr','Top 10 des fonctionnalités qu’on espère dans GTA VI','top-10-fonctionnalites-gta6','Météo dynamique, intérieurs, IA piétonne… notre liste de souhaits pour GTA VI.','<p>À l’approche de la sortie, voici les <strong>10 fonctionnalités</strong> que la communauté espère le plus voir dans <strong>GTA VI</strong>.</p><ol><li>Météo dynamique et ouragans.</li><li>Intérieurs accessibles sans chargement.</li><li>IA piétonne crédible et réactive.</li><li>Économie et propriétés à gérer.</li><li>Personnalisation poussée des véhicules.</li><li>Sous-marins et exploration maritime.</li><li>Mode photo avancé.</li><li>Radios et bande-son cultes.</li><li>Activités annexes variées.</li><li>Un mode en ligne ambitieux.</li></ol><p>Et vous, qu’attendez-vous le plus ? Dites-le sur le forum ! 💬</p>','/public/assets/img/scenes/downtown.png',1,'published','2026-05-23 09:00:00'),
+(5,'fr','GTA VI vs GTA V : tout ce qui change','gta-vi-vs-gta-v-ce-qui-change','Graphismes, carte, gameplay : les différences majeures entre GTA V et GTA VI.','<p>Plus de dix ans séparent <strong>GTA V</strong> de <strong>GTA VI</strong>. Voici les évolutions majeures attendues.</p><h2>Les grandes différences</h2><ul><li><strong>Moteur</strong> : un RAGE nouvelle génération, physique et destruction repensées.</li><li><strong>Carte</strong> : Leonida, plus vaste et plus vivante que Los Santos.</li><li><strong>Narration</strong> : un duo jouable plutôt qu’un trio.</li><li><strong>Immersion</strong> : foule réactive, météo dynamique, cycle jour/nuit photoréaliste.</li></ul><p>Le bond technologique s’annonce spectaculaire. 🚀</p>','/public/assets/img/scenes/beach-cruise.png',1,'published','2026-05-24 09:00:00'),
+(5,'fr','Bien préparer la sortie de GTA VI','bien-preparer-la-sortie-gta6','Console, précommande, espace de stockage : la checklist avant le jour J.','<p>Le <strong>19 novembre 2026</strong> approche. Voici notre checklist pour être prêt le jour du lancement de <strong>GTA VI</strong>.</p><h2>La checklist</h2><ul><li>Choisir sa plateforme (console next-gen, PC plus tard).</li><li>Précommander pour éviter les ruptures.</li><li>Libérer de l’espace de stockage (le jeu sera volumineux).</li><li>Vérifier sa connexion pour le téléchargement du day one.</li></ul><p>Retrouvez nos sélections (jeu, console, goodies) dans la <a href="/pages/shop.php">Boutique</a>. 🛍️</p>','/public/assets/img/scenes/sunset-cruise.png',1,'published','2026-05-25 09:00:00');
+
 -- Personnages (4)
 INSERT INTO characters (name, role, description, theories, lang) VALUES
 ('Lucia','Protagoniste','Ancienne détenue cherchant un nouveau départ à Vice City.','Pourrait être liée à un cartel local selon plusieurs analyses.','fr'),
@@ -367,6 +378,17 @@ INSERT INTO products (name, slug, description, category, price, currency, image,
 ('Casquette « Palm »', 'casquette-palm', 'Casquette snapback noire, palmier néon brodé. Style streetwear Vice City.', 'apparel', 19.90, 'EUR', '/public/assets/img/shop/cap.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 110, 'fr'),
 ('Mug « Synthwave »', 'mug-synthwave', 'Mug céramique 350 ml, design synthwave. Pour vos cafés avant une virée nocturne.', 'accessory', 14.90, 'EUR', '/public/assets/img/shop/mug.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 120, 'fr'),
 ('Tapis de souris XL « Neon City »', 'tapis-souris-xl-neon-city', 'Grand tapis de souris gaming (900×400 mm), surface néon, base antidérapante.', 'accessory', 29.90, 'EUR', '/public/assets/img/shop/mousepad.png', 'stripe', NULL, NULL, 'ViceHub Store', 'Gaming', 0, 1, 130, 'fr');
+
+-- Wallpapers numériques (5 €) — aperçu filigrané, fichier HD livré après paiement.
+INSERT INTO products (name, slug, description, category, price, currency, image, sale_type, digital_file, merchant, badge, featured, active, sort, lang) VALUES
+('Wallpaper « Vice City Skyline »', 'wallpaper-vice-city-skyline', 'Fond d''écran HD néon skyline. Fichier PNG livré immédiatement après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-skyline', 'stripe', 'storage/wallpapers/wall-skyline.png', 'ViceHub Store', 'Téléchargement', 1, 1, 31, 'fr'),
+('Wallpaper « Sunset Beach »', 'wallpaper-sunset-beach', 'Fond d''écran HD plage au coucher de soleil. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-beach', 'stripe', 'storage/wallpapers/wall-beach.png', 'ViceHub Store', 'Téléchargement', 0, 1, 32, 'fr'),
+('Wallpaper « Neon Supercar »', 'wallpaper-neon-supercar', 'Fond d''écran HD supercar néon sous la pluie. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-supercar', 'stripe', 'storage/wallpapers/wall-supercar.png', 'ViceHub Store', 'Téléchargement', 0, 1, 33, 'fr'),
+('Wallpaper « Leonida Aerial »', 'wallpaper-leonida-aerial', 'Fond d''écran HD vue aérienne de Leonida. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-aerial', 'stripe', 'storage/wallpapers/wall-aerial.png', 'ViceHub Store', 'Téléchargement', 0, 1, 34, 'fr'),
+('Wallpaper « Synthwave Dream »', 'wallpaper-synthwave-dream', 'Fond d''écran HD synthwave rétro. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-synthwave', 'stripe', 'storage/wallpapers/wall-synthwave.png', 'ViceHub Store', 'Téléchargement', 1, 1, 35, 'fr'),
+('Wallpaper « Nightlife »', 'wallpaper-nightlife', 'Fond d''écran HD quartier des clubs néon. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-nightlife', 'stripe', 'storage/wallpapers/wall-nightlife.png', 'ViceHub Store', 'Téléchargement', 0, 1, 36, 'fr'),
+('Wallpaper « Marina Lights »', 'wallpaper-marina-lights', 'Fond d''écran HD marina au crépuscule. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-marina', 'stripe', 'storage/wallpapers/wall-marina.png', 'ViceHub Store', 'Téléchargement', 0, 1, 37, 'fr'),
+('Wallpaper « Neon Flamingo »', 'wallpaper-neon-flamingo', 'Fond d''écran HD flamant néon. PNG livré après paiement.', 'wallpaper', 5.00, 'EUR', '/preview.php?p=wall-flamingo', 'stripe', 'storage/wallpapers/wall-flamingo.png', 'ViceHub Store', 'Téléchargement', 0, 1, 38, 'fr');
 
 -- Sondage communautaire
 INSERT INTO polls (question, lang, active) VALUES

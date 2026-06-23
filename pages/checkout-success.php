@@ -22,7 +22,13 @@ if ($session_id !== '' && stripe_enabled()) {
             // Filet de sécurité si le webhook n'est pas (encore) configuré : on enregistre la commande.
             $items = [];
             foreach ($lines as $l) {
-                $items[] = ['name' => $l['name'], 'qty' => $l['qty'], 'price' => (float) $l['price']];
+                $items[] = [
+                    'id'           => (int) $l['id'],
+                    'name'         => $l['name'],
+                    'qty'          => $l['qty'],
+                    'price'        => (float) $l['price'],
+                    'digital_file' => $l['digital_file'] ?? null,
+                ];
             }
             $stmt = db()->prepare(
                 'INSERT INTO orders (stripe_session, email, amount_total, currency, status, items)
@@ -59,6 +65,23 @@ require ROOT_PATH . '/includes/header.php';
             <p style="font-size:1.3rem;font-weight:800"><?= price_html($amount, $cur) ?></p>
         <?php endif; ?>
         <?php if ($email): ?><p class="muted" style="font-size:.9rem"><?= e($email) ?></p><?php endif; ?>
+
+        <?php
+        $downloads = array_filter($lines, fn($l) => !empty($l['digital_file']));
+        if ($downloads && $session_id !== ''): ?>
+            <div class="glass" style="margin:1.6rem auto 0;padding:1.2rem;border-radius:14px;max-width:460px;text-align:left">
+                <h2 style="font-size:1.05rem;margin:0 0 .8rem">⬇️ <?= lang() === 'fr' ? 'Vos téléchargements' : 'Your downloads' ?></h2>
+                <?php foreach ($downloads as $l): ?>
+                    <a class="btn btn--primary" style="width:100%;justify-content:center;margin-bottom:.5rem"
+                       href="<?= e(url('download.php?s=' . urlencode($session_id) . '&p=' . (int) $l['id'])) ?>">
+                        <?= e($l['name']) ?> ↓
+                    </a>
+                <?php endforeach; ?>
+                <p class="muted" style="font-size:.78rem;margin:.5rem 0 0"><?= lang() === 'fr'
+                    ? 'Conservez cette page : les liens restent valides. Un reçu vous est aussi envoyé par e-mail.'
+                    : 'Keep this page: links stay valid. A receipt is also emailed to you.' ?></p>
+            </div>
+        <?php endif; ?>
     <?php else: ?>
         <div style="font-size:3.4rem">⏳</div>
         <h1><?= lang() === 'fr' ? 'Paiement en cours de validation' : 'Payment being confirmed' ?></h1>

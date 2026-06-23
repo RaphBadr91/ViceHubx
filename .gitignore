@@ -24,3 +24,7 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# Cache aperçus filigranés
+/public/assets/img/shop/cache/*
+!/public/assets/img/shop/cache/.gitkeep

@@ -15,9 +15,15 @@ repli. Depuis le dossier du projet :
 
 ```bash
 bash scripts/make-hero-video.sh          # vidéo hero + scènes + photos véhicules
-git add public/assets && git commit -m "médias: hero + scènes + véhicules"
+bash scripts/make-wallpapers.sh          # wallpapers HD (fichiers privés vendus 5 €)
+git add public/assets storage/wallpapers && git commit -m "médias: hero + scènes + véhicules + wallpapers"
 git push
 ```
+
+> 🖼️ **Wallpapers** : les fichiers propres vont dans `storage/wallpapers/` (privé, non
+> accessible au public). L'aperçu affiché en boutique est filigrané automatiquement
+> (`preview.php`). À l'achat, l'acheteur reçoit le fichier propre via `download.php`
+> (lien valide uniquement après paiement Stripe confirmé).
 
 ---
 
