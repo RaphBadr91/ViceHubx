@@ -16,16 +16,22 @@ $SEO_OG_IMAGE = $SEO_OG_IMAGE ?? asset('img/og-default.svg');
 $BODY_CLASS   = $BODY_CLASS   ?? '';
 
 $nav = [
-    ['news.php',       t('nav_news')],
-    ['guides.php',     t('nav_guides')],
-    ['leaks-lab.php',  t('nav_leaks')],
-    ['trailer-lab.php',t('nav_trailer')],
-    ['map.php',        t('nav_map')],
-    ['vehicles.php',   t('nav_vehicles')],
-    ['characters.php', t('nav_characters')],
-    ['community.php',  t('nav_community')],
-    ['shop.php',       t('nav_shop')],
-    ['deals.php',      t('nav_deals')],
+    ['label' => lang() === 'fr' ? 'Actus' : 'News', 'children' => [
+        ['news.php',        t('nav_news')],
+        ['guides.php',      t('nav_guides')],
+        ['leaks-lab.php',   t('nav_leaks')],
+        ['trailer-lab.php', t('nav_trailer')],
+    ]],
+    ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
+        ['map.php',        t('nav_map')],
+        ['vehicles.php',   t('nav_vehicles')],
+        ['characters.php', t('nav_characters')],
+    ]],
+    ['href' => 'community.php', 'label' => t('nav_community')],
+    ['label' => t('nav_shop'), 'children' => [
+        ['shop.php',  lang() === 'fr' ? 'La Boutique' : 'The Shop'],
+        ['deals.php', t('nav_deals')],
+    ]],
 ];
 
 // Construit l'URL du switch de langue en conservant la page courante
@@ -90,8 +96,21 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
         </button>
 
         <nav class="site-nav" aria-label="Navigation principale">
-            <?php foreach ($nav as [$href, $label]): ?>
-                <a href="<?= e(with_lang(url('pages/' . $href))) ?>"><?= e($label) ?></a>
+            <?php foreach ($nav as $item): ?>
+                <?php if (isset($item['children'])): ?>
+                    <div class="nav-group">
+                        <button class="nav-group__btn" type="button" aria-expanded="false" aria-haspopup="true">
+                            <?= e($item['label']) ?> <span class="nav-caret" aria-hidden="true">▾</span>
+                        </button>
+                        <div class="nav-dropdown">
+                            <?php foreach ($item['children'] as [$href, $label]): ?>
+                                <a href="<?= e(with_lang(url('pages/' . $href))) ?>"><?= e($label) ?></a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <a class="nav-link" href="<?= e(with_lang(url('pages/' . $item['href']))) ?>"><?= e($item['label']) ?></a>
+                <?php endif; ?>
             <?php endforeach; ?>
         </nav>
 

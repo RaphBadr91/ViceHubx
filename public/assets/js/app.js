@@ -117,6 +117,32 @@
     });
   }
 
+  /* ---------------- Menus déroulants ---------------- */
+  const navGroups = $$('.nav-group');
+  navGroups.forEach((group) => {
+    const btn = group.querySelector('.nav-group__btn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = group.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+      navGroups.forEach((g) => {
+        if (g !== group) {
+          g.classList.remove('open');
+          const b = g.querySelector('.nav-group__btn');
+          if (b) b.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  });
+  document.addEventListener('click', () => {
+    navGroups.forEach((g) => {
+      g.classList.remove('open');
+      const b = g.querySelector('.nav-group__btn');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  });
+
   /* ---------------- Zones de carte ---------------- */
   $$('.zone').forEach((zone) => {
     zone.addEventListener('click', () => {
