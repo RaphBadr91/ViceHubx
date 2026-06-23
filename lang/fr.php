@@ -68,6 +68,8 @@ return [
     'page_shop_title'      => 'Boutique',
     'shop_intro'           => 'Affiches générées par IA, jeux, consoles, vêtements et goodies aux couleurs de Vice City. Sélection de fans, livrée par nos partenaires.',
     'shop_buy'             => 'Acheter',
+    'add_to_cart'          => 'Ajouter au panier',
+    'cart_title'           => 'Panier',
     'shop_section'         => 'La Boutique',
     'page_deals_title'     => 'Deals Gaming',
     'page_contact_title'   => 'Contact',

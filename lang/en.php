@@ -68,6 +68,8 @@ return [
     'page_shop_title'      => 'Shop',
     'shop_intro'           => 'AI-generated posters, games, consoles, apparel and goodies with Vice City vibes. Fan picks, shipped by our partners.',
     'shop_buy'             => 'Buy',
+    'add_to_cart'          => 'Add to cart',
+    'cart_title'           => 'Cart',
     'shop_section'         => 'The Shop',
     'page_deals_title'     => 'Gaming Deals',
     'page_contact_title'   => 'Contact',

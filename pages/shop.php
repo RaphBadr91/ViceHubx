@@ -85,9 +85,7 @@ require ROOT_PATH . '/includes/header.php';
                     <p class="product__desc"><?= e($p['description']) ?></p>
                     <div class="product__foot">
                         <span class="product__price"><?= price_html($p['price'], $p['currency']) ?></span>
-                        <a class="btn btn--primary product__buy" href="<?= e($p['url']) ?>" target="_blank" rel="sponsored nofollow noopener">
-                            <?= e(t('shop_buy')) ?><?php if (!empty($p['merchant'])): ?> · <?= e($p['merchant']) ?><?php endif; ?> ↗
-                        </a>
+                        <?= product_buy_button($p) ?>
                     </div>
                 </div>
             </article>

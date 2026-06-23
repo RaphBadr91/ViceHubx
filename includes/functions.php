@@ -302,6 +302,127 @@ function price_html($price, string $currency = 'EUR'): string
     return lang() === 'fr' ? $val . ' ' . $sym : $sym . $val;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Stripe (paiement direct des produits ViceHub)                      */
+/* ------------------------------------------------------------------ */
+function shop_currency(): string
+{
+    return strtoupper((string) (get_setting('shop_currency', 'EUR') ?: 'EUR'));
+}
+function stripe_secret(): string
+{
+    return (string) (getenv('STRIPE_SECRET_KEY') ?: get_setting('stripe_secret_key', ''));
+}
+function stripe_pk(): string
+{
+    return (string) (getenv('STRIPE_PUBLISHABLE_KEY') ?: get_setting('stripe_publishable_key', ''));
+}
+function stripe_webhook_secret(): string
+{
+    return (string) (getenv('STRIPE_WEBHOOK_SECRET') ?: get_setting('stripe_webhook_secret', ''));
+}
+/** Le paiement direct est-il configuré ? */
+function stripe_enabled(): bool
+{
+    $sk = stripe_secret();
+    return $sk !== '' && str_starts_with($sk, 'sk_');
+}
+/** Appel REST minimal à l'API Stripe (sans SDK, via cURL). */
+function stripe_api(string $method, string $path, array $params = []): array
+{
+    if (!function_exists('curl_init')) {
+        throw new RuntimeException('cURL est requis pour Stripe.');
+    }
+    $ch = curl_init('https://api.stripe.com/v1/' . ltrim($path, '/'));
+    $opts = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => ['Authorization: Bearer ' . stripe_secret()],
+        CURLOPT_CUSTOMREQUEST  => strtoupper($method),
+        CURLOPT_TIMEOUT        => 25,
+    ];
+    if ($params) {
+        $opts[CURLOPT_POSTFIELDS] = http_build_query($params); // notation imbriquée OK
+    }
+    curl_setopt_array($ch, $opts);
+    $raw  = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+    if ($raw === false) {
+        throw new RuntimeException('Connexion à Stripe impossible : ' . $err);
+    }
+    $data = json_decode((string) $raw, true) ?: [];
+    if ($code >= 400) {
+        throw new RuntimeException($data['error']['message'] ?? ('Erreur Stripe (' . $code . ')'));
+    }
+    return $data;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Panier (session)                                                   */
+/* ------------------------------------------------------------------ */
+function cart_get(): array
+{
+    return (isset($_SESSION['cart']) && is_array($_SESSION['cart'])) ? $_SESSION['cart'] : [];
+}
+function cart_set(array $cart): void
+{
+    $_SESSION['cart'] = $cart;
+}
+function cart_clear(): void
+{
+    unset($_SESSION['cart']);
+}
+function cart_count(): int
+{
+    return (int) array_sum(cart_get());
+}
+/** Lignes du panier hydratées (produits Stripe actifs uniquement). */
+function cart_lines(): array
+{
+    $cart = cart_get();
+    if (!$cart) {
+        return [];
+    }
+    $ids = array_map('intval', array_keys($cart));
+    $in  = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = db()->prepare("SELECT * FROM products WHERE id IN ($in) AND active = 1 AND sale_type = 'stripe'");
+    $stmt->execute($ids);
+    $lines = [];
+    foreach ($stmt->fetchAll() as $p) {
+        $qty = max(1, (int) ($cart[$p['id']] ?? 1));
+        $p['qty'] = $qty;
+        $p['line_total'] = (float) $p['price'] * $qty;
+        $lines[] = $p;
+    }
+    return $lines;
+}
+function cart_total(): float
+{
+    $t = 0.0;
+    foreach (cart_lines() as $l) {
+        $t += $l['line_total'];
+    }
+    return $t;
+}
+
+/** Bouton d'achat contextuel : panier Stripe (produit direct) ou lien revendeur. */
+function product_buy_button(array $p, bool $small = true): string
+{
+    $cls = 'btn btn--primary product__buy' . ($small ? '' : ' btn--lg');
+    if (($p['sale_type'] ?? 'external') === 'stripe') {
+        return '<form method="post" action="' . e(with_lang(url('pages/cart.php'))) . '" class="add-cart-form">'
+            . csrf_field()
+            . '<input type="hidden" name="action" value="add">'
+            . '<input type="hidden" name="id" value="' . (int) $p['id'] . '">'
+            . '<button class="' . $cls . '" type="submit">🛒 ' . e(t('add_to_cart')) . '</button>'
+            . '</form>';
+    }
+    $merchant = !empty($p['merchant']) ? ' · ' . e($p['merchant']) : '';
+    return '<a class="' . $cls . '" href="' . e((string) ($p['url'] ?? '#')) . '" target="_blank" rel="sponsored nofollow noopener">'
+        . e(t('shop_buy')) . $merchant . ' ↗</a>';
+}
+
 function get_setting(string $key, ?string $default = null): ?string
 {
     $stmt = db()->prepare('SELECT value FROM settings WHERE `key` = ? LIMIT 1');

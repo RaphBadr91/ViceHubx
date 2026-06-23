@@ -11,7 +11,7 @@ USE vicehubx;
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS poll_votes, poll_options, polls, article_tags, tags,
     comments, articles, categories, newsletter_subscribers, media, ads,
-    affiliate_links, products, seo_pages, settings, vehicles, characters, map_zones,
+    affiliate_links, products, orders, seo_pages, settings, vehicles, characters, map_zones,
     trailer_analyses, users;
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -113,24 +113,39 @@ CREATE TABLE affiliate_links (
     active      TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB;
 
--- ---------- Boutique (produits / affiliation / print-on-demand) ----------
+-- ---------- Boutique (produits : Stripe + affiliation / revendeur) ----------
 CREATE TABLE products (
-    id          INT AUTO_INCREMENT PRIMARY KEY,
-    name        VARCHAR(160) NOT NULL,
-    slug        VARCHAR(180) NOT NULL UNIQUE,
-    description VARCHAR(400),
-    category    ENUM('poster','game','console','apparel','accessory','collectible') NOT NULL DEFAULT 'accessory',
-    price       DECIMAL(8,2),
-    currency    VARCHAR(8) NOT NULL DEFAULT 'EUR',
-    image       VARCHAR(255),
-    url         VARCHAR(500) NOT NULL,
-    merchant    VARCHAR(60),
-    badge       VARCHAR(40),
-    featured    TINYINT(1) NOT NULL DEFAULT 0,
-    active      TINYINT(1) NOT NULL DEFAULT 1,
-    sort        INT NOT NULL DEFAULT 0,
-    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lang        ENUM('fr','en') NOT NULL DEFAULT 'fr'
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(160) NOT NULL,
+    slug            VARCHAR(180) NOT NULL UNIQUE,
+    description     VARCHAR(400),
+    category        ENUM('poster','game','console','apparel','accessory','collectible') NOT NULL DEFAULT 'accessory',
+    price           DECIMAL(8,2),
+    currency        VARCHAR(8) NOT NULL DEFAULT 'EUR',
+    image           VARCHAR(255),
+    -- sale_type : 'stripe' = vendu directement (paiement Stripe) ; 'external' = lien revendeur/affilié (Amazon…)
+    sale_type       ENUM('external','stripe') NOT NULL DEFAULT 'external',
+    url             VARCHAR(500),            -- lien externe (si sale_type='external')
+    stripe_price_id VARCHAR(120),            -- ID de prix Stripe (optionnel ; sinon price+currency)
+    merchant        VARCHAR(60),
+    badge           VARCHAR(40),
+    featured        TINYINT(1) NOT NULL DEFAULT 0,
+    active          TINYINT(1) NOT NULL DEFAULT 1,
+    sort            INT NOT NULL DEFAULT 0,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    lang            ENUM('fr','en') NOT NULL DEFAULT 'fr'
+) ENGINE=InnoDB;
+
+-- ---------- Commandes (paiements Stripe) ----------
+CREATE TABLE orders (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    stripe_session VARCHAR(190) UNIQUE,
+    email          VARCHAR(190),
+    amount_total   DECIMAL(10,2),
+    currency       VARCHAR(8),
+    status         VARCHAR(40) NOT NULL DEFAULT 'pending',
+    items          TEXT,
+    created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- ---------- SEO ----------
@@ -292,22 +307,24 @@ INSERT INTO affiliate_links (title, description, url, platform, badge, active) V
 ('Casque audio immersif','Pour profiter de la bande-son synthwave.','https://example.com/deal/headset','PS5','Top vente',1),
 ('Abonnement VPN gaming','Réduisez le ping et protégez votre connexion.','https://example.com/deal/vpn','PC','Partenaire',1);
 
--- Boutique — catalogue de démonstration (liens affiliés / print-on-demand)
--- ⚠️ Remplacez les URL par vos liens d'affiliation (tag Amazon, boutique POD…).
-INSERT INTO products (name, slug, description, category, price, currency, image, url, merchant, badge, featured, active, sort, lang) VALUES
-('GTA VI — Édition Standard (PS5 / Xbox)', 'gta-vi-edition-standard', 'Précommandez Grand Theft Auto VI au meilleur prix. Livraison suivie via notre partenaire.', 'game', 69.99, 'EUR', '/public/assets/img/shop/game-case.png', 'https://www.amazon.fr/s?k=GTA+VI&tag=vicehubx-21', 'Amazon', 'Précommande', 1, 1, 10, 'fr'),
-('Console Next-Gen — Pack Édition', 'console-next-gen-pack', 'La console nouvelle génération idéale pour profiter de GTA VI en 4K. Pack manette incluse.', 'console', 549.99, 'EUR', '/public/assets/img/shop/console.png', 'https://www.amazon.fr/s?k=PlayStation+5&tag=vicehubx-21', 'Amazon', 'Best-seller', 1, 1, 20, 'fr'),
-('Manette sans fil Next-Gen', 'manette-sans-fil-next-gen', 'Manette ergonomique compatible next-gen pour des sessions Vice City sans fil.', 'accessory', 74.99, 'EUR', '/public/assets/img/shop/console.png', 'https://www.amazon.fr/s?k=manette+sans+fil&tag=vicehubx-21', 'Amazon', NULL, 0, 1, 30, 'fr'),
-('Affiche Néon Skyline — Édition IA', 'affiche-neon-skyline', 'Affiche premium générée par IA : skyline néon synthwave. Impression haute qualité.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-synthwave.png', 'https://shop.vicehubx.fr/affiche-neon-skyline', 'ViceHub Store', 'Édition IA', 1, 1, 40, 'fr'),
-('Affiche Palmiers Sunset', 'affiche-palmiers-sunset', 'Affiche minimaliste palmiers et coucher de soleil. Idéale pour un setup gaming.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-palmsunset.png', 'https://shop.vicehubx.fr/affiche-palmiers-sunset', 'ViceHub Store', NULL, 0, 1, 50, 'fr'),
-('Affiche Supercar Néon', 'affiche-supercar-neon', 'Affiche supercar sur asphalte mouillé, ambiance néon magenta. Édition IA.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-supercar.png', 'https://shop.vicehubx.fr/affiche-supercar-neon', 'ViceHub Store', 'Populaire', 0, 1, 60, 'fr'),
-('Affiche Rétro Vice City', 'affiche-retro-vice-city', 'Affiche style poster de voyage rétro, skyline tropicale au crépuscule.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-skyline.png', 'https://shop.vicehubx.fr/affiche-retro-vice-city', 'ViceHub Store', NULL, 0, 1, 70, 'fr'),
-('Affiche Flamant Néon', 'affiche-flamant-neon', 'Affiche flamant rose néon sur fond tropical. Touche déco fun et vibrante.', 'poster', 19.90, 'EUR', '/public/assets/img/shop/poster-flamingo.png', 'https://shop.vicehubx.fr/affiche-flamant-neon', 'ViceHub Store', NULL, 0, 1, 80, 'fr'),
-('T-shirt « Vice Vibes »', 't-shirt-vice-vibes', 'T-shirt premium 100% coton, graphique palmier néon. Coupe unisexe.', 'apparel', 24.90, 'EUR', '/public/assets/img/shop/tshirt.png', 'https://shop.vicehubx.fr/t-shirt-vice-vibes', 'ViceHub Store', 'Nouveau', 1, 1, 90, 'fr'),
-('Hoodie « Neon City »', 'hoodie-neon-city', 'Sweat à capuche confortable, skyline néon brodé. Parfait pour les soirées gaming.', 'apparel', 44.90, 'EUR', '/public/assets/img/shop/hoodie.png', 'https://shop.vicehubx.fr/hoodie-neon-city', 'ViceHub Store', NULL, 0, 1, 100, 'fr'),
-('Casquette « Palm »', 'casquette-palm', 'Casquette snapback noire, palmier néon brodé. Style streetwear Vice City.', 'apparel', 19.90, 'EUR', '/public/assets/img/shop/cap.png', 'https://shop.vicehubx.fr/casquette-palm', 'ViceHub Store', NULL, 0, 1, 110, 'fr'),
-('Mug « Synthwave »', 'mug-synthwave', 'Mug céramique 350 ml, design synthwave. Pour vos cafés avant une virée nocturne.', 'accessory', 14.90, 'EUR', '/public/assets/img/shop/mug.png', 'https://shop.vicehubx.fr/mug-synthwave', 'ViceHub Store', NULL, 0, 1, 120, 'fr'),
-('Tapis de souris XL « Neon City »', 'tapis-souris-xl-neon-city', 'Grand tapis de souris gaming (900×400 mm), surface néon, base antidérapante.', 'accessory', 29.90, 'EUR', '/public/assets/img/shop/mousepad.png', 'https://shop.vicehubx.fr/tapis-souris-xl-neon-city', 'ViceHub Store', 'Gaming', 0, 1, 130, 'fr');
+-- Boutique — catalogue de démonstration.
+--  • sale_type 'stripe'   = produits vendus en direct (paiement Stripe) — affiches IA, goodies.
+--  • sale_type 'external' = liens revendeur / affilié (Amazon…) — jeu, console, manette.
+-- ⚠️ Pour Stripe : renseignez vos clés dans l'admin (Réglages) ; pour l'affiliation : remplacez les URL par vos liens.
+INSERT INTO products (name, slug, description, category, price, currency, image, sale_type, url, stripe_price_id, merchant, badge, featured, active, sort, lang) VALUES
+('GTA VI — Édition Standard (PS5 / Xbox)', 'gta-vi-edition-standard', 'Précommandez Grand Theft Auto VI au meilleur prix. Livraison suivie via notre partenaire.', 'game', 69.99, 'EUR', '/public/assets/img/shop/game-case.png', 'external', 'https://www.amazon.fr/s?k=GTA+VI&tag=vicehubx-21', NULL, 'Amazon', 'Précommande', 1, 1, 10, 'fr'),
+('Console Next-Gen — Pack Édition', 'console-next-gen-pack', 'La console nouvelle génération idéale pour profiter de GTA VI en 4K. Pack manette incluse.', 'console', 549.99, 'EUR', '/public/assets/img/shop/console.png', 'external', 'https://www.amazon.fr/s?k=PlayStation+5&tag=vicehubx-21', NULL, 'Amazon', 'Best-seller', 1, 1, 20, 'fr'),
+('Manette sans fil Next-Gen', 'manette-sans-fil-next-gen', 'Manette ergonomique compatible next-gen pour des sessions Vice City sans fil.', 'accessory', 74.99, 'EUR', '/public/assets/img/shop/console.png', 'external', 'https://www.amazon.fr/s?k=manette+sans+fil&tag=vicehubx-21', NULL, 'Amazon', NULL, 0, 1, 30, 'fr'),
+('Affiche Néon Skyline — Édition IA', 'affiche-neon-skyline', 'Affiche premium générée par IA : skyline néon synthwave. Impression haute qualité.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-synthwave.png', 'stripe', NULL, NULL, 'ViceHub Store', 'Édition IA', 1, 1, 40, 'fr'),
+('Affiche Palmiers Sunset', 'affiche-palmiers-sunset', 'Affiche minimaliste palmiers et coucher de soleil. Idéale pour un setup gaming.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-palmsunset.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 50, 'fr'),
+('Affiche Supercar Néon', 'affiche-supercar-neon', 'Affiche supercar sur asphalte mouillé, ambiance néon magenta. Édition IA.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-supercar.png', 'stripe', NULL, NULL, 'ViceHub Store', 'Populaire', 0, 1, 60, 'fr'),
+('Affiche Rétro Vice City', 'affiche-retro-vice-city', 'Affiche style poster de voyage rétro, skyline tropicale au crépuscule.', 'poster', 24.90, 'EUR', '/public/assets/img/shop/poster-skyline.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 70, 'fr'),
+('Affiche Flamant Néon', 'affiche-flamant-neon', 'Affiche flamant rose néon sur fond tropical. Touche déco fun et vibrante.', 'poster', 19.90, 'EUR', '/public/assets/img/shop/poster-flamingo.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 80, 'fr'),
+('T-shirt « Vice Vibes »', 't-shirt-vice-vibes', 'T-shirt premium 100% coton, graphique palmier néon. Coupe unisexe.', 'apparel', 24.90, 'EUR', '/public/assets/img/shop/tshirt.png', 'stripe', NULL, NULL, 'ViceHub Store', 'Nouveau', 1, 1, 90, 'fr'),
+('Hoodie « Neon City »', 'hoodie-neon-city', 'Sweat à capuche confortable, skyline néon brodé. Parfait pour les soirées gaming.', 'apparel', 44.90, 'EUR', '/public/assets/img/shop/hoodie.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 100, 'fr'),
+('Casquette « Palm »', 'casquette-palm', 'Casquette snapback noire, palmier néon brodé. Style streetwear Vice City.', 'apparel', 19.90, 'EUR', '/public/assets/img/shop/cap.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 110, 'fr'),
+('Mug « Synthwave »', 'mug-synthwave', 'Mug céramique 350 ml, design synthwave. Pour vos cafés avant une virée nocturne.', 'accessory', 14.90, 'EUR', '/public/assets/img/shop/mug.png', 'stripe', NULL, NULL, 'ViceHub Store', NULL, 0, 1, 120, 'fr'),
+('Tapis de souris XL « Neon City »', 'tapis-souris-xl-neon-city', 'Grand tapis de souris gaming (900×400 mm), surface néon, base antidérapante.', 'accessory', 29.90, 'EUR', '/public/assets/img/shop/mousepad.png', 'stripe', NULL, NULL, 'ViceHub Store', 'Gaming', 0, 1, 130, 'fr');
 
 -- Sondage communautaire
 INSERT INTO polls (question, lang, active) VALUES
@@ -324,7 +341,11 @@ INSERT INTO settings (`key`, value) VALUES
 ('hero_video', ''),
 ('trailer_url', ''),
 ('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00'),
-('release_date', '2026-11-19T00:00:00');
+('release_date', '2026-11-19T00:00:00'),
+('stripe_publishable_key', ''),
+('stripe_secret_key', ''),
+('stripe_webhook_secret', ''),
+('shop_currency', 'EUR');
 
 INSERT INTO seo_pages (path, title, description) VALUES
 ('/index.php', 'ViceHub X — GTA6 News', 'News, guides, leaks et analyses de trailers GTA VI.'),

@@ -45,6 +45,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($SEO_TITLE) ?></title>
     <meta name="description" content="<?= e($SEO_DESC) ?>">
+    <?php if (!empty($ROBOTS)): ?><meta name="robots" content="<?= e($ROBOTS) ?>"><?php endif; ?>
     <meta name="theme-color" content="#0a0a16">
     <link rel="canonical" href="<?= e($current_uri) ?>">
 
@@ -115,6 +116,9 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
         </nav>
 
         <div class="header-actions">
+            <a class="cart-link" href="<?= e(with_lang(url('pages/cart.php'))) ?>" aria-label="<?= e(t('cart_title')) ?>">
+                🛒<?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
+            </a>
             <a class="lang-switch" href="<?= e($current_uri . '?lang=' . $other_lang) ?>"><?= e(t('lang_switch')) ?></a>
             <a class="btn btn--ghost" href="<?= e(with_lang(url('admin/login.php'))) ?>"><?= e(t('nav_admin')) ?></a>
         </div>

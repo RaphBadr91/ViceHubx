@@ -10,6 +10,7 @@ $admin_nav = [
     ['articles.php',  t('admin_articles')],
     ['article-create.php', t('admin_new')],
     ['products.php',  'Boutique'],
+    ['orders.php',    'Commandes'],
     ['settings.php',  'Réglages'],
 ];
 $ADMIN_TITLE = $ADMIN_TITLE ?? (APP_NAME . ' — Admin');

@@ -74,13 +74,22 @@ require ROOT_PATH . '/includes/header.php';
                 <p class="product-detail__price"><?= price_html($product['price'], $product['currency']) ?></p>
             <?php endif; ?>
             <p class="product-detail__desc"><?= e($product['description']) ?></p>
-            <a class="btn btn--primary btn--lg" href="<?= e($product['url']) ?>" target="_blank" rel="sponsored nofollow noopener">
-                <?= e(t('shop_buy')) ?><?php if (!empty($product['merchant'])): ?> · <?= e($product['merchant']) ?><?php endif; ?> ↗
-            </a>
+            <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center">
+                <?= product_buy_button($product, false) ?>
+                <?php if (($product['sale_type'] ?? 'external') === 'stripe'): ?>
+                    <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/cart.php'))) ?>">🛒 <?= e(t('cart_title')) ?></a>
+                <?php endif; ?>
+            </div>
             <p class="muted" style="font-size:.82rem;margin-top:1rem">
-                <?= lang() === 'fr'
-                    ? 'Lien partenaire. Achat, paiement et livraison gérés par le marchand. ViceHub X peut percevoir une commission.'
-                    : 'Partner link. Purchase, payment and shipping handled by the merchant. ViceHub X may earn a commission.' ?>
+                <?php if (($product['sale_type'] ?? 'external') === 'stripe'): ?>
+                    <?= lang() === 'fr'
+                        ? '🔒 Paiement sécurisé par Stripe. Produit expedié par ViceHub X.'
+                        : '🔒 Secure payment by Stripe. Shipped by ViceHub X.' ?>
+                <?php else: ?>
+                    <?= lang() === 'fr'
+                        ? 'Lien partenaire. Achat, paiement et livraison gérés par le marchand. ViceHub X peut percevoir une commission.'
+                        : 'Partner link. Purchase, payment and shipping handled by the merchant. ViceHub X may earn a commission.' ?>
+                <?php endif; ?>
             </p>
         </div>
     </div>

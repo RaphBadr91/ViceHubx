@@ -106,6 +106,31 @@ Quand le site est prêt :
 
 ---
 
+## 10. Activer la boutique (paiement Stripe)
+
+La boutique gère **deux types de produits** :
+- **Stripe** (vente directe) : tes affiches IA, goodies… → paiement par carte sur le site.
+- **Revendeur / affilié** (Amazon…) : simple lien sortant (commission).
+
+Pour activer le paiement Stripe :
+1. Crée un compte sur **[dashboard.stripe.com](https://dashboard.stripe.com)**.
+2. Récupère tes clés API : **Développeurs → Clés API** (`pk_live_…` et `sk_live_…`).
+3. Dans l'admin ViceHub : **Réglages → Boutique** → colle la clé publiable, la clé
+   secrète et choisis la devise. (Ou via `.env` : `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`.)
+4. **Webhook** (confirme les paiements) : Stripe → **Développeurs → Webhooks → Ajouter** :
+   - URL : `https://tondomaine.fr/stripe-webhook.php`
+   - Événement : `checkout.session.completed`
+   - Copie le **Signing secret** (`whsec_…`) dans **Réglages → Boutique**.
+5. Teste en mode **Test** (clés `pk_test_`/`sk_test_`, carte `4242 4242 4242 4242`).
+
+Les commandes payées apparaissent dans **Admin → Commandes**. Chaque produit se
+règle dans **Admin → Boutique** (type de vente, prix, lien, image, mise en avant).
+
+> 💡 Tu peux aussi lier un **ID de prix Stripe** (`price_…`) par produit si tu
+> préfères gérer les prix dans le Dashboard Stripe.
+
+---
+
 ### Dépannage rapide
 
 | Symptôme | Cause probable | Solution |

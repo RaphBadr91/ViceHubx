@@ -12,6 +12,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('hero_video', trim((string) ($_POST['hero_video'] ?? '')));
         set_setting('trailer_url', trim((string) ($_POST['trailer_url'] ?? '')));
         set_setting('map_url', trim((string) ($_POST['map_url'] ?? '')));
+        // --- Boutique / Stripe ---
+        set_setting('stripe_publishable_key', trim((string) ($_POST['stripe_publishable_key'] ?? '')));
+        set_setting('shop_currency', strtoupper(trim((string) ($_POST['shop_currency'] ?? 'EUR'))) ?: 'EUR');
+        // Clés secrètes : remplacées uniquement si un nouveau champ est saisi.
+        $sk = trim((string) ($_POST['stripe_secret_key'] ?? ''));
+        if ($sk !== '') { set_setting('stripe_secret_key', $sk); }
+        $ws = trim((string) ($_POST['stripe_webhook_secret'] ?? ''));
+        if ($ws !== '') { set_setting('stripe_webhook_secret', $ws); }
         $rd = trim((string) ($_POST['release_date'] ?? ''));
         if ($rd !== '') {
             // datetime-local -> ISO
@@ -26,6 +34,10 @@ $adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
 $trailer = (string) get_setting('trailer_url', '');
 $map_url = (string) get_setting('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00');
+$stripe_pk  = (string) get_setting('stripe_publishable_key', '');
+$shop_cur   = (string) get_setting('shop_currency', 'EUR');
+$has_secret = stripe_secret() !== '';
+$has_whsec  = stripe_webhook_secret() !== '';
 $release = (string) release_date();
 // ISO -> valeur datetime-local (YYYY-MM-DDTHH:MM)
 $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
@@ -74,6 +86,40 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>URL de la carte interactive (Map Lab)</label>
         <input type="url" name="map_url" value="<?= e($map_url) ?>" placeholder="https://map.stateofleonida.net/?map=vi">
         <small class="muted">Carte intégrée en iframe sur Map Lab. Vide = masque l’iframe (garde la carte stylisée).</small>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--glass-brd);margin:.6rem 0">
+    <h2 style="font-size:1.1rem;margin:0">💳 Boutique — Paiement Stripe</h2>
+    <p class="muted" style="font-size:.85rem;margin:.2rem 0 .4rem">
+        Pour vendre vos produits en direct (affiches, goodies). Créez un compte sur
+        <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">stripe.com</a>,
+        puis collez vos clés ci-dessous. État :
+        <strong><?= stripe_enabled() ? '🟢 Paiement activé' : '⚪ Non configuré' ?></strong>
+    </p>
+
+    <div style="display:grid;grid-template-columns:1fr 140px;gap:1rem">
+        <div>
+            <label>Clé publiable Stripe (pk_…)</label>
+            <input type="text" name="stripe_publishable_key" value="<?= e($stripe_pk) ?>" placeholder="pk_live_… ou pk_test_…">
+        </div>
+        <div>
+            <label>Devise</label>
+            <select name="shop_currency">
+                <?php foreach (['EUR', 'USD', 'GBP', 'CAD', 'CHF'] as $cv): ?>
+                    <option value="<?= $cv ?>"<?= $shop_cur === $cv ? ' selected' : '' ?>><?= $cv ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    </div>
+    <div>
+        <label>Clé secrète Stripe (sk_…)</label>
+        <input type="password" name="stripe_secret_key" autocomplete="off" placeholder="<?= $has_secret ? '•••••••• (déjà enregistrée — laisser vide pour conserver)' : 'sk_live_… ou sk_test_…' ?>">
+        <small class="muted">⚠️ Confidentiel. Laissez vide pour conserver la clé actuelle.</small>
+    </div>
+    <div>
+        <label>Secret du webhook (whsec_…)</label>
+        <input type="password" name="stripe_webhook_secret" autocomplete="off" placeholder="<?= $has_whsec ? '•••••••• (déjà enregistré — laisser vide pour conserver)' : 'whsec_…' ?>">
+        <small class="muted">Endpoint à créer dans Stripe : <code><?= e(url('stripe-webhook.php')) ?></code> · événement <code>checkout.session.completed</code>.</small>
     </div>
 
     <button class="btn btn--primary" type="submit">Enregistrer</button>

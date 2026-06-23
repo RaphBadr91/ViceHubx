@@ -12,11 +12,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $name = trim((string) ($_POST['name'] ?? ''));
             $url  = trim((string) ($_POST['url'] ?? ''));
+            $sale_type = in_array($_POST['sale_type'] ?? 'external', ['external', 'stripe'], true) ? $_POST['sale_type'] : 'external';
+            $stripe_price_id = trim((string) ($_POST['stripe_price_id'] ?? ''));
             if ($name === '') {
                 throw new RuntimeException('Le nom est obligatoire.');
             }
-            if ($url === '') {
-                throw new RuntimeException('Le lien d’achat (affiliation) est obligatoire.');
+            if ($sale_type === 'external' && $url === '') {
+                throw new RuntimeException('Le lien d’achat (revendeur / affiliation) est obligatoire pour un produit externe.');
             }
             $slug     = trim((string) ($_POST['slug'] ?? '')) ?: slugify($name);
             $category = isset($cats[$_POST['category'] ?? '']) ? $_POST['category'] : 'accessory';
@@ -32,10 +34,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image    = handle_image_upload('image') ?: trim((string) ($_POST['image_url'] ?? ''));
 
             $stmt = db()->prepare(
-                'INSERT INTO products (name, slug, description, category, price, currency, image, url, merchant, badge, featured, active, sort, lang)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO products (name, slug, description, category, price, currency, image, sale_type, url, stripe_price_id, merchant, badge, featured, active, sort, lang)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $url, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang]);
+            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $sale_type, $url ?: null, $stripe_price_id ?: null, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang]);
             redirect(url('admin/products.php'));
         } catch (Throwable $ex) {
             $flash = ['err', $ex->getMessage()];
@@ -68,7 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <select name="currency"><option value="EUR">EUR €</option><option value="USD">USD $</option><option value="GBP">GBP £</option></select>
         </div>
     </div>
-    <div><label>Lien d’achat / affiliation *</label><input type="url" name="url" required maxlength="500" placeholder="https://www.amazon.fr/...?tag=votre-tag" value="<?= e($_POST['url'] ?? '') ?>"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label>Type de vente</label>
+            <select name="sale_type">
+                <option value="stripe"<?= ($_POST['sale_type'] ?? '') === 'stripe' ? ' selected' : '' ?>>Stripe (vente directe)</option>
+                <option value="external"<?= ($_POST['sale_type'] ?? 'external') === 'external' ? ' selected' : '' ?>>Revendeur / affilié (lien externe)</option>
+            </select>
+        </div>
+        <div><label>ID prix Stripe (optionnel)</label><input type="text" name="stripe_price_id" maxlength="120" placeholder="price_… (sinon prix ci-dessus)" value="<?= e($_POST['stripe_price_id'] ?? '') ?>"></div>
+    </div>
+    <div><label>Lien d’achat (si revendeur / affilié)</label><input type="url" name="url" maxlength="500" placeholder="https://www.amazon.fr/...?tag=votre-tag" value="<?= e($_POST['url'] ?? '') ?>"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div><label>Marchand</label><input type="text" name="merchant" maxlength="60" placeholder="Amazon, ViceHub Store…" value="<?= e($_POST['merchant'] ?? '') ?>"></div>
         <div><label>Badge</label><input type="text" name="badge" maxlength="40" placeholder="Best-seller, Édition IA…" value="<?= e($_POST['badge'] ?? '') ?>"></div>

@@ -21,11 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $name = trim((string) ($_POST['name'] ?? ''));
             $url  = trim((string) ($_POST['url'] ?? ''));
+            $sale_type = in_array($_POST['sale_type'] ?? 'external', ['external', 'stripe'], true) ? $_POST['sale_type'] : 'external';
+            $stripe_price_id = trim((string) ($_POST['stripe_price_id'] ?? ''));
             if ($name === '') {
                 throw new RuntimeException('Le nom est obligatoire.');
             }
-            if ($url === '') {
-                throw new RuntimeException('Le lien d’achat (affiliation) est obligatoire.');
+            if ($sale_type === 'external' && $url === '') {
+                throw new RuntimeException('Le lien d’achat (revendeur / affiliation) est obligatoire pour un produit externe.');
             }
             $slug     = trim((string) ($_POST['slug'] ?? '')) ?: slugify($name);
             $category = isset($cats[$_POST['category'] ?? '']) ? $_POST['category'] : 'accessory';
@@ -42,9 +44,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image    = $newImg !== '' ? $newImg : $p['image'];
 
             $stmt = db()->prepare(
-                'UPDATE products SET name=?, slug=?, description=?, category=?, price=?, currency=?, image=?, url=?, merchant=?, badge=?, featured=?, active=?, sort=?, lang=? WHERE id=?'
+                'UPDATE products SET name=?, slug=?, description=?, category=?, price=?, currency=?, image=?, sale_type=?, url=?, stripe_price_id=?, merchant=?, badge=?, featured=?, active=?, sort=?, lang=? WHERE id=?'
             );
-            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $url, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang, $id]);
+            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $sale_type, $url ?: null, $stripe_price_id ?: null, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang, $id]);
             redirect(url('admin/products.php'));
         } catch (Throwable $ex) {
             $flash = ['err', $ex->getMessage()];
@@ -83,7 +85,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
     </div>
-    <div><label>Lien d’achat / affiliation *</label><input type="url" name="url" required maxlength="500" value="<?= e($p['url']) ?>"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label>Type de vente</label>
+            <select name="sale_type">
+                <option value="stripe"<?= ($p['sale_type'] ?? 'external') === 'stripe' ? ' selected' : '' ?>>Stripe (vente directe)</option>
+                <option value="external"<?= ($p['sale_type'] ?? 'external') === 'external' ? ' selected' : '' ?>>Revendeur / affilié (lien externe)</option>
+            </select>
+        </div>
+        <div><label>ID prix Stripe (optionnel)</label><input type="text" name="stripe_price_id" maxlength="120" placeholder="price_…" value="<?= e($p['stripe_price_id'] ?? '') ?>"></div>
+    </div>
+    <div><label>Lien d’achat (si revendeur / affilié)</label><input type="url" name="url" maxlength="500" value="<?= e($p['url'] ?? '') ?>"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
         <div><label>Marchand</label><input type="text" name="merchant" maxlength="60" value="<?= e($p['merchant'] ?? '') ?>"></div>
         <div><label>Badge</label><input type="text" name="badge" maxlength="40" value="<?= e($p['badge'] ?? '') ?>"></div>
