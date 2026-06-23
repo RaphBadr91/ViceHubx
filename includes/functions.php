@@ -248,6 +248,60 @@ function get_deals(): array
     return db()->query("SELECT * FROM affiliate_links WHERE active = 1 ORDER BY id ASC")->fetchAll();
 }
 
+/** Produits de la boutique (filtrables par catégorie). */
+function get_products(?string $category = null, ?int $limit = null): array
+{
+    $sql = "SELECT * FROM products WHERE active = 1";
+    $args = [];
+    if ($category !== null && $category !== '' && $category !== 'all') {
+        $sql .= " AND category = ?";
+        $args[] = $category;
+    }
+    $sql .= " ORDER BY sort ASC, id ASC";
+    if ($limit !== null) {
+        $sql .= ' LIMIT ' . (int) $limit;
+    }
+    $stmt = db()->prepare($sql);
+    $stmt->execute($args);
+    return $stmt->fetchAll();
+}
+
+/** Produits mis en avant (page d'accueil). */
+function get_featured_products(int $limit = 4): array
+{
+    $stmt = db()->prepare("SELECT * FROM products WHERE active = 1 AND featured = 1 ORDER BY sort ASC, id ASC LIMIT ?");
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+function get_product_by_slug(string $slug): ?array
+{
+    $stmt = db()->prepare("SELECT * FROM products WHERE slug = ? AND active = 1 LIMIT 1");
+    $stmt->execute([$slug]);
+    return $stmt->fetch() ?: null;
+}
+
+/** Catégories de la boutique avec libellés bilingues. */
+function product_categories(): array
+{
+    return lang() === 'fr'
+        ? ['poster' => 'Affiches', 'game' => 'Jeux', 'console' => 'Consoles', 'apparel' => 'Vêtements', 'accessory' => 'Accessoires', 'collectible' => 'Collectors']
+        : ['poster' => 'Posters', 'game' => 'Games', 'console' => 'Consoles', 'apparel' => 'Apparel', 'accessory' => 'Accessories', 'collectible' => 'Collectibles'];
+}
+
+/** Prix formaté (ex. « 24,90 € »). */
+function price_html($price, string $currency = 'EUR'): string
+{
+    if ($price === null || $price === '') {
+        return '';
+    }
+    $symbols = ['EUR' => '€', 'USD' => '$', 'GBP' => '£'];
+    $sym = $symbols[$currency] ?? $currency;
+    $val = number_format((float) $price, 2, lang() === 'fr' ? ',' : '.', lang() === 'fr' ? ' ' : ',');
+    return lang() === 'fr' ? $val . ' ' . $sym : $sym . $val;
+}
+
 function get_setting(string $key, ?string $default = null): ?string
 {
     $stmt = db()->prepare('SELECT value FROM settings WHERE `key` = ? LIMIT 1');

@@ -28,6 +28,7 @@ $trailers = get_trailer_analyses();
 $zones    = array_slice(get_map_zones(), 0, 4);
 $vehicles = array_slice(get_vehicles(), 0, 3);
 $deals    = get_deals();
+$featured_products = get_featured_products(4);
 
 $hero_video = trim((string) get_setting('hero_video', ''));
 // Vidéo locale générée : utilisée par défaut si présente (réglage admin prioritaire)
@@ -263,13 +264,18 @@ require __DIR__ . '/includes/header.php';
         <h2>🗺️ <?= e(t('map_section')) ?></h2>
         <a class="link-all" href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
-    <?php $map_url = trim((string) get_setting('map_url', 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00')); ?>
+    <?php $map_url = trim((string) get_setting('map_url', '')) ?: 'https://map.stateofleonida.net/?map=vi&lat=3904.00&lng=-10452.00'; ?>
     <?php if ($map_url !== ''): ?>
         <div class="map-embed glass" style="height:min(62vh,560px)">
             <iframe src="<?= e($map_url) ?>" title="Carte interactive GTA VI — Leonida"
                     loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
             <a class="map-embed__open btn btn--ghost" href="<?= e($map_url) ?>" target="_blank" rel="noopener"><?= lang() === 'fr' ? 'Plein écran' : 'Fullscreen' ?> ↗</a>
         </div>
+        <p class="muted" style="font-size:.8rem;margin:.7rem 0 0">
+            <?= lang() === 'fr'
+                ? 'Carte interactive communautaire. Si elle ne s’affiche pas, cliquez sur « Plein écran ».'
+                : 'Community interactive map. If it does not load, click “Fullscreen”.' ?>
+        </p>
         <div class="map-zones map-zones--row">
             <?php foreach ($zones as $z): ?>
                 <button class="zone" aria-expanded="false">
@@ -372,6 +378,40 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
         <div class="ref glass"><div class="big">SEO</div><small><?= lang() === 'fr' ? 'Optimisé pour Google' : 'Search-optimised' ?></small></div>
     </div>
 </section>
+
+<!-- ============ BOUTIQUE (teaser) ============ -->
+<?php if ($featured_products): ?>
+<section class="section">
+    <div class="section-head">
+        <h2>🛍️ <?= e(t('shop_section')) ?></h2>
+        <a class="link-all" href="<?= e(with_lang(url('pages/shop.php'))) ?>"><?= e(t('view_all')) ?> →</a>
+    </div>
+    <?php $cat_emoji = ['poster' => '🖼️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆']; ?>
+    <div class="shop-teaser-grid">
+        <?php foreach ($featured_products as $p): ?>
+            <article class="product glass reveal">
+                <a class="product__media" href="<?= e(with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])))) ?>">
+                    <?php if (!empty($p['badge'])): ?><span class="product__badge"><?= e($p['badge']) ?></span><?php endif; ?>
+                    <span class="card__emoji" aria-hidden="true"><?= $cat_emoji[$p['category']] ?? '🛍️' ?></span>
+                    <?php if (!empty($p['image'])): ?>
+                        <img class="product__img" src="<?= e($p['image']) ?>" alt="<?= e($p['name']) ?>" loading="lazy" onerror="this.remove()">
+                    <?php endif; ?>
+                </a>
+                <div class="product__body">
+                    <span class="product__cat"><?= e($p['merchant'] ?? '') ?></span>
+                    <h3 class="product__title">
+                        <a href="<?= e(with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])))) ?>"><?= e($p['name']) ?></a>
+                    </h3>
+                    <div class="product__foot">
+                        <span class="product__price"><?= price_html($p['price'], $p['currency']) ?></span>
+                        <a class="btn btn--primary product__buy" href="<?= e($p['url']) ?>" target="_blank" rel="sponsored nofollow noopener"><?= e(t('shop_buy')) ?> ↗</a>
+                    </div>
+                </div>
+            </article>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- ============ NEWSLETTER ============ -->
 <section class="section">

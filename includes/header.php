@@ -24,6 +24,7 @@ $nav = [
     ['vehicles.php',   t('nav_vehicles')],
     ['characters.php', t('nav_characters')],
     ['community.php',  t('nav_community')],
+    ['shop.php',       t('nav_shop')],
     ['deals.php',      t('nav_deals')],
 ];
 
