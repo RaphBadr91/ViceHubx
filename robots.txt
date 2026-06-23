@@ -5,4 +5,4 @@ Disallow: /config/
 Disallow: /includes/
 Disallow: /uploads/
 
-Sitemap: /sitemap.xml
+Sitemap: /sitemap.php

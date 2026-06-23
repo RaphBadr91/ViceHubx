@@ -328,19 +328,42 @@ require __DIR__ . '/includes/header.php';
 <?php
 $scene_dir = ROOT_PATH . '/public/assets/img/scenes';
 $scene_defs = [
-    ['night',        'Vice City la nuit',   'Vice City by night',  'Night drive'],
-    ['beach-cruise', 'Boulevard côtier',    'Coastal boulevard',   'Golden hour'],
-    ['aerial',       'Leonida vue du ciel', 'Leonida from above',  'Aérien'],
-    ['police',       'Avis de recherche',   'Wanted',              'Police'],
-    ['heli',         'Soutien aérien',      'Air support',         'Hélico'],
-    ['plane',        'Survol côtier',       'Coastal flyover',     'Avion'],
-    ['marina',       'Marina & yachts',     'Marina & yachts',     'Bateau'],
-    ['beachlife',    'Vie de plage',        'Beach life',          'Plage'],
+    ['night',         'Vice City la nuit',     'Vice City by night',   'Night drive'],
+    ['nightlife',     'Quartier des clubs',    'Nightclub district',   'Nuit'],
+    ['ocean-drive',   'Ocean Drive',           'Ocean Drive',          'Art déco'],
+    ['drift',         'Drift nocturne',        'Night drift',          'Drift'],
+    ['sunset-cruise', 'Virée au crépuscule',   'Sunset cruise',        'Sunset'],
+    ['downtown',      'Downtown',              'Downtown',             'Gratte-ciels'],
+    ['beach-cruise',  'Boulevard côtier',      'Coastal boulevard',    'Golden hour'],
+    ['aerial',        'Leonida vue du ciel',   'Leonida from above',   'Aérien'],
+    ['peninsula',     'La péninsule',          'The peninsula',        'Panorama'],
+    ['marina',        'Marina & yachts',       'Marina & yachts',      'Bateau'],
+    ['marina-aerial', 'Marina vue du ciel',    'Marina from above',    'Yachts'],
+    ['police',        'Avis de recherche',     'Wanted',               'Police'],
+    ['heli',          'Soutien aérien',        'Air support',          'Hélico'],
+    ['heli-night',    'Hélico de nuit',        'Night chopper',        'Hélico'],
+    ['plane',         'Survol côtier',         'Coastal flyover',      'Avion'],
+    ['airboat',       'Hydroglisseur',         'Airboat',              'Marais'],
+    ['beachlife',     'Vie de plage',          'Beach life',           'Plage'],
+    ['beach-sunset',  'Plage au crépuscule',   'Beach at sunset',      'Sunset'],
+    ['boardwalk',     'La promenade',          'The boardwalk',        'Boardwalk'],
+    ['pool-party',    'Pool party',            'Pool party',           'Rooftop'],
+    ['street-market', 'Marché de rue',         'Street market',        'Street'],
+    ['artdeco',       'Quartier Art déco',     'Art deco district',    'Rétro'],
+    ['graffiti',      'Ruelle graffiti',       'Graffiti alley',       'Street art'],
+    ['rain-neon',     'Pluie néon',            'Neon rain',            'Pluie'],
+    ['gas-station',   'Station néon',          'Neon gas station',     'Rétro'],
+    ['muscle-diner',  'Muscle car & diner',    'Muscle car & diner',   'Americana'],
+    ['desert-road',   'Route déserte',         'Empty highway',        'Road trip'],
+    ['bridge',        'Le grand pont',         'The bridge',           'Pont'],
+    ['casino',        'Casino néon',           'Neon casino',          'Casino'],
+    ['storm',         'Tempête tropicale',     'Tropical storm',       'Orage'],
 ];
 $scene_img = static function (string $dir, string $key): ?string {
     foreach (['jpg', 'jpeg', 'png', 'webp'] as $ext) {
-        $g = glob($dir . '/*' . $key . '*.' . $ext);
-        if ($g) return $g[0];
+        if (is_file($dir . '/' . $key . '.' . $ext)) {
+            return $dir . '/' . $key . '.' . $ext;
+        }
     }
     return null;
 };
