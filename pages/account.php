@@ -49,7 +49,19 @@ require ROOT_PATH . '/includes/header.php';
         </p>
     </div>
 
-    <div class="account-actions">
+    <?php $achievements = user_achievements((int) $me['id']); ?>
+    <h2 style="margin-top:2rem">🏅 <?= lang() === 'fr' ? 'Tes trophées' : 'Your achievements' ?></h2>
+    <div class="trophy-grid">
+        <?php foreach ($achievements as $ac): ?>
+            <div class="trophy<?= $ac[3] ? ' trophy--on' : '' ?>" title="<?= e($ac[2]) ?>">
+                <span class="trophy__ico"><?= $ac[3] ? $ac[0] : '🔒' ?></span>
+                <span class="trophy__name"><?= e($ac[1]) ?></span>
+                <span class="trophy__desc muted"><?= e($ac[2]) ?></span>
+            </div>
+        <?php endforeach; ?>
+    </div>
+
+    <div class="account-actions" style="margin-top:2rem">
         <a class="account-tile glass" href="<?= e(with_lang(url('pages/contribute.php'))) ?>">
             <span class="account-tile__ico">✍️</span>
             <strong><?= lang() === 'fr' ? 'Proposer un article' : 'Submit an article' ?></strong>

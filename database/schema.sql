@@ -10,6 +10,7 @@ USE vicehubx;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS forum_posts, forum_threads, forum_categories,
+    fanarts, events,
     poll_votes, poll_options, polls, article_tags, tags,
     comments, articles, categories, newsletter_subscribers, media, ads,
     affiliate_links, products, orders, seo_pages, settings, vehicles, characters, map_zones,
@@ -187,6 +188,28 @@ CREATE TABLE forum_posts (
     FOREIGN KEY (thread_id) REFERENCES forum_threads(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_thread (thread_id)
+) ENGINE=InnoDB;
+
+-- ---------- Galerie de fan-arts ----------
+CREATE TABLE fanarts (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT,
+    title      VARCHAR(160) NOT NULL,
+    image      VARCHAR(255) NOT NULL,
+    status     ENUM('pending','approved') NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- ---------- Événements & comptes à rebours ----------
+CREATE TABLE events (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(160) NOT NULL,
+    description VARCHAR(300),
+    icon        VARCHAR(12),
+    event_date  DATETIME NOT NULL,
+    link        VARCHAR(300),
+    lang        ENUM('fr','en') NOT NULL DEFAULT 'fr'
 ) ENGINE=InnoDB;
 
 -- ---------- SEO ----------
@@ -560,3 +583,36 @@ INSERT INTO forum_posts (thread_id, user_id, body, created_at) VALUES
 (13,24,'Trop bourrin pour moi 😅 je préfère les missions propres, sans alerte.', NOW() - INTERVAL 623 MINUTE),
 (13,44,'En PvP faut savoir gérer la pression, le skill se voit là.', NOW() - INTERVAL 586 MINUTE),
 (13,41,'Tout dépend du feeling des armes. Si le gunplay est bon, je tente le chaos.', NOW() - INTERVAL 549 MINUTE);
+
+-- ====== Galerie de fan-arts (seed communautaire) ======
+INSERT INTO fanarts (user_id, title, image, status) VALUES
+(3,'Vice City by night','/public/assets/img/scenes/nightlife.png','approved'),
+(20,'Course-poursuite à Leonida','/public/assets/img/scenes/police.png','approved'),
+(11,'Skyline au crépuscule','/public/assets/img/scenes/downtown.png','approved'),
+(12,'Drift néon','/public/assets/img/scenes/drift.png','approved'),
+(31,'Marina dorée','/public/assets/img/scenes/marina-aerial.png','approved'),
+(43,'Orage tropical sur la ville','/public/assets/img/scenes/storm.png','approved'),
+(22,'Coucher de soleil sur la plage','/public/assets/img/scenes/beach-sunset.png','approved'),
+(50,'Ambiance Ocean Drive','/public/assets/img/scenes/ocean-drive.png','approved'),
+(25,'Route déserte au sunset','/public/assets/img/scenes/desert-road.png','approved'),
+(48,'Casino néon','/public/assets/img/scenes/casino.png','approved');
+
+-- ====== Événements & comptes à rebours ======
+INSERT INTO events (title, description, icon, event_date, link, lang) VALUES
+('Sortie de GTA VI','Le grand jour : Grand Theft Auto VI débarque enfin à Vice City.','🎮','2026-11-19 00:00:00','/index.php','fr'),
+('Watch Party — veille de sortie','On se retrouve pour fêter le lancement ensemble sur le forum.','📺','2026-11-18 20:00:00','/pages/forum.php','fr'),
+('Black Friday Boutique','Les meilleurs deals GTA de l''année dans la boutique ViceHub X.','🛍️','2026-11-28 09:00:00','/pages/shop.php','fr'),
+('2 ans du 1er trailer','On reregarde et on décortique le trailer culte image par image.','🎬','2026-12-05 18:00:00','/pages/trailer-lab.php','fr'),
+('Tournoi communautaire','Défis et classement spécial entre membres du forum.','🏆','2026-10-15 18:00:00','/pages/classement.php','fr');
+
+-- ====== Sondages supplémentaires + votes personas ======
+INSERT INTO polls (id, question, lang, active) VALUES
+(2,'Quel véhicule veux-tu conduire en premier ?','fr',1),
+(3,'Ton style de jeu sur GTA VI ?','fr',1);
+INSERT INTO poll_options (id, poll_id, label) VALUES
+(4,2,'Supercar'),(5,2,'Muscle car'),(6,2,'Moto'),(7,2,'Bateau'),(8,2,'Aéronef'),
+(9,3,'Histoire solo'),(10,3,'En ligne / braquages'),(11,3,'Roleplay'),(12,3,'100% / collectibles');
+INSERT INTO poll_votes (poll_id, option_id, ip_hash) VALUES
+(1,1,SHA2('s1',256)),(1,1,SHA2('s2',256)),(1,2,SHA2('s3',256)),(1,3,SHA2('s4',256)),(1,1,SHA2('s5',256)),(1,3,SHA2('s6',256)),(1,2,SHA2('s7',256)),(1,3,SHA2('s8',256)),(1,1,SHA2('s9',256)),
+(2,4,SHA2('s10',256)),(2,4,SHA2('s11',256)),(2,5,SHA2('s12',256)),(2,8,SHA2('s13',256)),(2,6,SHA2('s14',256)),(2,4,SHA2('s15',256)),(2,7,SHA2('s16',256)),(2,8,SHA2('s17',256)),(2,4,SHA2('s18',256)),
+(3,9,SHA2('s19',256)),(3,10,SHA2('s20',256)),(3,9,SHA2('s21',256)),(3,11,SHA2('s22',256)),(3,10,SHA2('s23',256)),(3,12,SHA2('s24',256)),(3,9,SHA2('s25',256)),(3,10,SHA2('s26',256)),(3,11,SHA2('s27',256));

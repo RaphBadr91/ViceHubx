@@ -372,6 +372,45 @@ function rank_chip_html(?int $uid): string
     $r = rank_for_xp($s['xp']);
     return '<span class="rank-chip" title="' . e($r['name'] . ' · ' . $s['xp'] . ' XP') . '">' . $r['emoji'] . ' ' . e($r['name']) . '</span>';
 }
+/** Galerie de fan-arts (approuvés par défaut). */
+function get_fanarts(bool $approvedOnly = true, int $limit = 60): array
+{
+    $sql = "SELECT f.*, COALESCE(u.display_name, u.username) AS author
+            FROM fanarts f LEFT JOIN users u ON u.id = f.user_id";
+    if ($approvedOnly) {
+        $sql .= " WHERE f.status = 'approved'";
+    }
+    $sql .= " ORDER BY f.id DESC LIMIT " . (int) $limit;
+    return db()->query($sql)->fetchAll();
+}
+
+/** Événements à venir (et récents) avec compte à rebours. */
+function get_events(int $limit = 12): array
+{
+    $stmt = db()->prepare('SELECT * FROM events ORDER BY event_date ASC LIMIT ?');
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll();
+}
+
+/** Succès/trophées d'un membre, calculés à partir de son activité. */
+function user_achievements(int $uid): array
+{
+    $s = user_xp_stats($uid);
+    $articles = (int) db()->query('SELECT COUNT(*) FROM articles WHERE author_id = ' . (int) $uid . " AND status='published'")->fetchColumn();
+    $arts = (int) db()->query('SELECT COUNT(*) FROM fanarts WHERE user_id = ' . (int) $uid . " AND status='approved'")->fetchColumn();
+    return [
+        ['🎟️', 'Bienvenue à Vice City', 'Crée ton compte', true],
+        ['💬', 'Première prise de parole', 'Poste ton 1er message', $s['posts'] >= 1],
+        ['🧵', 'Lanceur de sujet', 'Ouvre ton 1er sujet', $s['threads'] >= 1],
+        ['🗣️', 'Bavard', 'Atteins 10 messages', $s['posts'] >= 10],
+        ['🏛️', 'Pilier du forum', 'Atteins 50 messages', $s['posts'] >= 50],
+        ['✍️', 'Plume de Vice City', 'Publie un article', $articles >= 1],
+        ['🎨', 'Artiste de Leonida', 'Fais valider un fan-art', $arts >= 1],
+        ['👑', 'Légende', 'Atteins 2000 XP', $s['xp'] >= 2000],
+    ];
+}
+
 /** Classement des membres les plus actifs du forum. */
 function leaderboard(int $limit = 30): array
 {

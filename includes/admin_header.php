@@ -11,6 +11,7 @@ $admin_nav = [
     ['article-create.php', t('admin_new')],
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],
+    ['fanarts.php',   'Fan-arts'],
     ['users.php',     'Membres'],
     ['settings.php',  'Réglages'],
 ];
