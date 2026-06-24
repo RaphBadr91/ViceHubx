@@ -17,13 +17,20 @@ if ($p === '') {
 // Fichier propre (téléchargé depuis le CDN au besoin)
 $src = wallpaper_path($p) ?? '';
 
+// Négociation de contenu : WebP si le navigateur le supporte (plus léger), sinon JPEG.
+$accept  = (string) ($_SERVER['HTTP_ACCEPT'] ?? '');
+$useWebp = function_exists('imagewebp') && str_contains($accept, 'image/webp');
+$ext     = $useWebp ? 'webp' : 'jpg';
+$ctype   = $useWebp ? 'image/webp' : 'image/jpeg';
+
 $cacheDir = ROOT_PATH . '/public/assets/img/shop/cache/';
-$cache = $cacheDir . $p . '.jpg';
+$cache = $cacheDir . $p . '.' . $ext;
 
 // Cache valide → on le sert directement
 if ($src !== '' && is_file($cache) && filemtime($cache) >= filemtime($src)) {
-    header('Content-Type: image/jpeg');
+    header('Content-Type: ' . $ctype);
     header('Cache-Control: public, max-age=86400');
+    header('Vary: Accept');
     readfile($cache);
     exit;
 }
@@ -61,8 +68,8 @@ $mark = imagecolorallocatealpha($im, 255, 255, 255, 92);   // blanc ~28 % opacit
 $shadow = imagecolorallocatealpha($im, 0, 0, 0, 100);
 $text = 'VICEHUB X';
 $fw = imagefontwidth(5) * strlen($text);
-for ($y = 10; $y < $h; $y += 64) {
-    $offset = (($y / 64) % 2) ? 90 : 0;
+for ($y = 10, $row = 0; $y < $h; $y += 64, $row++) {
+    $offset = ($row % 2) ? 90 : 0;
     for ($x = -$fw + $offset; $x < $w; $x += 190) {
         imagestring($im, 5, $x + 1, $y + 1, $text, $shadow);
         imagestring($im, 5, $x, $y, $text, $mark);
@@ -70,12 +77,20 @@ for ($y = 10; $y < $h; $y += 64) {
 }
 
 // Sauvegarde en cache (si possible) puis sortie
-header('Content-Type: image/jpeg');
+header('Content-Type: ' . $ctype);
 header('Cache-Control: public, max-age=86400');
+header('Vary: Accept');
+$emit = static function ($img, ?string $file) use ($useWebp) {
+    if ($useWebp) {
+        imagewebp($img, $file, 82);
+    } else {
+        imagejpeg($img, $file, 82);
+    }
+};
 if (is_dir($cacheDir) && is_writable($cacheDir) && $src !== '') {
-    imagejpeg($im, $cache, 82);
+    $emit($im, $cache);
     readfile($cache);
 } else {
-    imagejpeg($im, null, 82);
+    $emit($im, null);
 }
 imagedestroy($im);

@@ -48,17 +48,28 @@ if (($event['type'] ?? '') === 'checkout.session.completed') {
         $amount = isset($s['amount_total']) ? $s['amount_total'] / 100 : null;
         $cur    = strtoupper($s['currency'] ?? 'EUR');
         $status = ($s['payment_status'] ?? '') === 'paid' ? 'paid' : 'pending';
+        // Reconstruit les lignes numériques depuis la métadonnée pour la livraison e-mail.
+        $spec  = (string) ($s['metadata']['digital'] ?? '');
+        $items = $spec !== '' ? digital_items_from_spec($spec) : [];
         try {
             $stmt = db()->prepare(
                 'INSERT INTO orders (stripe_session, email, amount_total, currency, status, items)
                  VALUES (?, ?, ?, ?, ?, ?)
                  ON DUPLICATE KEY UPDATE status = VALUES(status), email = VALUES(email), amount_total = VALUES(amount_total)'
             );
-            $stmt->execute([$sid, $email, $amount, $cur, $status, json_encode($s['metadata'] ?? [], JSON_UNESCAPED_UNICODE)]);
+            $stmt->execute([$sid, $email, $amount, $cur, $status, json_encode($items, JSON_UNESCAPED_UNICODE)]);
         } catch (Throwable $e) {
             http_response_code(500);
             echo '{"error":"db"}';
             exit;
+        }
+
+        // Livraison automatique des wallpapers par e-mail (sans filigrane) une fois payé.
+        if ($status === 'paid') {
+            $oid = order_id_for_session($sid);
+            if ($oid > 0) {
+                try { deliver_order($oid); } catch (Throwable $e) { /* on ne bloque pas l'accusé Stripe */ }
+            }
         }
     }
 }

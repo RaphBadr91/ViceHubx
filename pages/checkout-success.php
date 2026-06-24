@@ -33,9 +33,15 @@ if ($session_id !== '' && stripe_enabled()) {
             $stmt = db()->prepare(
                 'INSERT INTO orders (stripe_session, email, amount_total, currency, status, items)
                  VALUES (?, ?, ?, ?, ?, ?)
-                 ON DUPLICATE KEY UPDATE status = VALUES(status), email = VALUES(email), amount_total = VALUES(amount_total)'
+                 ON DUPLICATE KEY UPDATE status = VALUES(status), email = VALUES(email), amount_total = VALUES(amount_total), items = VALUES(items)'
             );
             $stmt->execute([$session_id, $email, $amount, $cur, 'paid', json_encode($items, JSON_UNESCAPED_UNICODE)]);
+
+            // Livraison automatique par e-mail des fichiers numériques (sans filigrane).
+            $oid = order_id_for_session($session_id);
+            if ($oid > 0) {
+                try { deliver_order($oid); } catch (Throwable $e) { /* silencieux côté visiteur */ }
+            }
         }
     } catch (Throwable $e) {
         // On reste silencieux côté visiteur ; l'achat est confirmé par Stripe de toute façon.

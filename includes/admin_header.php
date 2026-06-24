@@ -7,6 +7,7 @@ require_admin();
 $admin_user = current_user();
 $admin_nav = [
     ['dashboard.php', t('admin_dashboard')],
+    ['analytics.php', '📊 Analytics'],
     ['articles.php',  t('admin_articles')],
     ['article-create.php', t('admin_new')],
     ['products.php',  'Boutique'],

@@ -1057,6 +1057,36 @@ function img_src(?string $path): string
     return $cdn !== '' ? $cdn : $path;
 }
 
+/**
+ * Variante WebP légère d'une image (chargement rapide).
+ *  · CDN Higgsfield : « …_<id>.png » → « …_<id>_min.webp »
+ *  · Fichier local  : « image.png » → « image.webp » s'il existe
+ * Retourne '' si aucune variante n'est connue.
+ */
+function webp_variant(string $src): string
+{
+    if ($src === '') {
+        return '';
+    }
+    if (preg_match('#^https?://[^/]*cloudfront\.net/.+#i', $src)) {
+        if (preg_match('/_min\.webp$/i', $src)) {
+            return $src;
+        }
+        if (preg_match('/\.(png|jpe?g|webp)$/i', $src)) {
+            return preg_replace('/\.(png|jpe?g|webp)$/i', '_min.webp', $src);
+        }
+        return '';
+    }
+    $rel = ltrim($src, '/');
+    if (preg_match('/\.(png|jpe?g)$/i', $rel)) {
+        $cand = preg_replace('/\.(png|jpe?g)$/i', '.webp', $rel);
+        if (is_file(ROOT_PATH . '/' . $cand)) {
+            return '/' . $cand;
+        }
+    }
+    return '';
+}
+
 /** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
 function media_html(?string $img, string $emoji, string $alt = ''): string
 {
@@ -1064,7 +1094,14 @@ function media_html(?string $img, string $emoji, string $alt = ''): string
     $alt = $alt !== '' ? $alt : 'Illustration GTA VI — ViceHub X';
     $out = '<div class="card__media"><span class="card__emoji" aria-hidden="true">' . $emoji . '</span>';
     if ($src !== '') {
-        $out .= '<img class="card__img" src="' . e($src) . '" alt="' . e($alt) . '" loading="lazy" decoding="async" onerror="this.remove()">';
+        $img_tag = '<img class="card__img" src="' . e($src) . '" alt="' . e($alt)
+            . '" loading="lazy" decoding="async" onerror="(this.closest(\'picture\')||this).remove()">';
+        $webp = webp_variant($src);
+        if ($webp !== '') {
+            $out .= '<picture><source srcset="' . e($webp) . '" type="image/webp">' . $img_tag . '</picture>';
+        } else {
+            $out .= $img_tag;
+        }
     }
     return $out . '</div>';
 }
@@ -1151,4 +1188,155 @@ function handle_image_upload(string $field): ?string
 
     db()->prepare('INSERT INTO media (filename, mime) VALUES (?, ?)')->execute([$name, $mime]);
     return UPLOAD_URL . '/' . $name;
+}
+
+/* ================================================================== */
+/*  Livraison numérique : conversion JPEG/PDF + envoi par e-mail       */
+/* ================================================================== */
+
+/** Convertit une image (chemin) en JPEG (binaire), via GD. */
+function image_to_jpeg(string $path, int $quality = 92): ?string
+{
+    $data = @file_get_contents($path);
+    if ($data === false) {
+        return null;
+    }
+    $im = @imagecreatefromstring($data);
+    if (!$im) {
+        return null;
+    }
+    ob_start();
+    imagejpeg($im, null, $quality);
+    $out = ob_get_clean();
+    imagedestroy($im);
+    return $out ?: null;
+}
+
+/** Génère un PDF d'une seule page contenant un JPEG (sans librairie). */
+function jpeg_to_pdf(string $jpeg, int $w, int $h): string
+{
+    $pw = 842.0;                 // largeur page (paysage ~A4)
+    $ph = $w > 0 ? $pw * $h / $w : 595.0;
+    $pwF = number_format($pw, 2, '.', '');
+    $phF = number_format($ph, 2, '.', '');
+    $content = "q\n$pwF 0 0 $phF 0 0 cm\n/Im0 Do\nQ";
+    $pdf = "%PDF-1.4\n";
+    $off = [];
+    $add = function (string $s) use (&$pdf, &$off) { $off[] = strlen($pdf); $pdf .= $s; };
+    $add("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+    $add("2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n");
+    $add("3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 $pwF $phF] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>\nendobj\n");
+    $add("4 0 obj\n<< /Type /XObject /Subtype /Image /Width $w /Height $h /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length " . strlen($jpeg) . " >>\nstream\n" . $jpeg . "\nendstream\nendobj\n");
+    $add("5 0 obj\n<< /Length " . strlen($content) . " >>\nstream\n" . $content . "\nendstream\nendobj\n");
+    $xref = strlen($pdf);
+    $pdf .= "xref\n0 6\n0000000000 65535 f \n";
+    foreach ($off as $o) {
+        $pdf .= sprintf("%010d 00000 n \n", $o);
+    }
+    $pdf .= "trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n$xref\n%%EOF";
+    return $pdf;
+}
+
+/** Envoie un e-mail HTML avec pièces jointes (multipart/mixed). */
+function send_mail_attachments(string $to, string $subject, string $html, array $attachments): bool
+{
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    $host = $_SERVER['HTTP_HOST'] ?? 'vicehubx.fr';
+    $sender = (string) (get_setting('mail_from', '') ?: 'no-reply@' . preg_replace('/^www\./', '', $host));
+    $b = 'vhx_' . bin2hex(random_bytes(10));
+    $headers = "From: ViceHub X <$sender>\r\nReply-To: $sender\r\nMIME-Version: 1.0\r\n"
+        . "Content-Type: multipart/mixed; boundary=\"$b\"\r\n";
+    $msg = "--$b\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n" . $html . "\r\n";
+    foreach ($attachments as $a) {
+        $msg .= "--$b\r\nContent-Type: " . $a['mime'] . "; name=\"" . $a['name'] . "\"\r\n"
+            . "Content-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename=\"" . $a['name'] . "\"\r\n\r\n"
+            . chunk_split(base64_encode($a['data'])) . "\r\n";
+    }
+    $msg .= "--$b--";
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $msg, $headers);
+}
+
+/** Reconstruit les lignes numériques d'une commande depuis une spec « id:qty,id:qty ». */
+function digital_items_from_spec(string $spec): array
+{
+    $items = [];
+    foreach (array_filter(array_map('trim', explode(',', $spec))) as $pair) {
+        [$id, $qty] = array_pad(explode(':', $pair, 2), 2, '1');
+        $id = (int) $id;
+        if ($id <= 0) {
+            continue;
+        }
+        $st = db()->prepare('SELECT id, name, price, digital_file FROM products WHERE id = ? LIMIT 1');
+        $st->execute([$id]);
+        $p = $st->fetch();
+        if ($p && !empty($p['digital_file'])) {
+            $items[] = [
+                'id'           => (int) $p['id'],
+                'name'         => $p['name'],
+                'qty'          => max(1, (int) $qty),
+                'price'        => (float) $p['price'],
+                'digital_file' => $p['digital_file'],
+            ];
+        }
+    }
+    return $items;
+}
+
+/** Récupère (ou crée) l'identifiant d'une commande à partir de sa session Stripe. */
+function order_id_for_session(string $sessionId): int
+{
+    if ($sessionId === '') {
+        return 0;
+    }
+    $q = db()->prepare('SELECT id FROM orders WHERE stripe_session = ? LIMIT 1');
+    $q->execute([$sessionId]);
+    return (int) $q->fetchColumn();
+}
+
+/** Livre par e-mail les fichiers numériques d'une commande payée (PNG+JPEG+PDF). Idempotent. */
+function deliver_order(int $orderId): bool
+{
+    $st = db()->prepare('SELECT * FROM orders WHERE id = ? LIMIT 1');
+    $st->execute([$orderId]);
+    $o = $st->fetch();
+    if (!$o || $o['status'] !== 'paid' || (int) $o['delivered'] === 1) {
+        return false;
+    }
+    $email = (string) ($o['email'] ?? '');
+    $items = json_decode((string) $o['items'], true) ?: [];
+    $attach = [];
+    foreach ($items as $it) {
+        if (empty($it['digital_file'])) {
+            continue;
+        }
+        $name = pathinfo((string) $it['digital_file'], PATHINFO_FILENAME);
+        $path = function_exists('wallpaper_path') ? wallpaper_path($name) : null;
+        if (!$path || !is_file($path)) {
+            continue;
+        }
+        $png = @file_get_contents($path);
+        $base = preg_replace('/[^a-z0-9._-]/i', '-', (string) ($it['name'] ?? $name));
+        if ($png !== false) {
+            $attach[] = ['name' => $base . '.png', 'mime' => 'image/png', 'data' => $png];
+        }
+        $jpeg = image_to_jpeg($path, 92);
+        if ($jpeg !== null) {
+            $attach[] = ['name' => $base . '.jpg', 'mime' => 'image/jpeg', 'data' => $jpeg];
+            $sz = @getimagesizefromstring($jpeg);
+            $attach[] = ['name' => $base . '.pdf', 'mime' => 'application/pdf', 'data' => jpeg_to_pdf($jpeg, (int) ($sz[0] ?? 1376), (int) ($sz[1] ?? 768))];
+        }
+    }
+    if (!$attach || $email === '') {
+        // Rien à livrer (ou pas d'e-mail) : on marque tout de même pour ne pas réessayer indéfiniment
+        db()->prepare('UPDATE orders SET delivered = 1 WHERE id = ?')->execute([$orderId]);
+        return false;
+    }
+    $html = '<div style="font-family:sans-serif"><h2>Merci pour ton achat sur ViceHub X ! 🌴</h2>'
+        . '<p>Tes wallpapers haute qualité sont en pièces jointes, en <strong>PNG, JPEG et PDF</strong>, sans filigrane.</p>'
+        . '<p>Bon jeu à Vice City,<br>— L’équipe ViceHub X</p></div>';
+    $ok = send_mail_attachments($email, 'Tes wallpapers ViceHub X 🌴', $html, $attach);
+    db()->prepare('UPDATE orders SET delivered = 1 WHERE id = ?')->execute([$orderId]);
+    return $ok;
 }

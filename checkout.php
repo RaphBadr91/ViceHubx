@@ -26,10 +26,14 @@ $abs = static fn(string $p): string => str_starts_with($p, 'http') ? $p : $origi
 
 $cur = strtolower(active_currency());
 $has_physical = false;
+$digital_meta = [];
 $line_items = [];
 foreach ($lines as $l) {
     if (empty($l['digital_file'])) {
         $has_physical = true;
+    } else {
+        // On note les produits numériques (id:qty) pour que le webhook puisse livrer.
+        $digital_meta[] = ((int) $l['id']) . ':' . max(1, (int) $l['qty']);
     }
     if (!empty($l['stripe_price_id'])) {
         $line_items[] = ['price' => $l['stripe_price_id'], 'quantity' => $l['qty']];
@@ -52,6 +56,10 @@ $params = [
 // Adresse de livraison uniquement si un produit physique est présent (pas pour les wallpapers)
 if ($has_physical) {
     $params['shipping_address_collection'] = ['allowed_countries' => ['FR', 'BE', 'CH', 'LU', 'CA', 'MC']];
+}
+// Métadonnée : produits numériques à livrer par e-mail (lue par le webhook)
+if ($digital_meta) {
+    $params['metadata'] = ['digital' => substr(implode(',', $digital_meta), 0, 480)];
 }
 
 try {
