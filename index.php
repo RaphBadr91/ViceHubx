@@ -398,7 +398,7 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
         <div class="ref glass"><div class="big"><?= $days_left ?></div><small><?= lang() === 'fr' ? 'jours avant la sortie' : 'days until launch' ?></small></div>
         <div class="ref glass"><div class="big">100%</div><small><?= lang() === 'fr' ? 'Indépendant & non officiel' : 'Independent & unofficial' ?></small></div>
         <div class="ref glass"><div class="big">FR · EN</div><small><?= lang() === 'fr' ? 'Site bilingue' : 'Bilingual site' ?></small></div>
-        <div class="ref glass"><div class="big">SEO</div><small><?= lang() === 'fr' ? 'Optimisé pour Google' : 'Search-optimised' ?></small></div>
+        <div class="ref glass"><div class="big">🌴</div><small><?= lang() === 'fr' ? 'Par des fans, pour les fans' : 'By fans, for fans' ?></small></div>
     </div>
 </section>
 

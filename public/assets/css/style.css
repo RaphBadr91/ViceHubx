@@ -1068,3 +1068,26 @@ body.is-home .site-header.scrolled {
 .quiz__emoji { font-size: 4rem; animation: cheatPulse .8s ease infinite alternate; }
 .grad-text { background: var(--grad-sunset); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(2rem, 7vw, 3rem); margin: .3rem 0; }
 .quiz__actions { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.4rem; }
+
+/* ============================================================
+   FOOTER — bandeau CTA, badges de confiance, back-to-top
+   ============================================================ */
+.footer-cta {
+    position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap;
+    padding: 1.8rem clamp(1rem, 4vw, 2rem); margin-bottom: .5rem;
+}
+.footer-cta__txt h3 { margin: 0 0 .3rem; font-size: clamp(1.2rem, 3vw, 1.7rem); }
+.footer-cta__txt p { margin: 0; }
+.footer-cta__btns { display: flex; gap: .7rem; flex-wrap: wrap; }
+.footer-trust {
+    position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto;
+    display: flex; flex-wrap: wrap; gap: .6rem 1.6rem; justify-content: center;
+    padding: 1.1rem clamp(1rem, 4vw, 2rem); border-top: 1px solid var(--glass-brd);
+    color: var(--muted); font-size: .82rem;
+}
+.footer-trust span { white-space: nowrap; }
+.footer-bottom__row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: .3rem; }
+.footer-top { color: var(--blue); font-weight: 600; font-size: .82rem; transition: .2s; }
+.footer-top:hover { color: var(--pink); }
+@media (max-width: 640px) { .footer-cta { flex-direction: column; align-items: flex-start; text-align: left; } }

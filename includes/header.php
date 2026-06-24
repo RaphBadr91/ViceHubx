@@ -136,7 +136,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
 <div class="fx-scan" aria-hidden="true"></div>
 <div class="fx-vignette" aria-hidden="true"></div>
 
-<header class="site-header glass">
+<header class="site-header glass" id="top">
     <div class="header-inner">
         <a class="logo" href="<?= e(with_lang(url('index.php'))) ?>">
             Vice<span class="logo-accent">Hub</span><span class="logo-x">X</span>
