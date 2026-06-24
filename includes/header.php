@@ -39,10 +39,11 @@ $nav = [
         ['characters.php', t('nav_characters')],
     ]],
     ['label' => t('nav_community'), 'children' => [
-        ['forum.php',     'Forum'],
-        ['quiz.php',      'Quiz'],
-        ['cheats.php',    lang() === 'fr' ? 'Codes de triche' : 'Cheat codes'],
-        ['community.php', lang() === 'fr' ? 'Sondages & débats' : 'Polls & debates'],
+        ['forum.php',      'Forum'],
+        ['classement.php', lang() === 'fr' ? 'Classement' : 'Leaderboard'],
+        ['quiz.php',       'Quiz'],
+        ['cheats.php',     lang() === 'fr' ? 'Codes de triche' : 'Cheat codes'],
+        ['community.php',  lang() === 'fr' ? 'Sondages & débats' : 'Polls & debates'],
     ]],
     ['label' => t('nav_shop'), 'children' => [
         ['shop.php',  lang() === 'fr' ? 'La Boutique' : 'The Shop'],

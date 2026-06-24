@@ -318,6 +318,78 @@ function add_post(int $threadId, int $userId, string $body): void
     db()->prepare('UPDATE forum_threads SET last_post_at = NOW() WHERE id = ?')->execute([$threadId]);
 }
 
+/* ------------------------------------------------------------------ */
+/*  Gamification : XP & rangs (façon GTA)                              */
+/* ------------------------------------------------------------------ */
+function rank_tiers(): array
+{
+    return [
+        [0,    'Touriste',           '🧳'],
+        [50,   'Bizut',              '🛹'],
+        [150,  'Chauffeur',          '🚗'],
+        [350,  'Braqueur',           '💰'],
+        [700,  'Lieutenant',         '🕶️'],
+        [1200, 'Caïd',               '👑'],
+        [2000, 'Boss de Vice City',  '🌴'],
+        [3500, 'Légende de Leonida', '⭐'],
+    ];
+}
+/** Stats d'activité forum d'un membre (posts, sujets, XP). */
+function user_xp_stats(int $uid): array
+{
+    static $cache = [];
+    if (isset($cache[$uid])) {
+        return $cache[$uid];
+    }
+    $st = db()->prepare('SELECT (SELECT COUNT(*) FROM forum_posts WHERE user_id = ?) AS posts, (SELECT COUNT(*) FROM forum_threads WHERE user_id = ?) AS threads');
+    $st->execute([$uid, $uid]);
+    $r = $st->fetch() ?: [];
+    $posts = (int) ($r['posts'] ?? 0);
+    $threads = (int) ($r['threads'] ?? 0);
+    return $cache[$uid] = ['posts' => $posts, 'threads' => $threads, 'xp' => $posts * 10 + $threads * 20];
+}
+/** Rang correspondant à un total d'XP (+ palier suivant). */
+function rank_for_xp(int $xp): array
+{
+    $tiers = rank_tiers();
+    $cur = $tiers[0];
+    $next = null;
+    foreach ($tiers as $i => $t) {
+        if ($xp >= $t[0]) {
+            $cur = $t;
+            $next = $tiers[$i + 1] ?? null;
+        }
+    }
+    return ['min' => $cur[0], 'name' => $cur[1], 'emoji' => $cur[2], 'next' => $next];
+}
+/** Puce de rang affichable (forum, profil). */
+function rank_chip_html(?int $uid): string
+{
+    if (!$uid) {
+        return '';
+    }
+    $s = user_xp_stats($uid);
+    $r = rank_for_xp($s['xp']);
+    return '<span class="rank-chip" title="' . e($r['name'] . ' · ' . $s['xp'] . ' XP') . '">' . $r['emoji'] . ' ' . e($r['name']) . '</span>';
+}
+/** Classement des membres les plus actifs du forum. */
+function leaderboard(int $limit = 30): array
+{
+    $sql = "SELECT u.id, u.username, u.display_name, u.role,
+                (SELECT COUNT(*) FROM forum_posts p WHERE p.user_id = u.id) AS posts,
+                (SELECT COUNT(*) FROM forum_threads t WHERE t.user_id = u.id) AS threads
+            FROM users u
+            HAVING posts > 0 OR threads > 0
+            ORDER BY (posts * 10 + threads * 20) DESC, posts DESC
+            LIMIT " . (int) $limit;
+    $rows = db()->query($sql)->fetchAll();
+    foreach ($rows as &$r) {
+        $r['xp'] = (int) $r['posts'] * 10 + (int) $r['threads'] * 20;
+        $r['rank'] = rank_for_xp($r['xp']);
+    }
+    return $rows;
+}
+
 /* ================================================================== */
 /*  Accès aux données                                                 */
 /* ================================================================== */

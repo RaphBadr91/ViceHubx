@@ -26,6 +26,29 @@ require ROOT_PATH . '/includes/header.php';
         <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/logout.php'))) ?>"><?= lang() === 'fr' ? 'Déconnexion' : 'Log out' ?></a>
     </div>
 
+    <?php
+    $st = user_xp_stats((int) $me['id']);
+    $rk = rank_for_xp($st['xp']);
+    $nx = $rk['next'];
+    $pct = $nx ? min(100, round(($st['xp'] - $rk['min']) / max(1, $nx[0] - $rk['min']) * 100)) : 100;
+    ?>
+    <div class="rank-card glass">
+        <div class="rank-card__top">
+            <span class="rank-card__emoji"><?= $rk['emoji'] ?></span>
+            <div>
+                <span class="muted" style="font-size:.8rem"><?= lang() === 'fr' ? 'Ton rang' : 'Your rank' ?></span>
+                <h2 style="margin:.1rem 0"><?= e($rk['name']) ?></h2>
+            </div>
+            <span class="rank-card__xp"><?= (int) $st['xp'] ?> XP</span>
+        </div>
+        <div class="rank-bar"><i style="width:<?= (int) $pct ?>%"></i></div>
+        <p class="muted" style="font-size:.82rem;margin:.5rem 0 0">
+            <?= (int) $st['posts'] ?> <?= lang() === 'fr' ? 'messages' : 'posts' ?> · <?= (int) $st['threads'] ?> <?= lang() === 'fr' ? 'sujets' : 'topics' ?>
+            <?php if ($nx): ?> · <?= lang() === 'fr' ? 'Prochain rang' : 'Next rank' ?> : <?= $nx[2] ?> <?= e($nx[1]) ?> (<?= (int) ($nx[0] - $st['xp']) ?> XP)<?php else: ?> · <?= lang() === 'fr' ? 'Rang maximum atteint ! 🌴' : 'Max rank! 🌴' ?><?php endif; ?>
+            · <a class="link-all" href="<?= e(with_lang(url('pages/classement.php'))) ?>"><?= lang() === 'fr' ? 'Voir le classement' : 'Leaderboard' ?> →</a>
+        </p>
+    </div>
+
     <div class="account-actions">
         <a class="account-tile glass" href="<?= e(with_lang(url('pages/contribute.php'))) ?>">
             <span class="account-tile__ico">✍️</span>

@@ -20,6 +20,15 @@ require ROOT_PATH . '/includes/header.php';
         <?php endif; ?>
     </div>
 
+    <?php $tops = leaderboard(5); if ($tops): ?>
+    <div class="topmembers">
+        <span class="muted" style="font-size:.82rem"><?= lang() === 'fr' ? '🏆 Top membres :' : '🏆 Top members:' ?></span>
+        <?php foreach ($tops as $m): ?>
+            <a class="topmember" href="<?= e(with_lang(url('pages/classement.php'))) ?>"><?= $m['rank']['emoji'] ?> <?= e($m['display_name'] ?: $m['username']) ?> <span class="muted"><?= (int) $m['xp'] ?> XP</span></a>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
     <div class="forum-cats">
         <?php foreach ($cats as $c): ?>
             <a class="forum-cat glass" href="<?= e(with_lang(url('pages/forum-category.php?cat=' . urlencode($c['slug'])))) ?>">

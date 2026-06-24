@@ -1129,3 +1129,32 @@ body.is-home .site-header.scrolled {
 body.neon-boost { filter: saturate(1.5) contrast(1.08); }
 body.neon-boost .glass { box-shadow: 0 0 0 1px rgba(255,46,136,.4), 0 18px 50px -20px rgba(43,214,255,.6); }
 body.sunset-mode { filter: hue-rotate(-18deg) saturate(1.3) brightness(1.04); }
+
+/* ============================================================
+   GAMIFICATION : rangs, XP, classement
+   ============================================================ */
+.rank-chip { display: inline-flex; align-items: center; gap: .3rem; padding: .12rem .5rem; border-radius: 999px; font-size: .72rem; font-weight: 700; color: var(--ink); background: rgba(255,46,136,.14); border: 1px solid rgba(255,46,136,.35); vertical-align: middle; white-space: nowrap; }
+.rank-chip small { font-weight: 500; }
+.ranks-legend { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.2rem 0 1.8rem; }
+
+.rank-card { padding: 1.3rem 1.5rem; border-radius: 16px; margin: 1.4rem 0; }
+.rank-card__top { display: flex; align-items: center; gap: 1rem; }
+.rank-card__emoji { font-size: 2.4rem; }
+.rank-card__xp { margin-left: auto; font-family: var(--font-display); font-weight: 800; font-size: 1.3rem; color: var(--gold); }
+.rank-bar { height: 10px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-top: 1rem; }
+.rank-bar i { display: block; height: 100%; background: var(--grad-sunset); border-radius: 999px; transition: width .6s ease; }
+
+.leaderboard { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .6rem; counter-reset: lb; }
+.lb-row { display: grid; grid-template-columns: 52px 1fr auto auto; gap: 1rem; align-items: center; padding: .85rem 1.1rem; border-radius: 14px; }
+.lb-row--top { border-color: rgba(255,209,102,.5); box-shadow: 0 10px 30px -16px rgba(255,209,102,.5); }
+.lb-pos { font-size: 1.2rem; font-weight: 800; text-align: center; color: var(--muted); }
+.lb-name { font-weight: 700; display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.lb-stats { font-size: .82rem; white-space: nowrap; }
+.lb-xp { font-family: var(--font-display); font-weight: 800; color: var(--gold); white-space: nowrap; }
+@media (max-width: 620px) {
+    .lb-row { grid-template-columns: 40px 1fr auto; }
+    .lb-stats { display: none; }
+}
+/* Top membres (accueil/forum) */
+.topmembers { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
+.topmember { display: inline-flex; align-items: center; gap: .4rem; padding: .4rem .8rem; border-radius: 999px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.04); font-size: .85rem; }

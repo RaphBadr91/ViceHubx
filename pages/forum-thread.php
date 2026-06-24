@@ -80,7 +80,7 @@ require ROOT_PATH . '/includes/header.php';
         <?php foreach ($posts as $p): ?>
             <article class="post glass">
                 <div class="post__head">
-                    <span class="post__author"><?= e($role_badge[$p['role']] ?? '🙂') ?> <?= e($p['display_name'] ?: $p['username'] ?: 'Anonyme') ?></span>
+                    <span class="post__author"><?= e($role_badge[$p['role']] ?? '🙂') ?> <?= e($p['display_name'] ?: $p['username'] ?: 'Anonyme') ?> <?= rank_chip_html($p['user_id'] ? (int) $p['user_id'] : null) ?></span>
                     <span class="muted post__date"><?= e(substr((string) $p['created_at'], 0, 16)) ?></span>
                 </div>
                 <div class="post__body"><?= nl2br(e($p['body'])) ?></div>

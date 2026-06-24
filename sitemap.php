@@ -29,6 +29,7 @@ $urls = [
     ['pages/characters.php', 'monthly', '0.6'],
     ['pages/community.php', 'daily', '0.6'],
     ['pages/forum.php', 'daily', '0.7'],
+    ['pages/classement.php', 'weekly', '0.5'],
     ['pages/shop.php', 'weekly', '0.8'],
     ['pages/deals.php', 'weekly', '0.6'],
     ['pages/contact.php', 'yearly', '0.3'],
