@@ -1293,3 +1293,30 @@ select.lang-switch option { background: var(--bg-1); color: var(--ink); }
 .mini-chart__bar { width: 100%; max-width: 26px; border-radius: 6px 6px 2px 2px; min-height: 4px; box-shadow: 0 6px 16px -8px rgba(255,46,136,.8); transition: filter .2s ease; }
 .mini-chart__col:hover .mini-chart__bar { filter: brightness(1.25); }
 .mini-chart__n { font-size: .68rem; color: var(--muted); font-weight: 700; }
+
+/* ============ Weazel News — fil d'actu immersif (GTA) ============ */
+.weazel { display: flex; align-items: stretch; gap: 0; margin: 0 auto; max-width: 1180px; width: calc(100% - 2rem);
+    border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,46,136,.28);
+    background: linear-gradient(90deg, rgba(10,8,20,.92), rgba(20,10,30,.92));
+    box-shadow: 0 14px 40px -22px rgba(255,46,136,.7); font-weight: 700; position: relative; z-index: 3; }
+.weazel__brand { display: flex; align-items: center; gap: .5rem; padding: .55rem .9rem; white-space: nowrap;
+    background: linear-gradient(120deg, #e60a4d, #ff2e88); color: #fff; font-size: .82rem; letter-spacing: .04em;
+    font-weight: 900; text-transform: uppercase; }
+.weazel__live { display: inline-flex; align-items: center; font-size: .64rem; background: rgba(0,0,0,.35);
+    padding: .12rem .4rem; border-radius: 999px; animation: wz-blink 1.4s steps(2,start) infinite; }
+@keyframes wz-blink { 50% { opacity: .35; } }
+.weazel__viewport { flex: 1; overflow: hidden; position: relative; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.weazel__track { display: inline-flex; align-items: center; gap: 2.4rem; padding: .55rem 1.2rem; white-space: nowrap;
+    will-change: transform; animation: wz-scroll 48s linear infinite; }
+.weazel:hover .weazel__track { animation-play-state: paused; }
+@keyframes wz-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.wz-item { display: inline-flex; align-items: center; gap: .55rem; color: #f4ecff; font-size: .86rem; font-weight: 600; text-decoration: none; }
+a.wz-item:hover { color: #fff; }
+.wz-item--flavor { color: #8be9ff; font-style: italic; }
+.wz-dot { width: 7px; height: 7px; border-radius: 50%; background: #ff2e88; box-shadow: 0 0 8px #ff2e88; flex: none; }
+.wz-item--flavor .wz-dot { background: #39ffaa; box-shadow: 0 0 8px #39ffaa; }
+.weazel__clock { display: flex; align-items: center; gap: .4rem; padding: .55rem .9rem; white-space: nowrap;
+    background: rgba(0,0,0,.4); color: #cdbdf0; font-size: .76rem; letter-spacing: .05em; border-left: 1px solid rgba(255,255,255,.08); }
+.weazel__clock b { color: #fff; font-variant-numeric: tabular-nums; }
+@media (max-width: 720px) { .weazel__clock { display: none; } .weazel__brand { font-size: .72rem; padding: .5rem .6rem; } }
+@media (prefers-reduced-motion: reduce) { .weazel__track { animation: none; } }

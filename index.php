@@ -104,6 +104,9 @@ require __DIR__ . '/includes/header.php';
     <div class="scroll-cue" aria-hidden="true"></div>
 </section>
 
+<!-- ============ WEAZEL NEWS — fil d'actu immersif ============ -->
+<?= weazel_ticker_html() ?>
+
 <!-- ============ BANDE-ANNONCE ============ -->
 <section class="section" id="trailer">
     <div class="section-head">

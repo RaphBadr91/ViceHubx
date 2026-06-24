@@ -6,6 +6,24 @@ $flash = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf()) {
         $flash = ['err', 'Jeton CSRF invalide.'];
+    } elseif (($_POST['action'] ?? '') === 'test_email') {
+        // --- Envoi d'un e-mail de test ---
+        $dest = filter_input(INPUT_POST, 'test_to', FILTER_VALIDATE_EMAIL) ?: (current_user()['email'] ?? '');
+        if (!$dest) {
+            $flash = ['err', 'Renseignez une adresse e-mail de test valide.'];
+        } else {
+            $ok = send_mail(
+                $dest,
+                'Test ViceHub X ✅',
+                '<div style="font-family:sans-serif"><h2>Ça marche ! 🌴</h2>'
+                . '<p>Cet e-mail de test confirme que l’envoi automatique est bien configuré'
+                . (resend_enabled() ? ' via <strong>Resend</strong>' : ' via le serveur (mail)')
+                . '.</p><p>— ViceHub X</p></div>'
+            );
+            $flash = $ok
+                ? ['ok', 'E-mail de test envoyé à ' . $dest . ' ' . (resend_enabled() ? '(via Resend).' : '(via mail système).')]
+                : ['err', 'Échec de l’envoi. Vérifiez la clé Resend, le domaine vérifié et l’adresse d’expédition.'];
+        }
     } else {
         set_setting('adsense_client', trim((string) ($_POST['adsense_client'] ?? '')));
         set_setting('adsense_slot', trim((string) ($_POST['adsense_slot'] ?? '')));
@@ -26,9 +44,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // datetime-local -> ISO
             set_setting('release_date', str_replace(' ', 'T', $rd) . ':00');
         }
+        // --- E-mail / Resend ---
+        set_setting('mail_from', trim((string) ($_POST['mail_from'] ?? '')));
+        set_setting('mail_from_name', trim((string) ($_POST['mail_from_name'] ?? '')));
+        set_setting('contact_email', trim((string) ($_POST['contact_email'] ?? '')));
+        $rk = trim((string) ($_POST['resend_api_key'] ?? ''));
+        if ($rk !== '') { set_setting('resend_api_key', $rk); }
         $flash = ['ok', 'Réglages enregistrés.'];
     }
 }
+
+$mail_from_v = (string) get_setting('mail_from', '');
+$mail_name_v = (string) get_setting('mail_from_name', '');
+$contact_v   = (string) get_setting('contact_email', '');
+$has_resend  = resend_enabled();
 
 $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
@@ -134,6 +163,51 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <small class="muted">Endpoint à créer dans Stripe : <code><?= e(url('stripe-webhook.php')) ?></code> · événement <code>checkout.session.completed</code>.</small>
     </div>
 
+    <hr style="border:0;border-top:1px solid var(--glass-brd);margin:.6rem 0">
+    <h2 style="font-size:1.1rem;margin:0">📧 E-mails automatiques — Resend</h2>
+    <p class="muted" style="font-size:.85rem;margin:.2rem 0 .4rem">
+        Pour l’envoi automatique (livraison des wallpapers, contact, notifications).
+        Créez un compte sur <a href="https://resend.com" target="_blank" rel="noopener">resend.com</a>,
+        vérifiez votre domaine, générez une clé API, puis collez-la ci-dessous. État :
+        <strong><?= $has_resend ? '🟢 Resend connecté' : '⚪ Non connecté (repli sur le mail du serveur)' ?></strong>
+    </p>
+
+    <div>
+        <label>Clé API Resend (re_…)</label>
+        <input type="password" name="resend_api_key" autocomplete="off" placeholder="<?= $has_resend ? '•••••••• (déjà enregistrée — laisser vide pour conserver)' : 're_…' ?>">
+        <small class="muted">⚠️ Confidentiel. Laissez vide pour conserver la clé actuelle. Vous pouvez aussi définir la variable d’environnement <code>RESEND_API_KEY</code>.</small>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+            <label>Adresse d’expéditeur</label>
+            <input type="email" name="mail_from" value="<?= e($mail_from_v) ?>" placeholder="no-reply@vicehubx.fr">
+            <small class="muted">Doit appartenir à un domaine <strong>vérifié</strong> dans Resend.</small>
+        </div>
+        <div>
+            <label>Nom d’expéditeur</label>
+            <input type="text" name="mail_from_name" value="<?= e($mail_name_v) ?>" placeholder="ViceHub X">
+        </div>
+    </div>
+    <div>
+        <label>Adresse de réception des messages de contact</label>
+        <input type="email" name="contact_email" value="<?= e($contact_v) ?>" placeholder="contact@vicehubx.fr">
+        <small class="muted">Les messages du formulaire de contact y sont envoyés. Vide = adresse d’expéditeur.</small>
+    </div>
+
     <button class="btn btn--primary" type="submit">Enregistrer</button>
+</form>
+
+<form method="post" class="form glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="test_email">
+    <h2 style="font-size:1.05rem;margin:0 0 .2rem">✉️ Tester l’envoi</h2>
+    <p class="muted" style="font-size:.84rem;margin:.1rem 0 .6rem">Envoie un e-mail de test pour vérifier la configuration.</p>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:240px;margin:0">
+            <label>Adresse de test</label>
+            <input type="email" name="test_to" value="<?= e($admin_user['email'] ?? '') ?>" placeholder="vous@exemple.com">
+        </div>
+        <button class="btn btn--ghost" type="submit" style="white-space:nowrap">Envoyer un test →</button>
+    </div>
 </form>
 <?php require __DIR__ . '/../includes/admin_footer.php'; ?>

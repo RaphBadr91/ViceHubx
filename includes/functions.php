@@ -1139,6 +1139,64 @@ function yt_thumb(string $id): string
     return 'https://i.ytimg.com/vi/' . rawurlencode($id) . '/maxresdefault.jpg';
 }
 
+/**
+ * Bandeau « Weazel News » : fil d'actualité défilant, immersif (univers GTA / Vice City).
+ * Mêle les vrais titres news aux gros titres satiriques de Leonida + horloge en direct.
+ */
+function weazel_ticker_html(): string
+{
+    $fr = lang() === 'fr';
+    // Gros titres « in-universe » (satire façon GTA, indépendants du contenu réel)
+    $flavor = $fr ? [
+        'Météo Vice City : 35°C et 100 % de chances de braquage en fin de journée',
+        'Bouchon monstre sur le pont de Leonida après un airboat égaré sur la voie rapide',
+        'Le cours du dollar local s’effondre, les flamants roses entrent en panique',
+        'Un alligator élu maire honoraire de Vice Beach à l’unanimité',
+        'Course-poursuite en direct sur Ocean Drive : la police a perdu la trace',
+        'Les radios de Leonida se disputent le tube de l’été',
+        'Record battu au marché de nuit : les néons consomment plus que la ville',
+    ] : [
+        'Vice City weather: 95°F and a 100% chance of a heist by sundown',
+        'Massive jam on the Leonida bridge after a stray airboat hits the freeway',
+        'Local dollar crashes — the flamingos are officially panicking',
+        'An alligator elected honorary mayor of Vice Beach by a landslide',
+        'Live chase on Ocean Drive: police have lost the trail',
+        'Leonida radio stations fight over the song of the summer',
+        'Night market breaks records: the neon now outdraws the whole city',
+    ];
+    // Vrais titres récents (news) pour relier au contenu du site
+    $real = [];
+    foreach (get_articles(['category' => 'news', 'lang' => lang(), 'limit' => 6]) as $a) {
+        $real[] = ['t' => $a['title'], 'u' => with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))];
+    }
+    // Construit la liste entrelacée
+    $items = [];
+    $max = max(count($flavor), count($real));
+    for ($i = 0; $i < $max; $i++) {
+        if (isset($real[$i])) {
+            $items[] = '<a class="wz-item" href="' . e($real[$i]['u']) . '"><span class="wz-dot"></span>' . e($real[$i]['t']) . '</a>';
+        }
+        if (isset($flavor[$i])) {
+            $items[] = '<span class="wz-item wz-item--flavor"><span class="wz-dot"></span>' . e($flavor[$i]) . '</span>';
+        }
+    }
+    if (!$items) {
+        return '';
+    }
+    $track = implode('', $items);
+    $live  = $fr ? 'EN DIRECT' : 'LIVE';
+    $brand = $fr ? 'WEAZEL NEWS' : 'WEAZEL NEWS';
+    // Le ruban est dupliqué pour un défilement continu sans couture.
+    return '<div class="weazel" role="complementary" aria-label="Weazel News">'
+        . '<div class="weazel__brand"><span class="weazel__live">● ' . $live . '</span> ' . $brand . '</div>'
+        . '<div class="weazel__viewport"><div class="weazel__track">' . $track . $track . '</div></div>'
+        . '<div class="weazel__clock"><span aria-hidden="true">📡</span> LEONIDA <b data-leonida-clock>--:--</b></div>'
+        . '</div>'
+        . '<script>(function(){var b=document.querySelector("[data-leonida-clock]");if(!b)return;'
+        . 'function p(n){return(n<10?"0":"")+n;}function tick(){var d=new Date();'
+        . 'b.textContent=p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds());}tick();setInterval(tick,1000);})();</script>';
+}
+
 /* ================================================================== */
 /*  Upload d'image sécurisé (admin)                                   */
 /* ================================================================== */
@@ -1237,16 +1295,98 @@ function jpeg_to_pdf(string $jpeg, int $w, int $h): string
     return $pdf;
 }
 
-/** Envoie un e-mail HTML avec pièces jointes (multipart/mixed). */
+/* ------------------------------------------------------------------ */
+/*  E-mail : Resend (API) avec repli sur mail()                         */
+/* ------------------------------------------------------------------ */
+
+/** Clé API Resend (env prioritaire, sinon réglage admin). */
+function resend_api_key(): string
+{
+    return (string) (getenv('RESEND_API_KEY') ?: get_setting('resend_api_key', ''));
+}
+/** Resend est-il configuré ? (clé « re_… »). */
+function resend_enabled(): bool
+{
+    return str_starts_with(resend_api_key(), 're_');
+}
+/** Adresse d'expédition (réglage mail_from, sinon no-reply@domaine). */
+function mail_from_address(): string
+{
+    $host = preg_replace('/^www\./', '', $_SERVER['HTTP_HOST'] ?? 'vicehubx.fr');
+    return (string) (get_setting('mail_from', '') ?: 'no-reply@' . $host);
+}
+/** Nom d'expéditeur affiché. */
+function mail_from_name(): string
+{
+    return (string) (get_setting('mail_from_name', '') ?: APP_NAME);
+}
+/**
+ * Envoie un e-mail via l'API Resend (HTTPS, sans SDK).
+ * @param array $attachments  [['name'=>…, 'data'=>binaire], …]
+ */
+function resend_send(string $to, string $subject, string $html, array $attachments = []): bool
+{
+    if (!function_exists('curl_init') || !resend_enabled()) {
+        return false;
+    }
+    $payload = [
+        'from'    => mail_from_name() . ' <' . mail_from_address() . '>',
+        'to'      => [$to],
+        'subject' => $subject,
+        'html'    => $html,
+    ];
+    if ($attachments) {
+        $payload['attachments'] = array_map(
+            static fn($a) => ['filename' => $a['name'], 'content' => base64_encode($a['data'])],
+            $attachments
+        );
+    }
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . resend_api_key(),
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+        CURLOPT_TIMEOUT    => 25,
+    ]);
+    $raw  = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $raw !== false && $code >= 200 && $code < 300;
+}
+
+/** Envoie un e-mail HTML simple (Resend si configuré, sinon mail()). */
+function send_mail(string $to, string $subject, string $html): bool
+{
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    if (resend_enabled()) {
+        return resend_send($to, $subject, $html);
+    }
+    $headers = 'From: ' . mail_from_name() . ' <' . mail_from_address() . ">\r\n"
+        . 'Reply-To: ' . mail_from_address() . "\r\n"
+        . "MIME-Version: 1.0\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n";
+    return @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $html, $headers);
+}
+
+/** Envoie un e-mail HTML avec pièces jointes (Resend si configuré, sinon mail() multipart). */
 function send_mail_attachments(string $to, string $subject, string $html, array $attachments): bool
 {
     if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
         return false;
     }
-    $host = $_SERVER['HTTP_HOST'] ?? 'vicehubx.fr';
-    $sender = (string) (get_setting('mail_from', '') ?: 'no-reply@' . preg_replace('/^www\./', '', $host));
+    // Resend gère nativement les pièces jointes (PNG/JPEG/PDF en base64).
+    if (resend_enabled()) {
+        return resend_send($to, $subject, $html, $attachments);
+    }
+    $sender = mail_from_address();
     $b = 'vhx_' . bin2hex(random_bytes(10));
-    $headers = "From: ViceHub X <$sender>\r\nReply-To: $sender\r\nMIME-Version: 1.0\r\n"
+    $from = mail_from_name();
+    $headers = "From: $from <$sender>\r\nReply-To: $sender\r\nMIME-Version: 1.0\r\n"
         . "Content-Type: multipart/mixed; boundary=\"$b\"\r\n";
     $msg = "--$b\r\nContent-Type: text/html; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n" . $html . "\r\n";
     foreach ($attachments as $a) {

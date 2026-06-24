@@ -11,7 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && verify_csrf()) {
     $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
     $msg   = trim((string) ($_POST['message'] ?? ''));
     if ($name && $email && $msg) {
-        // MVP : pas d'API e-mail obligatoire. Brancher mail() / SMTP plus tard.
+        // Destinataire : réglage contact_email, sinon l'adresse d'expédition configurée.
+        $to = (string) (get_setting('contact_email', '') ?: mail_from_address());
+        $body = '<div style="font-family:sans-serif">'
+            . '<h2>Nouveau message — ViceHub X</h2>'
+            . '<p><strong>De :</strong> ' . e($name) . ' &lt;' . e($email) . '&gt;</p>'
+            . '<p style="white-space:pre-wrap">' . nl2br(e($msg)) . '</p></div>';
+        // On envoie si une voie e-mail est disponible (Resend ou mail système).
+        @send_mail($to, 'Contact ViceHub X — ' . $name, $body);
         $flash = ['ok', t('contact_ok')];
     } else {
         $flash = ['err', lang() === 'fr' ? 'Veuillez remplir tous les champs.' : 'Please fill in all fields.'];
