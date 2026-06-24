@@ -316,6 +316,99 @@ function add_post(int $threadId, int $userId, string $body): void
     db()->prepare('INSERT INTO forum_posts (thread_id, user_id, body) VALUES (?, ?, ?)')
         ->execute([$threadId, $userId, mb_substr($body, 0, 5000)]);
     db()->prepare('UPDATE forum_threads SET last_post_at = NOW() WHERE id = ?')->execute([$threadId]);
+    // Notifie l'auteur du sujet (si ce n'est pas lui qui répond)
+    $t = db()->prepare('SELECT user_id, title FROM forum_threads WHERE id = ?');
+    $t->execute([$threadId]);
+    if ($row = $t->fetch()) {
+        $owner = (int) ($row['user_id'] ?? 0);
+        if ($owner && $owner !== $userId) {
+            $nm = db()->prepare('SELECT COALESCE(display_name, username) FROM users WHERE id = ?');
+            $nm->execute([$userId]);
+            $who = (string) ($nm->fetchColumn() ?: 'Quelqu’un');
+            notify($owner, $who . ' a répondu à votre sujet « ' . $row['title'] . ' »', '/pages/forum-thread.php?id=' . $threadId);
+        }
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Likes / réactions                                                  */
+/* ------------------------------------------------------------------ */
+function like_count(string $kind, int $item): int
+{
+    $st = db()->prepare('SELECT COUNT(*) FROM likes WHERE kind = ? AND item_id = ?');
+    $st->execute([$kind, $item]);
+    return (int) $st->fetchColumn();
+}
+function user_liked(string $kind, int $item, ?int $uid): bool
+{
+    if (!$uid) {
+        return false;
+    }
+    $st = db()->prepare('SELECT 1 FROM likes WHERE user_id = ? AND kind = ? AND item_id = ? LIMIT 1');
+    $st->execute([$uid, $kind, $item]);
+    return (bool) $st->fetchColumn();
+}
+function like_toggle(string $kind, int $item, int $uid): bool
+{
+    if (user_liked($kind, $item, $uid)) {
+        db()->prepare('DELETE FROM likes WHERE user_id = ? AND kind = ? AND item_id = ?')->execute([$uid, $kind, $item]);
+        return false;
+    }
+    db()->prepare('INSERT IGNORE INTO likes (user_id, kind, item_id) VALUES (?, ?, ?)')->execute([$uid, $kind, $item]);
+    return true;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Notifications                                                      */
+/* ------------------------------------------------------------------ */
+function notify(int $uid, string $body, string $link = ''): void
+{
+    if ($uid <= 0) {
+        return;
+    }
+    db()->prepare('INSERT INTO notifications (user_id, body, link) VALUES (?, ?, ?)')
+        ->execute([$uid, mb_substr($body, 0, 255), $link]);
+}
+function unread_count(int $uid): int
+{
+    if ($uid <= 0) {
+        return 0;
+    }
+    $st = db()->prepare('SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = 0');
+    $st->execute([$uid]);
+    return (int) $st->fetchColumn();
+}
+function get_notifications(int $uid, int $limit = 40): array
+{
+    $st = db()->prepare('SELECT * FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT ' . (int) $limit);
+    $st->execute([$uid]);
+    return $st->fetchAll();
+}
+function mark_notifications_read(int $uid): void
+{
+    db()->prepare('UPDATE notifications SET is_read = 1 WHERE user_id = ?')->execute([$uid]);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Profils publics                                                    */
+/* ------------------------------------------------------------------ */
+function get_user_by_username(string $u): ?array
+{
+    $st = db()->prepare('SELECT id, username, display_name, role, created_at FROM users WHERE username = ? LIMIT 1');
+    $st->execute([$u]);
+    return $st->fetch() ?: null;
+}
+function user_recent_posts(int $uid, int $limit = 8): array
+{
+    $st = db()->prepare('SELECT p.body, p.created_at, t.id AS tid, t.title FROM forum_posts p JOIN forum_threads t ON t.id = p.thread_id WHERE p.user_id = ? ORDER BY p.id DESC LIMIT ' . (int) $limit);
+    $st->execute([$uid]);
+    return $st->fetchAll();
+}
+function user_fanarts(int $uid, int $limit = 12): array
+{
+    $st = db()->prepare("SELECT * FROM fanarts WHERE user_id = ? AND status = 'approved' ORDER BY id DESC LIMIT " . (int) $limit);
+    $st->execute([$uid]);
+    return $st->fetchAll();
 }
 
 /* ------------------------------------------------------------------ */
@@ -375,7 +468,7 @@ function rank_chip_html(?int $uid): string
 /** Galerie de fan-arts (approuvés par défaut). */
 function get_fanarts(bool $approvedOnly = true, int $limit = 60): array
 {
-    $sql = "SELECT f.*, COALESCE(u.display_name, u.username) AS author
+    $sql = "SELECT f.*, u.username, COALESCE(u.display_name, u.username) AS author
             FROM fanarts f LEFT JOIN users u ON u.id = f.user_id";
     if ($approvedOnly) {
         $sql .= " WHERE f.status = 'approved'";

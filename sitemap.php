@@ -72,6 +72,15 @@ foreach ($arts as $a) {
 foreach ($prods as $p) {
     echo '  <url><loc>' . e($abs('pages/product.php?slug=' . urlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
 }
+// Profils publics des membres actifs
+try {
+    $members = db()->query("SELECT DISTINCT u.username FROM users u JOIN forum_posts p ON p.user_id = u.id ORDER BY u.username LIMIT 200")->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) {
+    $members = [];
+}
+foreach ($members as $mu) {
+    echo '  <url><loc>' . e($abs('pages/profil.php?u=' . urlencode($mu))) . "</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>\n";
+}
 foreach ($fcats as $slug) {
     echo '  <url><loc>' . e($abs('pages/forum-category.php?cat=' . urlencode($slug))) . "</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n";
 }

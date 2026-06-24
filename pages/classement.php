@@ -28,7 +28,7 @@ require ROOT_PATH . '/includes/header.php';
         <?php foreach ($top as $i => $m): $podium = $i < 3; ?>
             <li class="lb-row glass<?= $podium ? ' lb-row--top' : '' ?>">
                 <span class="lb-pos"><?= $i === 0 ? '🥇' : ($i === 1 ? '🥈' : ($i === 2 ? '🥉' : '#' . ($i + 1))) ?></span>
-                <span class="lb-name"><?= e($m['display_name'] ?: $m['username']) ?>
+                <span class="lb-name"><a href="<?= e(with_lang(url('pages/profil.php?u=' . urlencode($m['username'])))) ?>" style="color:inherit"><?= e($m['display_name'] ?: $m['username']) ?></a>
                     <span class="rank-chip"><?= $m['rank']['emoji'] ?> <?= e($m['rank']['name']) ?></span>
                 </span>
                 <span class="lb-stats muted"><?= (int) $m['posts'] ?> <?= $fr ? 'msg' : 'posts' ?> · <?= (int) $m['threads'] ?> <?= $fr ? 'sujets' : 'topics' ?></span>

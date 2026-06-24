@@ -1188,3 +1188,34 @@ body.sunset-mode { filter: hue-rotate(-18deg) saturate(1.3) brightness(1.04); }
 .trophy__ico { font-size: 2rem; }
 .trophy__name { font-weight: 700; font-size: .9rem; }
 .trophy__desc { font-size: .72rem; }
+
+/* ============================================================
+   LIKES · NOTIFICATIONS · PROFILS
+   ============================================================ */
+.post__foot { display: flex; align-items: center; gap: 1rem; margin-top: .8rem; padding-top: .6rem; border-top: 1px solid var(--glass-brd); }
+.like-form { margin: 0; }
+.like-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .7rem; border-radius: 999px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.04); color: var(--muted); font-size: .85rem; cursor: pointer; transition: .18s; }
+.like-btn:hover { border-color: var(--pink); color: var(--pink); }
+.like-btn--on { background: rgba(255,46,136,.18); border-color: var(--pink); color: #fff; }
+.like-btn--static { cursor: default; }
+.art-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; width: 100%; }
+.art-card figcaption { gap: .4rem; }
+
+.notif-link { font-size: 1.15rem; }
+.notif-list { display: flex; flex-direction: column; gap: .6rem; margin-top: 1.4rem; }
+.notif { display: flex; align-items: center; gap: .8rem; padding: .9rem 1.1rem; border-radius: 12px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.03); text-decoration: none; color: var(--ink); transition: .18s; }
+.notif:hover { border-color: var(--blue); transform: translateX(3px); }
+.notif__dot { width: 9px; height: 9px; border-radius: 50%; background: transparent; flex-shrink: 0; }
+.notif--new { background: rgba(43,214,255,.07); }
+.notif--new .notif__dot { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+.notif__body { flex: 1; }
+.notif__date { font-size: .78rem; white-space: nowrap; }
+
+.profile-head { display: flex; align-items: center; gap: 1.4rem; padding: 1.6rem; border-radius: 18px; flex-wrap: wrap; }
+.profile-avatar { width: 76px; height: 76px; border-radius: 20px; display: grid; place-items: center; font-size: 2.6rem; background: linear-gradient(135deg, var(--violet), var(--pink)); box-shadow: 0 10px 30px -10px rgba(255,46,136,.6); }
+.profile-id h1 { margin: .15rem 0; }
+.profile-counts { display: flex; gap: 1.4rem; margin-left: auto; }
+.profile-counts div { text-align: center; }
+.profile-counts b { display: block; font-family: var(--font-display); font-size: 1.5rem; }
+.profile-counts small { color: var(--muted); font-size: .78rem; }
+@media (max-width: 560px) { .profile-counts { margin-left: 0; width: 100%; justify-content: space-around; } }

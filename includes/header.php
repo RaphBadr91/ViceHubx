@@ -173,6 +173,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
             <a class="cart-link" href="<?= e(with_lang(url('pages/cart.php'))) ?>" aria-label="<?= e(t('cart_title')) ?>">
                 🛒<?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
             </a>
+            <?php if (is_logged_in()): $unread = unread_count((int) current_user()['id']); ?>
+            <a class="cart-link notif-link" href="<?= e(with_lang(url('pages/notifications.php'))) ?>" aria-label="Notifications">
+                🔔<?php if ($unread > 0): ?><span class="cart-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
+            </a>
+            <?php endif; ?>
             <a class="lang-switch" href="<?= e($current_uri . '?lang=' . $other_lang) ?>"><?= e(t('lang_switch')) ?></a>
             <?php if (is_logged_in()): ?>
                 <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/account.php'))) ?>">👤 <?= e(mb_strimwidth(display_name(), 0, 14, '…')) ?></a>

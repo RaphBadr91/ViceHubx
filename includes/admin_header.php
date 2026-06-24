@@ -12,6 +12,7 @@ $admin_nav = [
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],
     ['fanarts.php',   'Fan-arts'],
+    ['events.php',    'Événements'],
     ['users.php',     'Membres'],
     ['settings.php',  'Réglages'],
 ];

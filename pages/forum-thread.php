@@ -78,18 +78,33 @@ require ROOT_PATH . '/includes/header.php';
 
     <div class="posts">
         <?php foreach ($posts as $p): ?>
-            <article class="post glass">
+            <article class="post glass" id="item-post<?= (int) $p['id'] ?>">
                 <div class="post__head">
-                    <span class="post__author"><?= e($role_badge[$p['role']] ?? '🙂') ?> <?= e($p['display_name'] ?: $p['username'] ?: 'Anonyme') ?> <?= rank_chip_html($p['user_id'] ? (int) $p['user_id'] : null) ?></span>
+                    <span class="post__author"><?= e($role_badge[$p['role']] ?? '🙂') ?>
+                        <?php if (!empty($p['username'])): ?><a href="<?= e(with_lang(url('pages/profil.php?u=' . urlencode($p['username'])))) ?>" style="color:inherit"><?= e($p['display_name'] ?: $p['username']) ?></a><?php else: ?><?= e('Anonyme') ?><?php endif; ?>
+                        <?= rank_chip_html($p['user_id'] ? (int) $p['user_id'] : null) ?></span>
                     <span class="muted post__date"><?= e(substr((string) $p['created_at'], 0, 16)) ?></span>
                 </div>
                 <div class="post__body"><?= nl2br(e($p['body'])) ?></div>
-                <?php if (is_admin()): ?>
-                    <form method="post" class="post__mod" onsubmit="return confirm('Supprimer ce message ?')">
-                        <?= csrf_field() ?><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?= (int) $p['id'] ?>">
-                        <button>🗑️ <?= lang() === 'fr' ? 'Supprimer' : 'Delete' ?></button>
-                    </form>
-                <?php endif; ?>
+                <div class="post__foot">
+                    <?php $lc = like_count('post', (int) $p['id']); $liked = user_liked('post', (int) $p['id'], is_logged_in() ? (int) current_user()['id'] : null); ?>
+                    <?php if (is_logged_in()): ?>
+                        <form method="post" action="<?= e(url('like.php')) ?>" class="like-form">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="kind" value="post"><input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                            <input type="hidden" name="return" value="<?= e(url('pages/forum-thread.php?id=' . $id)) ?>">
+                            <button class="like-btn<?= $liked ? ' like-btn--on' : '' ?>" type="submit">💜 <span><?= $lc ?></span></button>
+                        </form>
+                    <?php else: ?>
+                        <span class="like-btn like-btn--static">💜 <?= $lc ?></span>
+                    <?php endif; ?>
+                    <?php if (is_admin()): ?>
+                        <form method="post" class="post__mod" onsubmit="return confirm('Supprimer ce message ?')">
+                            <?= csrf_field() ?><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post_id" value="<?= (int) $p['id'] ?>">
+                            <button>🗑️ <?= lang() === 'fr' ? 'Supprimer' : 'Delete' ?></button>
+                        </form>
+                    <?php endif; ?>
+                </div>
             </article>
         <?php endforeach; ?>
     </div>

@@ -58,11 +58,20 @@ require ROOT_PATH . '/includes/header.php';
     <?php if ($arts): ?>
     <div class="art-grid">
         <?php foreach ($arts as $a): ?>
-            <figure class="art-card glass reveal">
+            <figure class="art-card glass reveal" id="item-fanart<?= (int) $a['id'] ?>">
                 <img src="<?= e(img_src($a['image'])) ?>" alt="<?= e($a['title']) ?>" loading="lazy" onerror="this.closest('.art-card').style.display='none'">
                 <figcaption>
                     <span class="art-title"><?= e($a['title']) ?></span>
-                    <span class="muted">@<?= e($a['author'] ?: 'anonyme') ?></span>
+                    <span class="art-foot">
+                        <?php if (!empty($a['username'])): ?><a class="muted" href="<?= e(with_lang(url('pages/profil.php?u=' . urlencode($a['username'])))) ?>">@<?= e($a['author']) ?></a><?php else: ?><span class="muted">@<?= e($a['author'] ?: 'anonyme') ?></span><?php endif; ?>
+                        <?php $lc = like_count('fanart', (int) $a['id']); $liked = user_liked('fanart', (int) $a['id'], is_logged_in() ? (int) current_user()['id'] : null); ?>
+                        <?php if (is_logged_in()): ?>
+                            <form method="post" action="<?= e(url('like.php')) ?>" class="like-form">
+                                <?= csrf_field() ?><input type="hidden" name="kind" value="fanart"><input type="hidden" name="id" value="<?= (int) $a['id'] ?>"><input type="hidden" name="return" value="<?= e(url('pages/galerie.php')) ?>">
+                                <button class="like-btn<?= $liked ? ' like-btn--on' : '' ?>" type="submit">💜 <span><?= $lc ?></span></button>
+                            </form>
+                        <?php else: ?><span class="like-btn like-btn--static">💜 <?= $lc ?></span><?php endif; ?>
+                    </span>
                 </figcaption>
             </figure>
         <?php endforeach; ?>

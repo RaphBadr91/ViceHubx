@@ -24,7 +24,7 @@ require ROOT_PATH . '/includes/header.php';
     <div class="topmembers">
         <span class="muted" style="font-size:.82rem"><?= lang() === 'fr' ? '🏆 Top membres :' : '🏆 Top members:' ?></span>
         <?php foreach ($tops as $m): ?>
-            <a class="topmember" href="<?= e(with_lang(url('pages/classement.php'))) ?>"><?= $m['rank']['emoji'] ?> <?= e($m['display_name'] ?: $m['username']) ?> <span class="muted"><?= (int) $m['xp'] ?> XP</span></a>
+            <a class="topmember" href="<?= e(with_lang(url('pages/profil.php?u=' . urlencode($m['username'])))) ?>"><?= $m['rank']['emoji'] ?> <?= e($m['display_name'] ?: $m['username']) ?> <span class="muted"><?= (int) $m['xp'] ?> XP</span></a>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
