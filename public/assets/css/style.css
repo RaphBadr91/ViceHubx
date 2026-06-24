@@ -993,3 +993,78 @@ body.is-home .site-header.scrolled {
 .footer-heart { opacity: .8; }
 @media (max-width: 900px) { .footer-inner { grid-template-columns: 1fr 1fr; } .footer-brand { grid-column: 1 / -1; } }
 @media (max-width: 560px) { .footer-inner { grid-template-columns: 1fr; gap: 1.6rem; } }
+
+/* ============================================================
+   VICE FM (radio synthwave) + EASTER EGG TRICHE
+   ============================================================ */
+.vfm { position: fixed; left: 18px; bottom: 18px; z-index: 200; font-family: var(--font-body); }
+.vfm__toggle {
+    position: relative; width: 56px; height: 56px; border-radius: 50%; cursor: pointer;
+    border: 1px solid var(--glass-brd); background: linear-gradient(135deg, var(--violet), var(--pink));
+    color: #fff; font-size: 1.4rem; display: grid; place-items: center;
+    box-shadow: 0 10px 30px -8px rgba(255,46,136,.6); transition: transform .2s;
+}
+.vfm__toggle:hover { transform: translateY(-3px) scale(1.05); }
+.vfm__ico { position: relative; z-index: 2; }
+.vfm__eq { position: absolute; inset: 0; display: flex; gap: 3px; align-items: center; justify-content: center; opacity: 0; transition: .3s; }
+.vfm__eq i { width: 3px; height: 10px; background: rgba(255,255,255,.9); border-radius: 2px; }
+.vfm--on .vfm__eq { opacity: .9; }
+.vfm--on .vfm__ico { opacity: 0; }
+.vfm--on .vfm__eq i { animation: vfmEq .9s ease-in-out infinite; }
+.vfm--on .vfm__eq i:nth-child(2){ animation-delay:.15s } .vfm--on .vfm__eq i:nth-child(3){ animation-delay:.3s } .vfm--on .vfm__eq i:nth-child(4){ animation-delay:.45s }
+@keyframes vfmEq { 0%,100%{ height:6px } 50%{ height:22px } }
+.vfm__panel {
+    position: absolute; left: 0; bottom: 68px; width: 240px; padding: 1rem;
+    border-radius: 16px; border: 1px solid var(--glass-brd); background: var(--bg-1);
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,.8); backdrop-filter: blur(14px);
+}
+.vfm__head { display: flex; flex-direction: column; gap: .15rem; margin-bottom: .8rem; }
+.vfm__name { font-family: var(--font-display); font-size: 1rem; color: var(--ink); }
+.vfm__tag { font-size: .72rem; text-transform: uppercase; letter-spacing: .12em; color: var(--blue); }
+.vfm__ctrls { display: flex; align-items: center; gap: .5rem; }
+.vfm__play, .vfm__next { width: 40px; height: 40px; border-radius: 11px; cursor: pointer; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.05); color: var(--ink); font-size: 1rem; }
+.vfm__play:hover, .vfm__next:hover { border-color: var(--pink); color: var(--pink); }
+.vfm__vol { flex: 1; accent-color: var(--pink); }
+@media (max-width: 600px) { .vfm { left: 12px; bottom: 12px; } .vfm__toggle { width: 48px; height: 48px; } }
+
+/* Easter egg : code de triche */
+.cheat-pop { position: fixed; inset: 0; z-index: 9999; display: grid; place-content: center; text-align: center; pointer-events: none; }
+.cheat-pop .cheat-stars { font-size: clamp(2.5rem, 9vw, 5rem); color: var(--gold); text-shadow: 0 0 24px rgba(255,209,102,.9); animation: cheatPulse .5s ease infinite alternate; }
+.cheat-pop .cheat-msg { font-family: var(--font-poster); font-size: clamp(1.2rem, 4vw, 2.2rem); color: #fff; letter-spacing: .05em; margin-top: .6rem; text-shadow: 0 0 18px rgba(255,46,136,.8); }
+.cheat-pop.out { opacity: 0; transition: opacity .6s ease; }
+@keyframes cheatPulse { from { transform: scale(1); } to { transform: scale(1.12); } }
+.cheat-flash::after { content:''; position: fixed; inset: 0; z-index: 9998; pointer-events: none; background: radial-gradient(circle, rgba(255,46,136,.35), transparent 70%); animation: cheatFlash .7s ease forwards; }
+@keyframes cheatFlash { from { opacity: 1; } to { opacity: 0; } }
+
+/* ============================================================
+   DOSSIER (lore hub) + QUIZ
+   ============================================================ */
+.dossier-nav { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1.4rem 0 2rem; position: sticky; top: 70px; z-index: 5; }
+.dossier-nav a { padding: .45rem .9rem; border-radius: 999px; border: 1px solid var(--glass-brd); background: rgba(10,8,20,.7); backdrop-filter: blur(8px); color: var(--muted); font-size: .85rem; font-weight: 600; text-decoration: none; transition: .2s; }
+.dossier-nav a:hover { color: #fff; border-color: var(--pink); }
+.dossier-body { display: flex; flex-direction: column; gap: 1.4rem; }
+.lore-block { padding: 1.6rem; border-radius: 18px; scroll-margin-top: 130px; }
+.lore-block h2 { margin: 0 0 1rem; font-size: clamp(1.3rem, 3vw, 1.8rem); }
+.lore-block p { line-height: 1.65; }
+.lore-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: .6rem; }
+.lore-grid h3 { margin: 0 0 .25rem; font-size: 1.02rem; color: var(--ink); }
+.lore-grid > div { padding: 1rem; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--glass-brd); }
+.lore-timeline { list-style: none; padding: 0; margin: .4rem 0 0; display: flex; flex-direction: column; gap: .7rem; }
+.lore-timeline li { padding-left: 1.1rem; border-left: 2px solid var(--pink); }
+.lore-timeline b { color: var(--blue); }
+.lore-dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .5rem 1.2rem; }
+.lore-dl dt { font-weight: 700; color: var(--ink); }
+.lore-dl dd { margin: 0; }
+
+.quiz { padding: 1.8rem; border-radius: 20px; margin-top: 1.6rem; }
+.quiz__progress { height: 6px; border-radius: 999px; background: rgba(255,255,255,.08); overflow: hidden; margin-bottom: 1.6rem; }
+.quiz__progress i { display: block; height: 100%; width: 0; background: var(--grad-sunset); transition: width .3s ease; }
+.quiz__q { font-size: clamp(1.2rem, 3vw, 1.6rem); margin: 0 0 1.2rem; }
+.quiz__opts { display: grid; gap: .7rem; }
+.quiz__opt { text-align: left; padding: 1rem 1.2rem; border-radius: 12px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.04); color: var(--ink); font-size: 1rem; cursor: pointer; transition: .18s; font-family: var(--font-body); }
+.quiz__opt:hover { border-color: var(--pink); transform: translateX(4px); background: rgba(255,46,136,.08); }
+.quiz__step { margin: 1rem 0 0; font-size: .82rem; }
+.quiz__result { text-align: center; }
+.quiz__emoji { font-size: 4rem; animation: cheatPulse .8s ease infinite alternate; }
+.grad-text { background: var(--grad-sunset); -webkit-background-clip: text; background-clip: text; color: transparent; font-size: clamp(2rem, 7vw, 3rem); margin: .3rem 0; }
+.quiz__actions { display: flex; gap: .7rem; justify-content: center; flex-wrap: wrap; margin-top: 1.4rem; }

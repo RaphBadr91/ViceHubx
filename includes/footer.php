@@ -60,5 +60,6 @@
 </footer>
 
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
+<script src="<?= e(asset('js/vicefm.js')) ?>" defer></script>
 </body>
 </html>

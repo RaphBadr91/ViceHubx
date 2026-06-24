@@ -33,12 +33,14 @@ $nav = [
         ['trailer-lab.php', t('nav_trailer')],
     ]],
     ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
+        ['dossier.php',    lang() === 'fr' ? 'Le Dossier' : 'The Files'],
         ['map.php',        t('nav_map')],
         ['vehicles.php',   t('nav_vehicles')],
         ['characters.php', t('nav_characters')],
     ]],
     ['label' => t('nav_community'), 'children' => [
         ['forum.php',     'Forum'],
+        ['quiz.php',      'Quiz'],
         ['community.php', lang() === 'fr' ? 'Sondages & débats' : 'Polls & debates'],
     ]],
     ['label' => t('nav_shop'), 'children' => [
