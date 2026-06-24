@@ -1244,3 +1244,41 @@ body.sunset-mode { filter: hue-rotate(-18deg) saturate(1.3) brightness(1.04); }
 .cookie-bar p a { color: var(--blue); }
 .cookie-bar__btns { display: flex; gap: .5rem; }
 .cookie-bar__btns .btn { padding: .5rem 1rem; font-size: .85rem; }
+
+/* ============================================================
+   POLISH DESIGN & ANIMATIONS (additif, GPU-friendly)
+   ============================================================ */
+/* Barre de progression de défilement */
+.scroll-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 400; background: linear-gradient(90deg, var(--pink), var(--blue)); box-shadow: 0 0 12px rgba(255,46,136,.7); transition: width .1s linear; pointer-events: none; }
+
+/* Sélecteur de langue */
+select.lang-switch { font-family: var(--font-display); font-size: .8rem; font-weight: 600; border: 1px solid var(--glass-brd); border-radius: 10px; padding: .4rem .55rem; color: var(--blue); background: rgba(255,255,255,.04); cursor: pointer; -webkit-appearance: none; appearance: none; }
+select.lang-switch:hover { background: rgba(43,214,255,.12); }
+select.lang-switch option { background: var(--bg-1); color: var(--ink); }
+
+/* Effet "sheen" sur les boutons primaires */
+.btn--primary { position: relative; overflow: hidden; }
+.btn--primary::after { content: ''; position: absolute; top: 0; left: -120%; width: 60%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent); transform: skewX(-18deg); transition: left .6s ease; }
+.btn--primary:hover::after { left: 130%; }
+
+/* Soulignement néon sous les titres de section */
+.section-head h2 { position: relative; }
+.section-head h2::after { content: ''; position: absolute; left: 0; bottom: -.4rem; width: 46px; height: 3px; border-radius: 3px; background: var(--grad-neon); box-shadow: 0 0 10px rgba(43,214,255,.6); }
+
+/* Cartes : halo au survol */
+.card, .product, .fan-card, .forum-cat, .event-card, .account-tile { will-change: transform; }
+.card:hover, .product:hover { box-shadow: 0 22px 50px -22px rgba(138,60,255,.6), 0 0 0 1px rgba(255,46,136,.25); }
+
+/* Apparition en cascade des grilles */
+.cards .reveal:nth-child(2), .shop-grid .reveal:nth-child(2), .fan-grid .reveal:nth-child(2) { transition-delay: .07s; }
+.cards .reveal:nth-child(3), .shop-grid .reveal:nth-child(3), .fan-grid .reveal:nth-child(3) { transition-delay: .14s; }
+.cards .reveal:nth-child(4), .shop-grid .reveal:nth-child(4), .fan-grid .reveal:nth-child(4) { transition-delay: .21s; }
+
+/* Lien néon animé au survol des liens "tout voir" */
+.link-all { background-image: linear-gradient(var(--blue), var(--blue)); background-size: 0% 2px; background-position: 0 100%; background-repeat: no-repeat; transition: background-size .3s ease; }
+.link-all:hover { background-size: 100% 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .scroll-progress, .btn--primary::after { transition: none; }
+    .cards .reveal, .shop-grid .reveal, .fan-grid .reveal { transition-delay: 0s !important; }
+}

@@ -95,4 +95,9 @@ require_once ROOT_PATH . '/includes/functions.php';
 /*  Langue active + chargement des traductions                         */
 /* ------------------------------------------------------------------ */
 $GLOBALS['LANG_CODE'] = resolve_language();
-$GLOBALS['LANG'] = require ROOT_PATH . '/lang/' . $GLOBALS['LANG_CODE'] . '.php';
+$__langFile = ROOT_PATH . '/lang/' . $GLOBALS['LANG_CODE'] . '.php';
+$GLOBALS['LANG'] = is_file($__langFile) ? require $__langFile : [];
+// Repli anglais pour les clés non traduites dans les langues étendues
+$GLOBALS['LANG_FALLBACK'] = $GLOBALS['LANG_CODE'] === 'en'
+    ? $GLOBALS['LANG']
+    : (is_file(ROOT_PATH . '/lang/en.php') ? require ROOT_PATH . '/lang/en.php' : []);

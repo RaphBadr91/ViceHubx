@@ -73,8 +73,9 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
     <!-- Versions linguistiques (hreflang) -->
-    <link rel="alternate" hreflang="fr" href="<?= e($site_base . $path_only . '?lang=fr') ?>">
-    <link rel="alternate" hreflang="en" href="<?= e($site_base . $path_only . '?lang=en') ?>">
+    <?php foreach (array_keys(available_languages()) as $hl): ?>
+    <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($site_base . $path_only . ($hl === 'fr' ? '' : '?lang=' . $hl)) ?>">
+    <?php endforeach; ?>
     <link rel="alternate" hreflang="x-default" href="<?= e($site_base . $path_only) ?>">
 
     <!-- Open Graph -->
@@ -89,6 +90,8 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
+    <link rel="dns-prefetch" href="https://d8j0ntlcm91z4.cloudfront.net">
     <link rel="stylesheet" href="<?= e(asset('css/style.css')) ?>">
 
     <?php if (!empty($JSONLD)): ?>
@@ -187,7 +190,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
                 🔔<?php if ($unread > 0): ?><span class="cart-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
             </a>
             <?php endif; ?>
-            <a class="lang-switch" href="<?= e($current_uri . '?lang=' . $other_lang) ?>"><?= e(t('lang_switch')) ?></a>
+            <select class="lang-switch" onchange="if(this.value)location.href=this.value" aria-label="Langue / Language">
+                <?php foreach (available_languages() as $lc => $llabel): ?>
+                    <option value="<?= e(lang_url($lc)) ?>"<?= lang() === $lc ? ' selected' : '' ?>><?= e($llabel) ?></option>
+                <?php endforeach; ?>
+            </select>
             <?php if (is_logged_in()): ?>
                 <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/account.php'))) ?>">👤 <?= e(mb_strimwidth(display_name(), 0, 14, '…')) ?></a>
             <?php else: ?>

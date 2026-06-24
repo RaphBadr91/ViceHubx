@@ -179,3 +179,18 @@
     try { render(); cheats(); } catch (err) { /* silencieux */ }
   });
 })();
+
+/* Barre de progression de défilement (perf : passive + rAF) */
+(function () {
+  var bar = document.createElement('div');
+  bar.className = 'scroll-progress';
+  document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(bar); });
+  var ticking = false;
+  function update() {
+    var h = document.documentElement;
+    var max = (h.scrollHeight - h.clientHeight) || 1;
+    bar.style.width = Math.min(100, (h.scrollTop || document.body.scrollTop) / max * 100) + '%';
+    ticking = false;
+  }
+  window.addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(update); } }, { passive: true });
+})();

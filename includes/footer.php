@@ -64,6 +64,7 @@
             <?php else: ?>
                 <a href="<?= e(with_lang(url('pages/login.php'))) ?>"><?= lang() === 'fr' ? 'Connexion' : 'Login' ?></a>
             <?php endif; ?>
+            <a href="<?= e(with_lang(url('pages/presse.php'))) ?>"><?= lang() === 'fr' ? 'Presse & Partenariats' : 'Press & Partners' ?></a>
             <a href="<?= e(with_lang(url('pages/contact.php'))) ?>"><?= e(t('nav_contact')) ?></a>
             <a href="<?= e(with_lang(url('pages/legal.php'))) ?>"><?= e(t('page_legal_title')) ?></a>
         </nav>

@@ -49,19 +49,26 @@ function verify_csrf(): bool
 /* ================================================================== */
 
 /** Détermine la langue active (fr/en) via ?lang, session, puis défaut. */
+/** Langues disponibles (code => libellé natif). Ajoutez une langue = un fichier lang/<code>.php. */
+function available_languages(): array
+{
+    return ['fr' => '🇫🇷 Français', 'en' => '🇬🇧 English', 'es' => '🇪🇸 Español', 'de' => '🇩🇪 Deutsch'];
+}
+
 function resolve_language(): string
 {
-    $allowed = ['fr', 'en'];
+    $allowed = array_keys(available_languages());
     if (isset($_GET['lang']) && in_array($_GET['lang'], $allowed, true)) {
         $_SESSION['lang'] = $_GET['lang'];
     }
-    return $_SESSION['lang'] ?? 'fr';
+    $l = $_SESSION['lang'] ?? 'fr';
+    return in_array($l, $allowed, true) ? $l : 'fr';
 }
 
-/** Traduit une clé. Retourne la clé si absente. */
+/** Traduit une clé (langue active → repli anglais → clé). */
 function t(string $key): string
 {
-    return $GLOBALS['LANG'][$key] ?? $key;
+    return $GLOBALS['LANG'][$key] ?? ($GLOBALS['LANG_FALLBACK'][$key] ?? $key);
 }
 
 /** Code langue courant. */
@@ -73,8 +80,21 @@ function lang(): string
 /** Construit une URL en conservant la langue active. */
 function with_lang(string $url): string
 {
+    if (lang() === 'fr') {
+        return $url; // langue par défaut : pas de paramètre
+    }
     $sep = str_contains($url, '?') ? '&' : '?';
     return $url . $sep . 'lang=' . lang();
+}
+
+/** URL de la page courante dans une autre langue (préserve le chemin et les paramètres). */
+function lang_url(string $code): string
+{
+    $uri = $_SERVER['REQUEST_URI'] ?? '/';
+    $parts = explode('?', $uri, 2);
+    parse_str($parts[1] ?? '', $q);
+    $q['lang'] = $code;
+    return $parts[0] . '?' . http_build_query($q);
 }
 
 /* ================================================================== */
@@ -1044,7 +1064,7 @@ function media_html(?string $img, string $emoji, string $alt = ''): string
     $alt = $alt !== '' ? $alt : 'Illustration GTA VI — ViceHub X';
     $out = '<div class="card__media"><span class="card__emoji" aria-hidden="true">' . $emoji . '</span>';
     if ($src !== '') {
-        $out .= '<img class="card__img" src="' . e($src) . '" alt="' . e($alt) . '" loading="lazy" onerror="this.remove()">';
+        $out .= '<img class="card__img" src="' . e($src) . '" alt="' . e($alt) . '" loading="lazy" decoding="async" onerror="this.remove()">';
     }
     return $out . '</div>';
 }

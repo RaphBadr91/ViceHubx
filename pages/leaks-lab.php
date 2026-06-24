@@ -23,6 +23,7 @@ require ROOT_PATH . '/includes/header.php';
     <div class="cards">
         <?php foreach ($leaks as $a): ?>
             <article class="card glass reveal">
+                <?= media_html($a['image'] ?? '', '🕵️', $a['title']) ?>
                 <div class="card__body">
                     <?= badge_html($a['badge']) ?>
                     <h3 class="card__title"><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></h3>
