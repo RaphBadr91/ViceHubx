@@ -41,6 +41,7 @@ $nav = [
     ['label' => t('nav_community'), 'children' => [
         ['forum.php',     'Forum'],
         ['quiz.php',      'Quiz'],
+        ['cheats.php',    lang() === 'fr' ? 'Codes de triche' : 'Cheat codes'],
         ['community.php', lang() === 'fr' ? 'Sondages & débats' : 'Polls & debates'],
     ]],
     ['label' => t('nav_shop'), 'children' => [

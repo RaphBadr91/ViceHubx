@@ -169,6 +169,42 @@ require __DIR__ . '/includes/header.php';
 
 <?= ad_slot(get_setting('adsense_slot', '')) ?>
 
+<!-- ============ ESPACE FANS ============ -->
+<section class="section fanzone">
+    <div class="section-head">
+        <div>
+            <span class="eyebrow">🌴 <?= lang() === 'fr' ? 'Rien que pour les fans' : 'Just for fans' ?></span>
+            <h2><?= lang() === 'fr' ? 'L’espace des amoureux de GTA VI' : 'The GTA VI fan zone' ?></h2>
+        </div>
+    </div>
+    <div class="fan-grid">
+        <button type="button" class="fan-card glass" data-vfm-play>
+            <span class="fan-card__ico">📻</span>
+            <h3>Vice FM</h3>
+            <p><?= lang() === 'fr' ? 'Lance la radio synthwave maison et plonge dans l’ambiance.' : 'Play the in-house synthwave radio.' ?></p>
+            <span class="fan-card__cta"><?= lang() === 'fr' ? '▶ Écouter maintenant' : '▶ Listen now' ?></span>
+        </button>
+        <a class="fan-card glass" href="<?= e(with_lang(url('pages/dossier.php'))) ?>">
+            <span class="fan-card__ico">📂</span>
+            <h3><?= lang() === 'fr' ? 'Le Dossier' : 'The Files' ?></h3>
+            <p><?= lang() === 'fr' ? 'L’encyclopédie : quartiers, gangs, radios, chronologie de la saga.' : 'The encyclopedia: districts, gangs, radios, saga timeline.' ?></p>
+            <span class="fan-card__cta"><?= lang() === 'fr' ? 'Explorer le lore' : 'Explore the lore' ?> →</span>
+        </a>
+        <a class="fan-card glass" href="<?= e(with_lang(url('pages/quiz.php'))) ?>">
+            <span class="fan-card__ico">🎮</span>
+            <h3>Quiz</h3>
+            <p><?= lang() === 'fr' ? 'Lucia, Jason, le Maire ou DJ Solaris ? Découvre qui tu es.' : 'Lucia, Jason, the Mayor or DJ Solaris? Find out.' ?></p>
+            <span class="fan-card__cta"><?= lang() === 'fr' ? 'Faire le test' : 'Take the quiz' ?> →</span>
+        </a>
+        <a class="fan-card glass" href="<?= e(with_lang(url('pages/cheats.php'))) ?>">
+            <span class="fan-card__ico">🎰</span>
+            <h3><?= lang() === 'fr' ? 'Codes de triche' : 'Cheat codes' ?></h3>
+            <p><?= lang() === 'fr' ? 'La console de triche façon GTA + des codes secrets à débloquer.' : 'GTA-style cheat console + secret codes to unlock.' ?></p>
+            <span class="fan-card__cta"><?= lang() === 'fr' ? 'Entrer un code' : 'Enter a code' ?> →</span>
+        </a>
+    </div>
+</section>
+
 <!-- ============ VICE CITY OS ============ -->
 <section class="section">
     <div class="section-head">

@@ -24,6 +24,7 @@ $urls = [
     ['pages/map.php', 'monthly', '0.7'],
     ['pages/dossier.php', 'weekly', '0.8'],
     ['pages/quiz.php', 'monthly', '0.6'],
+    ['pages/cheats.php', 'monthly', '0.6'],
     ['pages/vehicles.php', 'monthly', '0.6'],
     ['pages/characters.php', 'monthly', '0.6'],
     ['pages/community.php', 'daily', '0.6'],

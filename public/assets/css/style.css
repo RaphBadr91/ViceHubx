@@ -1091,3 +1091,41 @@ body.is-home .site-header.scrolled {
 .footer-top { color: var(--blue); font-weight: 600; font-size: .82rem; transition: .2s; }
 .footer-top:hover { color: var(--pink); }
 @media (max-width: 640px) { .footer-cta { flex-direction: column; align-items: flex-start; text-align: left; } }
+
+/* ============================================================
+   ESPACE FANS + CONSOLE DE TRICHE
+   ============================================================ */
+.fan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; }
+.fan-card {
+    display: flex; flex-direction: column; gap: .5rem; padding: 1.5rem; border-radius: 18px;
+    text-align: left; text-decoration: none; color: var(--ink); cursor: pointer;
+    border: 1px solid var(--glass-brd); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    font-family: var(--font-body); background: var(--glass-bg);
+}
+.fan-card:hover { transform: translateY(-6px); border-color: var(--pink); box-shadow: 0 18px 45px -18px rgba(255,46,136,.5); }
+.fan-card__ico { font-size: 2.2rem; }
+.fan-card h3 { margin: 0; font-size: 1.15rem; }
+.fan-card p { margin: 0; color: var(--muted); font-size: .9rem; flex: 1; }
+.fan-card__cta { color: var(--blue); font-weight: 700; font-size: .88rem; margin-top: .4rem; }
+.fan-card:hover .fan-card__cta { color: var(--pink); }
+
+.cheat-console { border-radius: 16px; overflow: hidden; margin-top: 1.4rem; }
+.cheat-console__bar { display: flex; align-items: center; gap: .4rem; padding: .7rem 1rem; background: rgba(0,0,0,.4); font-family: var(--font-display); font-size: .78rem; letter-spacing: .15em; color: var(--muted); border-bottom: 1px solid var(--glass-brd); }
+.cheat-console__bar span { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+.cheat-console__bar span:nth-child(2){ background:#febc2e } .cheat-console__bar span:nth-child(3){ background:#28c840; margin-right:.6rem }
+.cheat-log { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: .85rem; padding: 1rem; min-height: 110px; max-height: 200px; overflow-y: auto; }
+.cheat-log p { margin: 0 0 .35rem; }
+.cheat-form { display: flex; gap: .6rem; padding: 1rem; border-top: 1px solid var(--glass-brd); }
+.cheat-form input { flex: 1; padding: .8rem 1rem; border-radius: 11px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.05); color: var(--ink); font-family: ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.cheat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .8rem; margin-top: 1rem; }
+.cheat-code { display: flex; flex-direction: column; gap: .25rem; padding: .9rem 1rem; border-radius: 12px; border: 1px solid var(--glass-brd); background: rgba(255,255,255,.04); color: var(--ink); cursor: pointer; text-align: left; transition: .18s; }
+.cheat-code:hover { border-color: var(--pink); transform: translateY(-3px); }
+.cheat-code code { font-family: ui-monospace, monospace; color: var(--blue); font-weight: 700; letter-spacing: .1em; }
+.cheat-code span { color: var(--muted); font-size: .82rem; }
+
+/* Effets */
+.fx-rain { position: fixed; top: -50px; z-index: 9997; pointer-events: none; animation: fxFall 4s linear forwards; }
+@keyframes fxFall { to { transform: translateY(110vh) rotate(180deg); opacity: .2; } }
+body.neon-boost { filter: saturate(1.5) contrast(1.08); }
+body.neon-boost .glass { box-shadow: 0 0 0 1px rgba(255,46,136,.4), 0 18px 50px -20px rgba(43,214,255,.6); }
+body.sunset-mode { filter: hue-rotate(-18deg) saturate(1.3) brightness(1.04); }

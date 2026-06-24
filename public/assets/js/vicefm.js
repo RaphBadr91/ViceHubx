@@ -136,6 +136,15 @@
       if (ac && playing) { master.gain.cancelScheduledValues(ac.currentTime); master.gain.setValueAtTime(vol.value / 100 * 0.6, ac.currentTime); }
     });
     refresh();
+
+    // Hook public : permet à d'autres boutons (Espace Fans, Cheats) de lancer la radio
+    window.ViceFM = {
+      play: function () { if (!playing) { start(); refresh(); } panel.hidden = false; },
+      stop: function () { if (playing) { stop(); refresh(); } }
+    };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-vfm-play]'), function (b) {
+      b.addEventListener('click', function (e) { e.preventDefault(); window.ViceFM.play(); });
+    });
   }
 
   /* ---------------- Easter egg : code de triche GTA ---------------- */
