@@ -136,11 +136,47 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
 <a class="skip-link" href="#main"><?= lang() === 'fr' ? 'Aller au contenu' : 'Skip to content' ?></a>
 
 <!-- Écran de chargement -->
+<?php
+$__tips = lang() === 'fr' ? [
+    'Vice City n’a jamais dormi… et toi non plus ce soir.',
+    'Astuce : tape « vicecity » au clavier pour un petit bonus 🌴',
+    'Le soleil de Leonida se couche en néon rose et cyan.',
+    'Garde un œil sur ton niveau de recherche ⭐ en bas de l’écran.',
+    'Branche Vice FM 📻 et roule au rythme de la synthwave.',
+    'Jason & Lucia : deux destins, une seule cavale.',
+    'Le plus gros open-world de l’histoire de Rockstar t’attend.',
+    'Conseil de pro : la pluie change tout sur la route.',
+    'Les meilleurs leaks sont vérifiés avant d’être publiés ici.',
+    'Bienvenue dans le QG des passionnés de GTA VI.',
+] : [
+    'Vice City never sleeps… and neither will you tonight.',
+    'Tip: type “vicecity” on your keyboard for a little bonus 🌴',
+    'Leonida’s sun sets in pink and cyan neon.',
+    'Keep an eye on your wanted level ⭐ at the bottom of the screen.',
+    'Tune in to Vice FM 📻 and cruise to the synthwave.',
+    'Jason & Lucia: two fates, one getaway.',
+    'The biggest open world in Rockstar history awaits.',
+    'Pro tip: rain changes everything on the road.',
+    'The best leaks are verified before they’re posted here.',
+    'Welcome to the home of GTA VI fans.',
+];
+$__tip = $__tips[array_rand($__tips)];
+?>
 <div class="vh-loader" aria-hidden="true">
+    <div class="vh-loader__scene" aria-hidden="true">
+        <span class="vh-loader__sun"></span>
+        <span class="vh-loader__sea"></span>
+        <span class="vh-loader__skyline"></span>
+        <span class="vh-loader__palm vh-loader__palm--l">🌴</span>
+        <span class="vh-loader__palm vh-loader__palm--r">🌴</span>
+    </div>
     <div class="vh-loader__logo">Vice<span class="logo-accent">Hub</span><span class="logo-x">X</span></div>
+    <div class="vh-loader__sub">VICE CITY · LEONIDA</div>
     <div class="vh-loader__bar"><i></i></div>
-    <div class="vh-loader__tag">Loading Vice City&hellip;</div>
+    <div class="vh-loader__pct"><b data-loader-pct>0</b>% — <?= lang() === 'fr' ? 'Chargement de Vice City' : 'Loading Vice City' ?>&hellip;</div>
+    <div class="vh-loader__tip">💡 <?= e($__tip) ?></div>
 </div>
+<script>(function(){var b=document.querySelector('[data-loader-pct]');if(!b)return;var n=0,id=setInterval(function(){n+=Math.random()*9+4;if(n>=98){n=98;clearInterval(id);}b.textContent=Math.floor(n);},95);window.addEventListener('load',function(){clearInterval(id);b.textContent=100;});})();</script>
 
 <!-- Calques cinéma -->
 <div class="fx-cursor" aria-hidden="true"></div>
