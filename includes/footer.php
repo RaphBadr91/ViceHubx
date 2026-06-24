@@ -87,5 +87,29 @@
 
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 <script src="<?= e(asset('js/vicefm.js')) ?>" defer></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('<?= e(url('sw.js')) ?>').catch(function(){});});}</script>
+
+<!-- Bandeau cookies (RGPD) -->
+<div class="cookie-bar" id="cookieBar" hidden>
+    <p><?= lang() === 'fr'
+        ? '🍪 On utilise des cookies pour le bon fonctionnement du site et la mesure d’audience.'
+        : '🍪 We use cookies for site functionality and analytics.' ?>
+        <a href="<?= e(with_lang(url('pages/legal.php'))) ?>"><?= lang() === 'fr' ? 'En savoir plus' : 'Learn more' ?></a>
+    </p>
+    <div class="cookie-bar__btns">
+        <button class="btn btn--ghost" data-cookie="refuse"><?= lang() === 'fr' ? 'Refuser' : 'Decline' ?></button>
+        <button class="btn btn--primary" data-cookie="accept"><?= lang() === 'fr' ? 'Accepter' : 'Accept' ?></button>
+    </div>
+</div>
+<script>
+(function(){try{
+  var bar=document.getElementById('cookieBar');
+  if(!bar)return;
+  if(!localStorage.getItem('vhx_cookie')){bar.hidden=false;}
+  bar.querySelectorAll('[data-cookie]').forEach(function(b){
+    b.addEventListener('click',function(){localStorage.setItem('vhx_cookie',b.getAttribute('data-cookie'));bar.hidden=true;});
+  });
+}catch(e){}})();
+</script>
 </body>
 </html>

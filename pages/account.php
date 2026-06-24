@@ -72,6 +72,12 @@ require ROOT_PATH . '/includes/header.php';
             <strong><?= lang() === 'fr' ? 'Forum' : 'Forum' ?></strong>
             <span class="muted"><?= lang() === 'fr' ? 'Discutez avec la communauté.' : 'Join the community.' ?></span>
         </a>
+        <a class="account-tile glass" href="<?= e(with_lang(url('pages/messages.php'))) ?>">
+            <span class="account-tile__ico">💌</span>
+            <strong><?= lang() === 'fr' ? 'Messagerie' : 'Messages' ?>
+                <?php $um = unread_messages_count((int) $me['id']); if ($um): ?><span class="cart-badge" style="position:static"><?= $um ?></span><?php endif; ?></strong>
+            <span class="muted"><?= lang() === 'fr' ? 'Tes messages privés.' : 'Your private messages.' ?></span>
+        </a>
         <?php if (is_admin()): ?>
         <a class="account-tile glass" href="<?= e(url('admin/dashboard.php')) ?>">
             <span class="account-tile__ico">🛠️</span>

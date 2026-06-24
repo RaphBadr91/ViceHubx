@@ -66,6 +66,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="description" content="<?= e($SEO_DESC) ?>">
     <?php if (!empty($ROBOTS)): ?><meta name="robots" content="<?= e($ROBOTS) ?>"><?php endif; ?>
     <meta name="theme-color" content="#0a0a16">
+    <link rel="manifest" href="<?= e(url('manifest.webmanifest')) ?>">
+    <link rel="apple-touch-icon" href="<?= e(asset('img/icon-192.png')) ?>">
+    <link rel="icon" type="image/png" href="<?= e(asset('img/icon-192.png')) ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
     <!-- Versions linguistiques (hreflang) -->
     <link rel="alternate" hreflang="fr" href="<?= e($site_base . $path_only . '?lang=fr') ?>">
@@ -112,7 +117,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
                 'publisher'  => ['@id' => $site_base . '/#org'],
                 'potentialAction' => [
                     '@type'       => 'SearchAction',
-                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $site_base . '/pages/news.php?q={search_term_string}'],
+                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $site_base . '/pages/recherche.php?q={search_term_string}'],
                     'query-input' => 'required name=search_term_string',
                 ],
             ],
@@ -170,10 +175,14 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
         </nav>
 
         <div class="header-actions">
+            <a class="cart-link" href="<?= e(with_lang(url('pages/recherche.php'))) ?>" aria-label="<?= lang() === 'fr' ? 'Rechercher' : 'Search' ?>">🔍</a>
             <a class="cart-link" href="<?= e(with_lang(url('pages/cart.php'))) ?>" aria-label="<?= e(t('cart_title')) ?>">
                 🛒<?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
             </a>
-            <?php if (is_logged_in()): $unread = unread_count((int) current_user()['id']); ?>
+            <?php if (is_logged_in()): $unread = unread_count((int) current_user()['id']); $umsg = unread_messages_count((int) current_user()['id']); ?>
+            <a class="cart-link notif-link" href="<?= e(with_lang(url('pages/messages.php'))) ?>" aria-label="Messages">
+                💌<?php if ($umsg > 0): ?><span class="cart-badge"><?= $umsg > 9 ? '9+' : $umsg ?></span><?php endif; ?>
+            </a>
             <a class="cart-link notif-link" href="<?= e(with_lang(url('pages/notifications.php'))) ?>" aria-label="Notifications">
                 🔔<?php if ($unread > 0): ?><span class="cart-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
             </a>

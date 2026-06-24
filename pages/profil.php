@@ -46,6 +46,9 @@ require ROOT_PATH . '/includes/header.php';
     </div>
     <div class="rank-bar" style="margin-top:1rem"><i style="width:<?= (int) $pct ?>%"></i></div>
     <?php if ($nx): ?><p class="muted" style="font-size:.82rem;margin:.4rem 0 0"><?= $fr ? 'Prochain rang' : 'Next rank' ?> : <?= $nx[2] ?> <?= e($nx[1]) ?> (<?= (int) ($nx[0] - $stats['xp']) ?> XP)</p><?php endif; ?>
+    <?php if (is_logged_in() && (int) current_user()['id'] !== $uid && $u['password_hash'] ?? true): ?>
+        <a class="btn btn--primary" style="margin-top:1rem" href="<?= e(with_lang(url('pages/messages.php?u=' . urlencode($u['username'])))) ?>">💌 <?= $fr ? 'Envoyer un message' : 'Send a message' ?></a>
+    <?php endif; ?>
 
     <h2 style="margin-top:2rem">🏅 <?= $fr ? 'Trophées' : 'Achievements' ?></h2>
     <div class="trophy-grid">

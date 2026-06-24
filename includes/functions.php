@@ -225,7 +225,13 @@ function register_user(string $username, string $email, string $password, string
     $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
     $ins = db()->prepare('INSERT INTO users (username, email, display_name, password_hash, role) VALUES (?, ?, ?, ?, ?)');
     $ins->execute([$username, $email, $display !== '' ? $display : $username, $hash, 'member']);
-    return (int) db()->lastInsertId();
+    $newId = (int) db()->lastInsertId();
+    // Message de bienvenue (et notification) depuis l'équipe
+    $adminId = (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0);
+    if ($adminId && $adminId !== $newId) {
+        send_message($adminId, $newId, 'Bienvenue à Vice City ! 🌴 Présente-toi sur le forum, partage tes fan-arts, débloque des trophées et grimpe les rangs. Bon jeu et à bientôt sur ViceHub X !');
+    }
+    return $newId;
 }
 
 /** Authentifie par identifiant OU e-mail. Retourne l'utilisateur ou null. */
@@ -412,6 +418,64 @@ function user_fanarts(int $uid, int $limit = 12): array
 }
 
 /* ------------------------------------------------------------------ */
+/*  Messagerie privée                                                  */
+/* ------------------------------------------------------------------ */
+function send_message(int $from, int $to, string $body): bool
+{
+    $body = trim($body);
+    if ($from <= 0 || $to <= 0 || $from === $to || mb_strlen($body) < 1) {
+        return false;
+    }
+    db()->prepare('INSERT INTO messages (from_id, to_id, body) VALUES (?, ?, ?)')
+        ->execute([$from, $to, mb_substr($body, 0, 4000)]);
+    $nm = db()->prepare('SELECT username, COALESCE(display_name, username) FROM users WHERE id = ?');
+    $nm->execute([$from]);
+    if ($r = $nm->fetch(PDO::FETCH_NUM)) {
+        notify($to, $r[1] . ' t’a envoyé un message privé 💌', '/pages/messages.php?u=' . $r[0]);
+    }
+    return true;
+}
+function unread_messages_count(int $uid): int
+{
+    if ($uid <= 0) {
+        return 0;
+    }
+    $st = db()->prepare('SELECT COUNT(*) FROM messages WHERE to_id = ? AND is_read = 0');
+    $st->execute([$uid]);
+    return (int) $st->fetchColumn();
+}
+function get_conversations(int $uid): array
+{
+    $st = db()->prepare('SELECT IF(from_id = ?, to_id, from_id) AS other_id, MAX(id) AS last_id FROM messages WHERE from_id = ? OR to_id = ? GROUP BY other_id ORDER BY last_id DESC');
+    $st->execute([$uid, $uid, $uid]);
+    $convs = [];
+    foreach ($st->fetchAll() as $row) {
+        $oid = (int) $row['other_id'];
+        $m = db()->prepare('SELECT * FROM messages WHERE id = ?');
+        $m->execute([(int) $row['last_id']]);
+        $last = $m->fetch();
+        $u = db()->prepare('SELECT username, COALESCE(display_name, username) AS name FROM users WHERE id = ?');
+        $u->execute([$oid]);
+        $usr = $u->fetch();
+        if (!$usr) {
+            continue;
+        }
+        $un = db()->prepare('SELECT COUNT(*) FROM messages WHERE from_id = ? AND to_id = ? AND is_read = 0');
+        $un->execute([$oid, $uid]);
+        $convs[] = ['other_id' => $oid, 'username' => $usr['username'], 'name' => $usr['name'], 'last' => $last, 'unread' => (int) $un->fetchColumn()];
+    }
+    return $convs;
+}
+function get_conversation(int $uid, int $other): array
+{
+    $st = db()->prepare('SELECT * FROM messages WHERE (from_id = ? AND to_id = ?) OR (from_id = ? AND to_id = ?) ORDER BY id ASC LIMIT 300');
+    $st->execute([$uid, $other, $other, $uid]);
+    $rows = $st->fetchAll();
+    db()->prepare('UPDATE messages SET is_read = 1 WHERE to_id = ? AND from_id = ?')->execute([$uid, $other]);
+    return $rows;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Gamification : XP & rangs (façon GTA)                              */
 /* ------------------------------------------------------------------ */
 function rank_tiers(): array
@@ -490,8 +554,13 @@ function get_events(int $limit = 12): array
 function user_achievements(int $uid): array
 {
     $s = user_xp_stats($uid);
-    $articles = (int) db()->query('SELECT COUNT(*) FROM articles WHERE author_id = ' . (int) $uid . " AND status='published'")->fetchColumn();
-    $arts = (int) db()->query('SELECT COUNT(*) FROM fanarts WHERE user_id = ' . (int) $uid . " AND status='approved'")->fetchColumn();
+    $u = (int) $uid;
+    $articles = (int) db()->query('SELECT COUNT(*) FROM articles WHERE author_id = ' . $u . " AND status='published'")->fetchColumn();
+    $arts = (int) db()->query('SELECT COUNT(*) FROM fanarts WHERE user_id = ' . $u . " AND status='approved'")->fetchColumn();
+    $likesGiven = (int) db()->query('SELECT COUNT(*) FROM likes WHERE user_id = ' . $u)->fetchColumn();
+    $likesRecv = (int) db()->query("SELECT COUNT(*) FROM likes l WHERE (l.kind='post' AND l.item_id IN (SELECT id FROM forum_posts WHERE user_id=$u)) OR (l.kind='fanart' AND l.item_id IN (SELECT id FROM fanarts WHERE user_id=$u))")->fetchColumn();
+    $msgs = (int) db()->query('SELECT COUNT(*) FROM messages WHERE from_id = ' . $u)->fetchColumn();
+    $age = (int) db()->query('SELECT COALESCE(DATEDIFF(NOW(), created_at),0) FROM users WHERE id = ' . $u)->fetchColumn();
     return [
         ['🎟️', 'Bienvenue à Vice City', 'Crée ton compte', true],
         ['💬', 'Première prise de parole', 'Poste ton 1er message', $s['posts'] >= 1],
@@ -500,6 +569,10 @@ function user_achievements(int $uid): array
         ['🏛️', 'Pilier du forum', 'Atteins 50 messages', $s['posts'] >= 50],
         ['✍️', 'Plume de Vice City', 'Publie un article', $articles >= 1],
         ['🎨', 'Artiste de Leonida', 'Fais valider un fan-art', $arts >= 1],
+        ['💜', 'Généreux', 'Aime 5 publications', $likesGiven >= 5],
+        ['🔥', 'Apprécié', 'Reçois 10 likes', $likesRecv >= 10],
+        ['💌', 'Sociable', 'Envoie un message privé', $msgs >= 1],
+        ['📅', 'Vétéran', 'Membre depuis 30 jours', $age >= 30],
         ['👑', 'Légende', 'Atteins 2000 XP', $s['xp'] >= 2000],
     ];
 }

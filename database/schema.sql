@@ -10,7 +10,7 @@ USE vicehubx;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS forum_posts, forum_threads, forum_categories,
-    fanarts, events, likes, notifications,
+    fanarts, events, likes, notifications, messages,
     poll_votes, poll_options, polls, article_tags, tags,
     comments, articles, categories, newsletter_subscribers, media, ads,
     affiliate_links, products, orders, seo_pages, settings, vehicles, characters, map_zones,
@@ -234,6 +234,20 @@ CREATE TABLE notifications (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_user (user_id, is_read),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------- Messagerie privée ----------
+CREATE TABLE messages (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    from_id    INT NOT NULL,
+    to_id      INT NOT NULL,
+    body       TEXT NOT NULL,
+    is_read    TINYINT(1) NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_to (to_id, is_read),
+    INDEX idx_pair (from_id, to_id),
+    FOREIGN KEY (from_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
 -- ---------- SEO ----------
