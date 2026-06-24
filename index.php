@@ -481,7 +481,9 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
         <h2>📨 <?= e(t('newsletter')) ?></h2>
         <p class="muted"><?= e(t('newsletter_text')) ?></p>
         <?php if ($newsletter_msg): ?>
-            <div class="alert alert--<?= e($newsletter_msg[0]) ?>"><?= e($newsletter_msg[1]) ?></div>
+            <div class="alert alert--<?= e($newsletter_msg[0]) ?>"
+                 <?php if ($newsletter_msg[0] === 'ok'): ?>data-mission="<?= e(lang() === 'fr' ? 'MISSION ACCOMPLIE' : 'MISSION PASSED') ?>" data-mission-sub="<?= e(lang() === 'fr' ? 'Inscription confirmée · Respect +100' : 'Subscribed · Respect +100') ?>"<?php endif; ?>>
+                <?= e($newsletter_msg[1]) ?></div>
         <?php endif; ?>
         <form method="post" class="inline-form" style="justify-content:center;max-width:480px;margin:1rem auto 0">
             <?= csrf_field() ?>

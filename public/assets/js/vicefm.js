@@ -163,12 +163,17 @@
       setTimeout(function () { w.classList.add('out'); }, 2600);
       setTimeout(function () { w.remove(); }, 3200);
       if (!playing) { start(); var p = document.querySelector('.vfm__play'); if (p) p.textContent = '⏸'; var v = document.querySelector('.vfm'); if (v) v.classList.add('vfm--on'); }
+      // Lie la triche au HUD : niveau de recherche maximal façon GTA
+      if (window.ViceHUD) { window.ViceHUD.setWanted(5); }
     }
     document.addEventListener('keydown', function (e) {
       if (/^[a-zA-Z]$/.test(e.key)) {
         buf = (buf + e.key.toLowerCase()).slice(-12);
         if (buf.indexOf('vicecity') !== -1) { buf = ''; fire('TRICHE : BIENVENUE À VICE CITY 🌴'); }
         else if (buf.indexOf('leonida') !== -1) { buf = ''; fire('TRICHE : ACCÈS LEONIDA DÉBLOQUÉ ⭐'); }
+        else if (buf.indexOf('sixstars') !== -1) { buf = ''; fire('TRICHE : AVIS DE RECHERCHE ★★★★★★'); if (window.ViceHUD) window.ViceHUD.setWanted(6); }
+        else if (buf.indexOf('lowprofile') !== -1) { buf = ''; if (window.ViceHUD) { window.ViceHUD.setWanted(0); window.ViceHUD.mission('PROFIL BAS', 'Recherche effacée'); } }
+        else if (buf.indexOf('respect') !== -1) { buf = ''; if (window.ViceHUD) window.ViceHUD.mission('RESPECT +', 'Réputation de Vice City'); }
       }
       kbuf = (kbuf + e.key).slice(-KONAMI.length);
       if (kbuf === KONAMI) { kbuf = ''; fire('CODE KONAMI : MODE VICE ACTIVÉ 🎮'); }

@@ -1320,3 +1320,71 @@ a.wz-item:hover { color: #fff; }
 .weazel__clock b { color: #fff; font-variant-numeric: tabular-nums; }
 @media (max-width: 720px) { .weazel__clock { display: none; } .weazel__brand { font-size: .72rem; padding: .5rem .6rem; } }
 @media (prefers-reduced-motion: reduce) { .weazel__track { animation: none; } }
+
+/* ============ HUD Vice City (radar / minimap GTA) ============ */
+.vhud { position: fixed; right: 16px; bottom: 16px; z-index: 60; width: 132px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px; user-select: none;
+    filter: drop-shadow(0 10px 26px rgba(0,0,0,.55)); animation: vhud-in .6s ease both; }
+@keyframes vhud-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.vhud__stars { display: flex; gap: 2px; cursor: pointer; font-size: .82rem; line-height: 1; }
+.vhud__stars i { color: rgba(255,255,255,.16); transition: color .25s, text-shadow .25s, transform .25s; font-style: normal; }
+.vhud__stars i.on { color: #ffd166; text-shadow: 0 0 8px #ffb703; transform: scale(1.08); }
+.vhud__stars--active { animation: vhud-star-flash 1s steps(2,start) infinite; }
+@keyframes vhud-star-flash { 50% { filter: brightness(1.4); } }
+
+.vhud__radar { position: relative; width: 116px; height: 116px; border-radius: 50%; overflow: hidden;
+    border: 2px solid rgba(43,214,255,.5);
+    background:
+        radial-gradient(circle at 50% 50%, rgba(43,214,255,.10), rgba(10,8,22,.96) 70%),
+        #0a0816;
+    box-shadow: inset 0 0 24px rgba(43,214,255,.18), 0 0 0 4px rgba(0,0,0,.5); }
+.vhud__rings { position: absolute; inset: 0; border-radius: 50%;
+    background: repeating-radial-gradient(circle at 50% 50%, transparent 0 17px, rgba(43,214,255,.12) 17px 18px); }
+.vhud__road { position: absolute; left: 50%; top: -10%; width: 3px; height: 120%;
+    background: linear-gradient(180deg, transparent, rgba(255,209,102,.55), transparent); transform-origin: 50% 50%; }
+.vhud__road--a { transform: translateX(-50%) rotate(24deg); }
+.vhud__road--b { transform: translateX(-50%) rotate(-58deg); background: linear-gradient(180deg, transparent, rgba(57,255,170,.45), transparent); }
+.vhud__road--c { transform: translateX(-50%) rotate(90deg); width: 2px; }
+.vhud__sweep { position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(57,255,170,.55), rgba(57,255,170,.08) 50deg, transparent 90deg);
+    animation: vhud-sweep 3.6s linear infinite; }
+@keyframes vhud-sweep { to { transform: rotate(360deg); } }
+.vhud__player { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform: translate(-50%,-50%);
+    border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 11px solid #fff;
+    filter: drop-shadow(0 0 5px #2bd6ff); }
+.vhud__blip { position: absolute; width: 7px; height: 7px; border-radius: 50%; }
+.vhud__blip--1 { left: 34%; top: 32%; background: #ff2e88; box-shadow: 0 0 8px #ff2e88; animation: vhud-blip 2.2s ease-in-out infinite; }
+.vhud__blip--2 { left: 64%; top: 60%; background: #39ffaa; box-shadow: 0 0 8px #39ffaa; animation: vhud-blip 2.8s ease-in-out infinite .6s; }
+@keyframes vhud-blip { 0%,100% { opacity: .35; transform: scale(.7); } 50% { opacity: 1; transform: scale(1.15); } }
+.vhud__n { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); font-size: .56rem; font-weight: 900; color: #ff5fae; letter-spacing: .05em; }
+.vhud__bar { display: flex; flex-direction: column; align-items: center; gap: 1px;
+    font-size: .58rem; font-weight: 800; letter-spacing: .06em; color: #cdbdf0; text-transform: uppercase;
+    background: rgba(8,6,18,.78); border: 1px solid rgba(255,46,136,.28); border-radius: 8px; padding: 3px 8px; }
+.vhud__time b { color: #fff; font-variant-numeric: tabular-nums; }
+.vhud__time i { font-style: normal; }
+.vhud--paused .vhud__sweep, .vhud--paused .vhud__blip { animation-play-state: paused; }
+body.is-wanted .vhud__radar { border-color: rgba(255,46,136,.85); box-shadow: inset 0 0 26px rgba(255,46,136,.3), 0 0 14px rgba(255,46,136,.5); }
+@media (max-width: 640px) { .vhud { display: none; } }
+@media (prefers-reduced-motion: reduce) { .vhud__sweep, .vhud__blip, .vhud__stars--active { animation: none; } }
+
+/* ============ Bannières MISSION PASSED / WASTED / BUSTED ============ */
+.vh-banner { position: fixed; left: 50%; top: 40%; transform: translate(-50%,-50%) scale(.86);
+    z-index: 220; pointer-events: none; text-align: center; opacity: 0;
+    transition: opacity .45s ease, transform .55s cubic-bezier(.2,.8,.2,1); width: min(92vw, 760px); }
+.vh-banner.in { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+.vh-banner.out { opacity: 0; transform: translate(-50%,-50%) scale(1.04); }
+.vh-banner__bg { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 120%; height: 130%; border-radius: 18px; z-index: -1;
+    background: linear-gradient(90deg, transparent, rgba(0,0,0,.62) 18%, rgba(0,0,0,.62) 82%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent);
+            mask-image: linear-gradient(90deg, transparent, #000 16%, #000 84%, transparent); }
+.vh-banner__title { display: block; font-family: Georgia, 'Times New Roman', serif; font-weight: 900;
+    font-style: italic; font-size: clamp(2.4rem, 8vw, 4.6rem); line-height: 1; letter-spacing: .01em;
+    text-transform: uppercase; }
+.vh-banner__sub { display: block; margin-top: .4rem; font-weight: 800; letter-spacing: .14em;
+    text-transform: uppercase; font-size: clamp(.72rem, 2.4vw, .95rem); color: #f4ecff; }
+.vh-banner--mission .vh-banner__title { color: #fff;
+    background: linear-gradient(180deg, #d6ffe9, #39ffaa 55%, #16c79a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 18px rgba(57,255,170,.6)); }
+.vh-banner--wasted .vh-banner__title { color: #ff3b5c; filter: drop-shadow(0 4px 18px rgba(255,59,92,.6)); }
+.vh-banner--busted .vh-banner__title { color: #2bd6ff; filter: drop-shadow(0 4px 18px rgba(43,214,255,.6)); }

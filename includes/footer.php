@@ -88,6 +88,7 @@
 
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 <script src="<?= e(asset('js/vicefm.js')) ?>" defer></script>
+<script src="<?= e(asset('js/immersion.js')) ?>" defer></script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('<?= e(url('sw.js')) ?>').catch(function(){});});}</script>
 
 <!-- Bandeau cookies (RGPD) -->
