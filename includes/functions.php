@@ -718,16 +718,21 @@ function get_products(?string $category = null, ?int $limit = null, ?string $sub
 }
 
 /**
- * Encart promotionnel « Boutique » à insérer dans un article (CTA wallpaper).
- * Met en avant un wallpaper au hasard pour inciter à l'achat.
+ * Encart promotionnel « Boutique » à insérer dans un article (CTA).
+ * Priorité aux produits « propulsés » (cta=1) choisis par l'admin, tous types
+ * confondus (wallpapers, t-shirts, mugs…), sinon repli sur les wallpapers vedette.
  */
 function article_shop_cta(string $variant = 'full'): string
 {
     static $pool = null;
     if ($pool === null) {
         try {
-            $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' AND featured=1 ORDER BY RAND() LIMIT 8")->fetchAll();
-            if (!$pool) {
+            // 1) produits propulsés par l'admin (toutes catégories)
+            $pool = db()->query("SELECT * FROM products WHERE active=1 AND cta=1 ORDER BY RAND() LIMIT 10")->fetchAll();
+            if (!$pool) { // 2) repli : wallpapers vedette
+                $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' AND featured=1 ORDER BY RAND() LIMIT 8")->fetchAll();
+            }
+            if (!$pool) { // 3) repli : n'importe quel wallpaper
                 $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' ORDER BY RAND() LIMIT 8")->fetchAll();
             }
         } catch (Throwable $e) {
@@ -739,30 +744,43 @@ function article_shop_cta(string $variant = 'full'): string
     }
     $p = $pool[array_rand($pool)];
     $fr = lang() === 'fr';
+    $is_wp = !empty($p['digital_file']);
     $purl = with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])));
-    $allurl = with_lang(url('pages/shop.php?cat=wallpaper'));
+    $allurl = with_lang(url('pages/shop.php' . ($is_wp ? '?cat=wallpaper' : '')));
     $price = price_html($p['price'], active_currency());
+    $cats = product_categories();
+    $badge = $is_wp ? 'HD' : ($p['badge'] ?: ($cats[$p['category']] ?? '★'));
 
     if ($variant === 'inline') {
+        $msg = $is_wp
+            ? ($fr ? 'Tu aimes l’univers de Vice City&nbsp;? Habille ton écran avec nos wallpapers HD.' : 'Love the Vice City vibe? Dress up your screen with our HD wallpapers.')
+            : ($fr ? 'Soutiens le site et affiche ton style avec nos goodies Vice City.' : 'Support the site and show your style with our Vice City goodies.');
         return '<aside class="art-cta art-cta--inline">'
-            . '<span class="art-cta__tag">🖥️ ' . ($fr ? 'Boutique' : 'Shop') . '</span>'
-            . '<p>' . ($fr ? 'Tu aimes l’univers de Vice City&nbsp;? Habille ton écran avec nos wallpapers HD.' : 'Love the Vice City vibe? Dress up your screen with our HD wallpapers.') . '</p>'
-            . '<a class="btn btn--primary" href="' . e($allurl) . '">' . ($fr ? 'Voir les wallpapers' : 'Browse wallpapers') . ' →</a>'
+            . '<span class="art-cta__tag">🛍️ ' . ($fr ? 'Boutique' : 'Shop') . '</span>'
+            . '<p>' . $msg . '</p>'
+            . '<a class="btn btn--primary" href="' . e($allurl) . '">' . ($fr ? 'Voir la boutique' : 'Browse the shop') . ' →</a>'
             . '</aside>';
     }
+
+    $title = $is_wp
+        ? ($fr ? 'Habille ton écran avec Vice City' : 'Bring Vice City to your screen')
+        : ($fr ? 'Le style Vice City, sur toi' : 'Wear the Vice City vibe');
+    $desc = $is_wp
+        ? ($fr ? 'Qualité magnifique, livrée sans filigrane en PNG, JPEG et PDF après achat.' : 'Gorgeous quality, delivered watermark-free in PNG, JPEG and PDF after purchase.')
+        : ($fr ? 'Édition fan ViceHub X. Paiement sécurisé Stripe.' : 'ViceHub X fan edition. Secure Stripe checkout.');
+    $cta1 = $is_wp ? ($fr ? 'Voir ce wallpaper' : 'View this wallpaper') : ($fr ? 'Voir le produit' : 'View product');
 
     return '<aside class="art-cta">'
         . '<a class="art-cta__media" href="' . e($purl) . '" aria-label="' . e($p['name']) . '">'
         . '<img src="' . e(img_src($p['image'])) . '" alt="' . e($p['name']) . '" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">'
-        . '<span class="art-cta__badge">HD</span></a>'
+        . '<span class="art-cta__badge">' . e($badge) . '</span></a>'
         . '<div class="art-cta__body">'
-        . '<span class="art-cta__tag">🖥️ ' . ($fr ? 'Boutique ViceHub X' : 'ViceHub X Shop') . '</span>'
-        . '<h3>' . ($fr ? 'Habille ton écran avec Vice City' : 'Bring Vice City to your screen') . '</h3>'
-        . '<p>« ' . e($p['name']) . ' » — <strong>' . $price . '</strong>. '
-        . ($fr ? 'Qualité magnifique, livrée sans filigrane en PNG, JPEG et PDF après achat.' : 'Gorgeous quality, delivered watermark-free in PNG, JPEG and PDF after purchase.') . '</p>'
+        . '<span class="art-cta__tag">🛍️ ' . ($fr ? 'Boutique ViceHub X' : 'ViceHub X Shop') . '</span>'
+        . '<h3>' . $title . '</h3>'
+        . '<p>« ' . e($p['name']) . ' » — <strong>' . $price . '</strong>. ' . $desc . '</p>'
         . '<div class="art-cta__btns">'
-        . '<a class="btn btn--primary" href="' . e($purl) . '">' . ($fr ? 'Voir ce wallpaper' : 'View this wallpaper') . ' →</a>'
-        . '<a class="btn btn--ghost" href="' . e($allurl) . '">' . ($fr ? 'Toute la collection' : 'Full collection') . '</a>'
+        . '<a class="btn btn--primary" href="' . e($purl) . '">' . $cta1 . ' →</a>'
+        . '<a class="btn btn--ghost" href="' . e($allurl) . '">' . ($fr ? 'La boutique' : 'The shop') . '</a>'
         . '</div></div></aside>';
 }
 

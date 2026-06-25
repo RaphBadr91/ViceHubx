@@ -61,4 +61,16 @@ return [
     'mousepad.png' => "$CDN/hf_20260623_051510_ce83737a-c826-492b-a139-e17bc53be523.png",
     'console.png'  => "$CDN/hf_20260623_051512_ec364c7e-92be-4538-8d78-8456a695a966.png",
     'game-case.png'=> "$CDN/hf_20260623_051513_7d55e51b-c7ff-4365-858a-afc72116bffa.png",
+
+    // --- Goodies (t-shirts, mugs, stylo, carnet, tote, stickers…) ---
+    'shop-pen.png'             => "$CDN/hf_20260625_155811_6e93c6d1-3e81-42d6-b65b-6ff5ede215f3.jpeg",
+    'shop-notebook.png'        => "$CDN/hf_20260625_155815_525a4f1a-5cc2-4fb3-b55f-fb8dc523483f.png",
+    'shop-tshirt-palm.png'     => "$CDN/hf_20260625_155820_ea5d2938-71c3-4437-ba33-6f03af076c21.png",
+    'shop-tshirt-flamingo.png' => "$CDN/hf_20260625_155823_434729fa-0674-47b3-aee6-980c3567a803.png",
+    'shop-mug-skyline.png'     => "$CDN/hf_20260625_155826_3fc394b8-4e51-4c32-800c-07a9c546623c.png",
+    'shop-mug-enamel.png'      => "$CDN/hf_20260625_155828_72b3b1a0-e4c1-45e6-8098-4c2408197f79.jpeg",
+    'shop-tote.png'            => "$CDN/hf_20260625_155830_64bcbc9a-9e13-4c9e-b639-d470c35cd1e4.jpeg",
+    'shop-stickers.png'        => "$CDN/hf_20260625_155832_361f133b-dd7f-47c1-aa1f-303231335e8e.jpeg",
+    'shop-phonecase.png'       => "$CDN/hf_20260625_155834_9985ccce-c488-49b3-9d98-6e7fbbe741c0.jpeg",
+    'shop-keychain.png'        => "$CDN/hf_20260625_155836_f0940fe4-2acf-4f70-aea4-6015d69635fc.jpeg",
 ];

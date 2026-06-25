@@ -68,8 +68,10 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php if (!empty($ROBOTS)): ?><meta name="robots" content="<?= e($ROBOTS) ?>"><?php endif; ?>
     <meta name="theme-color" content="#0a0a16">
     <link rel="manifest" href="<?= e(url('manifest.webmanifest')) ?>">
-    <link rel="apple-touch-icon" href="<?= e(asset('img/icon-192.png')) ?>">
-    <link rel="icon" type="image/png" href="<?= e(asset('img/icon-192.png')) ?>">
+    <link rel="icon" type="image/svg+xml" href="<?= e(asset('img/favicon.svg')) ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= e(asset('img/favicon-32.png')) ?>">
+    <link rel="icon" type="image/png" sizes="192x192" href="<?= e(asset('img/icon-192.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">

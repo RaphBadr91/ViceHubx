@@ -18,6 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'feature' && $id) {
             db()->prepare('UPDATE products SET featured = 1 - featured WHERE id = ?')->execute([$id]);
             $flash = ['ok', 'Mise en avant mise à jour.'];
+        } elseif ($action === 'cta' && $id) {
+            db()->prepare('UPDATE products SET cta = 1 - cta WHERE id = ?')->execute([$id]);
+            $flash = ['ok', 'Produit propulsé (CTA) mis à jour.'];
         }
     }
 }
@@ -40,7 +43,7 @@ $cats = product_categories();
 
 <div class="glass" style="border-radius:18px;padding:1rem 1.2rem;overflow-x:auto">
     <table class="data-table">
-        <thead><tr><th>#</th><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Marchand</th><th>Vedette</th><th>Visible</th><th></th></tr></thead>
+        <thead><tr><th>#</th><th>Produit</th><th>Catégorie</th><th>Prix</th><th>Marchand</th><th>Vedette</th><th title="Propulsé en encart CTA dans les articles">CTA 🚀</th><th>Visible</th><th></th></tr></thead>
         <tbody>
         <?php foreach ($products as $p): ?>
             <tr>
@@ -55,6 +58,14 @@ $cats = product_categories();
                         <input type="hidden" name="action" value="feature">
                         <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
                         <button class="link-all" style="background:none;border:0;cursor:pointer"><?= $p['featured'] ? '⭐' : '☆' ?></button>
+                    </form>
+                </td>
+                <td>
+                    <form method="post" style="display:inline">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="cta">
+                        <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
+                        <button class="link-all" style="background:none;border:0;cursor:pointer" title="<?= !empty($p['cta']) ? 'Retirer du CTA' : 'Propulser en CTA' ?>"><?= !empty($p['cta']) ? '🚀' : '·' ?></button>
                     </form>
                 </td>
                 <td>
