@@ -21,12 +21,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($action === 'cta' && $id) {
             db()->prepare('UPDATE products SET cta = 1 - cta WHERE id = ?')->execute([$id]);
             $flash = ['ok', 'Produit propulsé (CTA) mis à jour.'];
+        } elseif ($action === 'cta_count') {
+            $n = max(1, min(50, (int) ($_POST['cta_count'] ?? 6)));
+            set_setting('cta_count', (string) $n);
+            $flash = ['ok', "Rotation CTA réglée sur $n produit(s)."];
         }
     }
 }
 
 $products = db()->query('SELECT * FROM products ORDER BY sort ASC, id ASC')->fetchAll();
 $cats = product_categories();
+$cta_count = max(1, min(50, (int) get_setting('cta_count', '6')));
+$cta_flagged = (int) db()->query("SELECT COUNT(*) c FROM products WHERE active=1 AND cta=1")->fetch()['c'];
 ?>
 <div class="admin-bar">
     <h1>Boutique</h1>
@@ -40,6 +46,23 @@ $cats = product_categories();
     Aucune gestion de stock ni d'expédition : tout est géré par le marchand. Renseignez vos liens d'affiliation
     dans chaque produit pour percevoir les commissions automatiquement.
 </p>
+
+<div class="glass" style="border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+    <form method="post" style="display:flex;gap:.7rem;align-items:flex-end;margin:0">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="cta_count">
+        <div style="margin:0">
+            <label style="font-weight:700">🚀 Produits propulsés en rotation</label>
+            <input type="number" name="cta_count" value="<?= $cta_count ?>" min="1" max="50" style="width:90px">
+        </div>
+        <button class="btn btn--primary" type="submit">Enregistrer</button>
+    </form>
+    <p class="muted" style="font-size:.84rem;max-width:420px;margin:0">
+        Ce nombre de produits est mis en avant <strong>au hasard</strong> dans les encarts des articles
+        (rotation quotidienne, pour l'immersion). Candidats : les produits cochés 🚀 ci-dessous
+        (<strong><?= $cta_flagged ?></strong> coché<?= $cta_flagged > 1 ? 's' : '' ?>) — si aucun n'est coché, tout le catalogue vendable est utilisé.
+    </p>
+</div>
 
 <div class="glass" style="border-radius:18px;padding:1rem 1.2rem;overflow-x:auto">
     <table class="data-table">

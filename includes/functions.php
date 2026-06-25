@@ -722,22 +722,40 @@ function get_products(?string $category = null, ?int $limit = null, ?string $sub
  * Priorité aux produits « propulsés » (cta=1) choisis par l'admin, tous types
  * confondus (wallpapers, t-shirts, mugs…), sinon repli sur les wallpapers vedette.
  */
+/**
+ * Pool de produits « propulsés » en rotation.
+ * L'admin choisit un nombre (réglage cta_count) ; on sélectionne ce nombre de
+ * produits, en rotation quotidienne (déterministe par jour) pour l'immersion.
+ * Candidats : produits cochés 🚀 par l'admin, sinon tout produit vendable.
+ */
+function cta_pool(): array
+{
+    try {
+        $count = max(1, min(50, (int) get_setting('cta_count', '6')));
+        $cand = db()->query("SELECT * FROM products WHERE active=1 AND cta=1")->fetchAll();
+        if (!$cand) {
+            $cand = db()->query("SELECT * FROM products WHERE active=1 AND sale_type='stripe' AND image IS NOT NULL AND image <> ''")->fetchAll();
+        }
+        if (!$cand) {
+            $cand = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper'")->fetchAll();
+        }
+        if (!$cand) {
+            return [];
+        }
+        // Rotation stable sur la journée : ordre déterministe par (id, jour), puis on garde N.
+        $day = date('Ymd');
+        usort($cand, fn($a, $b) => strcmp(md5($a['id'] . '-' . $day), md5($b['id'] . '-' . $day)));
+        return array_slice($cand, 0, $count);
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
 function article_shop_cta(string $variant = 'full'): string
 {
     static $pool = null;
     if ($pool === null) {
-        try {
-            // 1) produits propulsés par l'admin (toutes catégories)
-            $pool = db()->query("SELECT * FROM products WHERE active=1 AND cta=1 ORDER BY RAND() LIMIT 10")->fetchAll();
-            if (!$pool) { // 2) repli : wallpapers vedette
-                $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' AND featured=1 ORDER BY RAND() LIMIT 8")->fetchAll();
-            }
-            if (!$pool) { // 3) repli : n'importe quel wallpaper
-                $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' ORDER BY RAND() LIMIT 8")->fetchAll();
-            }
-        } catch (Throwable $e) {
-            $pool = [];
-        }
+        $pool = cta_pool();
     }
     if (!$pool) {
         return '';
