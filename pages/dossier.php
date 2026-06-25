@@ -24,7 +24,20 @@ $sections = [
     ['radios',     '📻', $fr ? 'Les radios' : 'Radio stations'],
     ['chrono',     '🕹️', $fr ? 'Chronologie de la saga' : 'Series timeline'],
     ['lexique',    '📖', $fr ? 'Lexique GTA' : 'GTA glossary'],
+    ['explorer',   '🧭', $fr ? 'Pour aller plus loin' : 'Dig deeper'],
 ];
+
+// Articles à relier au dossier (maillage interne / SEO)
+$dossier_cols = [
+    ['news',     $fr ? '📰 Actus à la une'   : '📰 Top news'],
+    ['guides',   $fr ? '📘 Guides essentiels' : '📘 Key guides'],
+    ['leaks',    $fr ? '🕵️ Leaks décryptés'  : '🕵️ Leaks explained'],
+    ['trailers', $fr ? '🎬 Analyses de trailers' : '🎬 Trailer breakdowns'],
+];
+$dossier_articles = [];
+foreach ($dossier_cols as [$slug, $label]) {
+    $dossier_articles[$slug] = get_articles(['category' => $slug, 'lang' => lang(), 'limit' => 5]);
+}
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section dossier">
@@ -109,10 +122,29 @@ require ROOT_PATH . '/includes/header.php';
             <h2>📖 <?= $fr ? 'Lexique GTA' : 'GTA glossary' ?></h2>
             <dl class="lore-dl">
                 <dt>RAGE</dt><dd class="muted"><?= $fr ? 'Le moteur de jeu de Rockstar (physique, météo, IA).' : 'Rockstar’s game engine.' ?></dd>
+                <dt>BAWSAQ</dt><dd class="muted"><?= $fr ? 'La bourse de l’univers GTA. Découvre notre ' : 'The GTA universe stock market. See our ' ?><a class="link-all" href="<?= e(with_lang(url('pages/bawsaq.php'))) ?>"><?= $fr ? 'BAWSAQ 2026' : 'BAWSAQ 2026' ?></a>.</dd>
                 <dt><?= $fr ? 'Indice de recherche' : 'Wanted level' ?></dt><dd class="muted"><?= $fr ? 'Le niveau d’alerte de la police, en étoiles ⭐.' : 'Police alert level, in stars ⭐.' ?></dd>
                 <dt>Leak</dt><dd class="muted"><?= $fr ? 'Fuite non confirmée. À prendre avec prudence.' : 'Unconfirmed leak. Handle with care.' ?></dd>
                 <dt>Heist</dt><dd class="muted"><?= $fr ? 'Braquage scénarisé, souvent en plusieurs étapes.' : 'A scripted multi-step robbery.' ?></dd>
             </dl>
+        </div>
+
+        <div class="lore-block glass" id="explorer">
+            <h2>🧭 <?= $fr ? 'Pour aller plus loin' : 'Dig deeper' ?></h2>
+            <p class="muted"><?= $fr ? 'Nos derniers articles pour approfondir chaque thème du dossier.' : 'Our latest articles to dig into each topic.' ?></p>
+            <div class="lore-links">
+                <?php foreach ($dossier_cols as [$cslug, $clabel]): $list = $dossier_articles[$cslug] ?? []; if (!$list) continue; ?>
+                    <div class="lore-links__col">
+                        <h3><?= e($clabel) ?></h3>
+                        <ul>
+                            <?php foreach ($list as $a): ?>
+                                <li><a href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>"><?= e($a['title']) ?></a></li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <a class="link-all" href="<?= e(with_lang(url('pages/' . ($cslug === 'leaks' ? 'leaks-lab' : ($cslug === 'trailers' ? 'trailer-lab' : $cslug)) . '.php'))) ?>"><?= $fr ? 'Tout voir' : 'See all' ?> →</a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </article>
 

@@ -22,6 +22,8 @@ $safe_body = strip_tags(
     (string) $article['body'],
     '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br>'
 );
+// Encart Boutique (CTA wallpaper) inséré au cœur de l'article pour inciter à l'achat
+$safe_body = inject_after_paragraph($safe_body, 2, article_shop_cta('full'));
 
 // Tags
 $tstmt = db()->prepare(
@@ -76,6 +78,8 @@ require ROOT_PATH . '/includes/header.php';
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
+
+    <?= article_shop_cta('inline') ?>
 
     <p class="muted" style="margin-top:2rem;font-size:.82rem;border-top:1px solid var(--glass-brd);padding-top:1rem">
         <?= e(t('legal_disclaimer')) ?>

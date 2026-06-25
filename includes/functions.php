@@ -696,13 +696,17 @@ function get_deals(): array
 }
 
 /** Produits de la boutique (filtrables par catégorie). */
-function get_products(?string $category = null, ?int $limit = null): array
+function get_products(?string $category = null, ?int $limit = null, ?string $subcategory = null): array
 {
     $sql = "SELECT * FROM products WHERE active = 1";
     $args = [];
     if ($category !== null && $category !== '' && $category !== 'all') {
         $sql .= " AND category = ?";
         $args[] = $category;
+    }
+    if ($subcategory !== null && $subcategory !== '' && $subcategory !== 'all') {
+        $sql .= " AND subcategory = ?";
+        $args[] = $subcategory;
     }
     $sql .= " ORDER BY sort ASC, id ASC";
     if ($limit !== null) {
@@ -711,6 +715,84 @@ function get_products(?string $category = null, ?int $limit = null): array
     $stmt = db()->prepare($sql);
     $stmt->execute($args);
     return $stmt->fetchAll();
+}
+
+/**
+ * Encart promotionnel « Boutique » à insérer dans un article (CTA wallpaper).
+ * Met en avant un wallpaper au hasard pour inciter à l'achat.
+ */
+function article_shop_cta(string $variant = 'full'): string
+{
+    static $pool = null;
+    if ($pool === null) {
+        try {
+            $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' AND featured=1 ORDER BY RAND() LIMIT 8")->fetchAll();
+            if (!$pool) {
+                $pool = db()->query("SELECT * FROM products WHERE active=1 AND category='wallpaper' ORDER BY RAND() LIMIT 8")->fetchAll();
+            }
+        } catch (Throwable $e) {
+            $pool = [];
+        }
+    }
+    if (!$pool) {
+        return '';
+    }
+    $p = $pool[array_rand($pool)];
+    $fr = lang() === 'fr';
+    $purl = with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])));
+    $allurl = with_lang(url('pages/shop.php?cat=wallpaper'));
+    $price = price_html($p['price'], active_currency());
+
+    if ($variant === 'inline') {
+        return '<aside class="art-cta art-cta--inline">'
+            . '<span class="art-cta__tag">🖥️ ' . ($fr ? 'Boutique' : 'Shop') . '</span>'
+            . '<p>' . ($fr ? 'Tu aimes l’univers de Vice City&nbsp;? Habille ton écran avec nos wallpapers HD.' : 'Love the Vice City vibe? Dress up your screen with our HD wallpapers.') . '</p>'
+            . '<a class="btn btn--primary" href="' . e($allurl) . '">' . ($fr ? 'Voir les wallpapers' : 'Browse wallpapers') . ' →</a>'
+            . '</aside>';
+    }
+
+    return '<aside class="art-cta">'
+        . '<a class="art-cta__media" href="' . e($purl) . '" aria-label="' . e($p['name']) . '">'
+        . '<img src="' . e(img_src($p['image'])) . '" alt="' . e($p['name']) . '" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">'
+        . '<span class="art-cta__badge">HD</span></a>'
+        . '<div class="art-cta__body">'
+        . '<span class="art-cta__tag">🖥️ ' . ($fr ? 'Boutique ViceHub X' : 'ViceHub X Shop') . '</span>'
+        . '<h3>' . ($fr ? 'Habille ton écran avec Vice City' : 'Bring Vice City to your screen') . '</h3>'
+        . '<p>« ' . e($p['name']) . ' » — <strong>' . $price . '</strong>. '
+        . ($fr ? 'Qualité magnifique, livrée sans filigrane en PNG, JPEG et PDF après achat.' : 'Gorgeous quality, delivered watermark-free in PNG, JPEG and PDF after purchase.') . '</p>'
+        . '<div class="art-cta__btns">'
+        . '<a class="btn btn--primary" href="' . e($purl) . '">' . ($fr ? 'Voir ce wallpaper' : 'View this wallpaper') . ' →</a>'
+        . '<a class="btn btn--ghost" href="' . e($allurl) . '">' . ($fr ? 'Toute la collection' : 'Full collection') . '</a>'
+        . '</div></div></aside>';
+}
+
+/** Insère un bloc HTML après le n-ième paragraphe d'un corps d'article. */
+function inject_after_paragraph(string $html, int $after, string $insert): string
+{
+    if ($insert === '') {
+        return $html;
+    }
+    $parts = explode('</p>', $html);
+    if (count($parts) <= $after) {
+        return $html . $insert;
+    }
+    $out = '';
+    $last = count($parts) - 1;
+    foreach ($parts as $i => $part) {
+        $out .= $part . ($i < $last ? '</p>' : '');
+        if ($i === $after - 1) {
+            $out .= $insert;
+        }
+    }
+    return $out;
+}
+
+/** Thèmes de wallpapers (sous-catégories) avec libellés bilingues + emoji. */
+function wallpaper_themes(): array
+{
+    return lang() === 'fr'
+        ? ['voiture' => '🚗 Voiture', 'avion' => '✈️ Avion', 'ville' => '🌆 Ville', 'nuit' => '🌃 Nuit', 'fille' => '💃 Fille']
+        : ['voiture' => '🚗 Cars', 'avion' => '✈️ Planes', 'ville' => '🌆 City', 'nuit' => '🌃 Night', 'fille' => '💃 Girls'];
 }
 
 /** Produits mis en avant (page d'accueil). */

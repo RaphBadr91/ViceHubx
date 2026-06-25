@@ -37,6 +37,7 @@ $nav = [
         ['map.php',         t('nav_map')],
         ['vehicles.php',    t('nav_vehicles')],
         ['characters.php',  t('nav_characters')],
+        ['bawsaq.php',      '📈 BAWSAQ'],
         ['evenements.php',  lang() === 'fr' ? 'Événements' : 'Events'],
     ]],
     ['label' => t('nav_community'), 'children' => [

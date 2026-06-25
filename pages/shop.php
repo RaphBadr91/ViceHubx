@@ -6,12 +6,32 @@ $active_cat = isset($_GET['cat']) ? trim((string) $_GET['cat']) : 'all';
 if ($active_cat !== 'all' && !isset($cats[$active_cat])) {
     $active_cat = 'all';
 }
-$products = get_products($active_cat === 'all' ? null : $active_cat);
 
-$SEO_TITLE = ($active_cat === 'all' ? t('page_shop_title') : ($cats[$active_cat] ?? t('page_shop_title'))) . ' — ' . APP_NAME;
-$SEO_DESC  = lang() === 'fr'
-    ? 'Boutique ViceHub X : affiches GTA VI générées par IA, jeux, consoles, vêtements et goodies. Sélection officielle de fans.'
-    : 'ViceHub X shop: AI-generated GTA VI posters, games, consoles, apparel and goodies. Official fan picks.';
+// Sous-thèmes wallpapers (Voiture / Avion / Ville / Nuit / Fille)
+$themes = wallpaper_themes();
+$is_wallpaper = ($active_cat === 'wallpaper');
+$active_theme = $is_wallpaper && isset($_GET['theme']) ? trim((string) $_GET['theme']) : 'all';
+if (!$is_wallpaper || !isset($themes[$active_theme])) {
+    $active_theme = 'all';
+}
+
+$products = get_products(
+    $active_cat === 'all' ? null : $active_cat,
+    null,
+    $is_wallpaper && $active_theme !== 'all' ? $active_theme : null
+);
+
+$theme_label = ($is_wallpaper && $active_theme !== 'all') ? trim((string) (explode(' ', $themes[$active_theme], 2)[1] ?? $themes[$active_theme])) : '';
+$SEO_TITLE = ($active_cat === 'all'
+    ? t('page_shop_title')
+    : (($cats[$active_cat] ?? t('page_shop_title')) . ($theme_label ? ' ' . $theme_label : ''))) . ' — ' . APP_NAME;
+$SEO_DESC  = $is_wallpaper
+    ? (lang() === 'fr'
+        ? 'Wallpapers GTA VI / Vice City en haute définition' . ($theme_label ? ' — thème ' . $theme_label : '') . ' : voiture, avion, ville, nuit et plus. Téléchargement immédiat, qualité magnifique, sans filigrane après achat.'
+        : 'HD GTA VI / Vice City wallpapers' . ($theme_label ? ' — ' . $theme_label . ' theme' : '') . ': cars, planes, city, night and more. Instant download, gorgeous quality, watermark-free after purchase.')
+    : (lang() === 'fr'
+        ? 'Boutique ViceHub X : wallpapers et affiches GTA VI générés par IA, jeux, consoles, vêtements et goodies. Sélection de fans.'
+        : 'ViceHub X shop: AI-generated GTA VI wallpapers and posters, games, consoles, apparel and goodies. Fan picks.');
 
 $cat_emoji = ['poster' => '🖼️', 'wallpaper' => '🖥️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
 
@@ -63,6 +83,25 @@ require ROOT_PATH . '/includes/header.php';
             </a>
         <?php endforeach; ?>
     </div>
+
+    <?php if ($is_wallpaper): ?>
+    <!-- Bandeau wallpapers + sous-thèmes (Voiture / Avion / Ville / Nuit / Fille) -->
+    <div class="wp-hero glass reveal">
+        <div class="wp-hero__txt">
+            <span class="eyebrow">🖥️ <?= lang() === 'fr' ? 'Collection Wallpapers HD' : 'HD Wallpapers Collection' ?></span>
+            <h2><?= lang() === 'fr' ? 'Des fonds d’écran magnifiques de Vice City' : 'Gorgeous Vice City wallpapers' ?></h2>
+            <p class="muted"><?= lang() === 'fr'
+                ? 'Générés par IA, qualité haute définition. Aperçu filigrané — après achat, vous recevez le fichier propre par e-mail en PNG, JPEG et PDF.'
+                : 'AI-generated, high definition. Watermarked preview — after purchase, you get the clean file by email in PNG, JPEG and PDF.' ?></p>
+        </div>
+    </div>
+    <div class="shop-filters shop-filters--themes" role="tablist" aria-label="Thèmes">
+        <a class="chip chip--theme<?= $active_theme === 'all' ? ' chip--on' : '' ?>" href="<?= e(with_lang(url('pages/shop.php?cat=wallpaper'))) ?>"><?= lang() === 'fr' ? '✨ Tous' : '✨ All' ?></a>
+        <?php foreach ($themes as $tkey => $tlabel): ?>
+            <a class="chip chip--theme<?= $active_theme === $tkey ? ' chip--on' : '' ?>" href="<?= e(with_lang(url('pages/shop.php?cat=wallpaper&theme=' . $tkey))) ?>"><?= e($tlabel) ?></a>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if (!$products): ?>
         <p class="muted" style="margin-top:2rem"><?= e(t('no_content')) ?></p>
