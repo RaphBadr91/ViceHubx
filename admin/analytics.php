@@ -87,7 +87,7 @@ $top_members = $rows(
      ORDER BY (posts + threads*2) DESC LIMIT 8"
 );
 $top_threads = $rows(
-    "SELECT t.title, t.slug,
+    "SELECT t.id, t.title,
             (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id = t.id) replies,
             t.last_post_at
      FROM forum_threads t ORDER BY replies DESC, t.last_post_at DESC LIMIT 8"
@@ -217,7 +217,7 @@ $bar_chart = static function (array $data, string $accent): string {
             <tbody>
             <?php foreach ($top_threads as $t): ?>
                 <tr>
-                    <td><a class="link-all" href="<?= e(url('pages/forum-thread.php?slug=' . urlencode($t['slug']))) ?>"><?= e($t['title']) ?></a></td>
+                    <td><a class="link-all" href="<?= e(url('pages/forum-thread.php?id=' . (int) $t['id'])) ?>"><?= e($t['title']) ?></a></td>
                     <td><?= (int) $t['replies'] ?></td>
                 </tr>
             <?php endforeach; ?>
