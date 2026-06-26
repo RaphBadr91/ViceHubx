@@ -1,6 +1,8 @@
 <?php
 /**
- * ViceHub X — Articles « précommandes GTA VI » (actualité chaude).
+ * ViceHub X — Articles « précommandes GTA VI » (infos officielles vérifiées).
+ * 2 éditions seulement : Standard (79,99 $) et Ultimate (99,99 $).
+ * Bonus de précommande : Vintage Vice City Pack (+ mois de GTA+ sur PS/Xbox).
  * Produit database/seed_preorder.sql.  Usage : php scripts/gen-preorder.php
  */
 $CAT = ['news' => 1, 'guides' => 2, 'leaks' => 3, 'trailers' => 4, 'blog' => 5];
@@ -12,71 +14,71 @@ $A = [];
 $add = function ($cat, $badge, $title, $excerpt, $body) use (&$A) { $A[] = compact('cat', 'badge', 'title', 'excerpt', 'body'); };
 
 $add('news', 'official', 'GTA VI : les précommandes sont ouvertes !',
-    'C’est officiel : on peut enfin réserver GTA VI. Voici l’essentiel à savoir avant de craquer.',
-    $p('Le moment que des millions de joueurs attendaient est arrivé : les <strong>précommandes de GTA VI</strong> sont ouvertes. Après deux bandes-annonces record, Rockstar permet enfin de réserver le jeu le plus attendu de la décennie.')
-    . $p('Avant de foncer, prends une minute : vérifie la plateforme, l’édition, et la politique de remboursement de ton revendeur. Une précommande, ça s’annule, mais autant partir sur de bonnes bases.')
-    . $p('Sur ViceHub X, on suivra chaque évolution officielle — prix, éditions, bonus — sans relayer de fausses informations. Reste connecté.'));
+    'C’est officiel : on peut précommander GTA VI. Deux éditions, un bonus collector pour les nostalgiques.',
+    $p('Le moment que des millions de joueurs attendaient est arrivé : les <strong>précommandes de GTA VI</strong> sont ouvertes. Rockstar propose <strong>deux éditions</strong> : la <strong>Standard</strong> (79,99 $) et l’<strong>Ultimate</strong> (99,99 $).')
+    . $p('La Standard, c’est le jeu complet : toute l’histoire de Jason et Lucia dans l’État de Leonida. L’Ultimate ajoute un ensemble de contenus exclusifs répartis tout au long de l’aventure.')
+    . $p('Et surtout : toute précommande numérique donne droit au <strong>Vintage Vice City Pack</strong>, un clin d’œil à Vice City (2002). On détaille tout ça dans nos guides ci-dessous. Sortie prévue le <strong>19 novembre 2026</strong>.'));
 
-$add('guides', null, 'Éditions de GTA VI : Standard, Deluxe ou Collector ?',
-    'Trois éditions, trois budgets. On t’aide à choisir celle qui te correspond vraiment.',
-    $p('Comme souvent chez Rockstar, GTA VI se décline probablement en plusieurs éditions. Voici comment les départager selon ton profil.')
+$add('guides', null, 'Standard ou Ultimate : quelle édition de GTA VI choisir ?',
+    'Deux éditions, deux budgets (79,99 $ vs 99,99 $). On t’aide à trancher selon ton profil.',
+    $p('Contrairement aux rumeurs, il n’y a <strong>pas d’édition Collector physique</strong> : GTA VI se décline en seulement deux éditions. Voici comment les départager.')
+    . $h('Standard Edition — 79,99 $')
+    . $p('Le jeu complet, point. Toute l’histoire et l’open-world de Leonida avec Jason et Lucia. Disponible en <strong>numérique ou en boîte (code in box)</strong>. Parfait si tu viens d’abord pour la campagne.')
+    . $h('Ultimate Edition — 99,99 $ (numérique)')
+    . $p('La Standard + un paquet de contenus exclusifs disséminés dans l’aventure :')
     . $ul([
-        '<strong>Standard</strong> : le jeu, point. Parfait si tu veux l’essentiel au meilleur prix.',
-        '<strong>Deluxe</strong> : le bon compromis, avec des bonus in-game sans exploser le budget.',
-        '<strong>Collector</strong> : pour les passionnés — goodies physiques, steelbook, objets exclusifs.',
+        '<strong>5 véhicules exclusifs</strong> et <strong>4 variantes d’armes</strong>',
+        'Plusieurs <strong>packs cosmétiques</strong> pour Jason et Lucia',
+        '<strong>5 boutiques</strong> : Rideout Customs, Sara’s Unisex Salon, Stock 305, Electric Fang Tattoo, One-Eyed Willie’s',
+        'Un <strong>garage dédié</strong> et une <strong>mission annexe</strong> en plus',
     ])
-    . $p('Notre conseil : si tu joues surtout pour l’histoire, la Standard suffit. Si tu es fan absolu de Vice City, le Collector se réserve vite… et part vite.'));
+    . $p('Notre conseil : si tu veux tout débloquer day-one et soutenir au max, l’Ultimate vaut ses 20 $ de plus. Sinon la Standard suffit largement pour vivre l’histoire.'));
+
+$add('news', 'official', 'Le Vintage Vice City Pack : le bonus de précommande expliqué',
+    'Un clin d’œil à Vice City 2002 offert à toute précommande numérique avant le 20 novembre 2026.',
+    $p('Le gros bonus de précommande, c’est le <strong>Vintage Vice City Pack</strong> : un hommage direct à <em>Grand Theft Auto: Vice City</em> (2002). Il regroupe un <strong>véhicule</strong>, un <strong>garage</strong> et des <strong>cosmétiques</strong> pour Jason et Lucia.')
+    . $p('Bonne nouvelle : il est inclus dans <strong>tous les achats numériques</strong> de GTA VI réalisés <strong>avant le 20 novembre 2026</strong>, quelle que soit l’édition. Pas besoin de prendre l’Ultimate pour l’obtenir.')
+    . $p('Pour les nostalgiques de la première Vice City, c’est le détail qui fait plaisir. Un pont symbolique entre 2002 et 2026.'));
+
+$add('guides', null, 'Précommande GTA VI : le mois de GTA+ offert sur PS5 et Xbox',
+    'Précommander en numérique sur PlayStation Store ou Microsoft Store débloque un mois de GTA+.',
+    $p('Si tu précommandes une édition <strong>numérique</strong> de GTA VI sur le <strong>PlayStation Store</strong> ou le <strong>Microsoft Store</strong>, tu obtiens un <strong>mois de GTA+ offert</strong>. Concrètement, ça donne :')
+    . $ul([
+        'Un dépôt mensuel de <strong>GTA$ 500 000</strong> sur ton compte GTA Online',
+        'Des <strong>Shark Cards spéciales</strong> avec +15 % de GTA$ bonus',
+        'Des <strong>véhicules gratuits et réduits</strong> en rotation',
+        'L’accès à la <strong>bibliothèque de jeux GTA+</strong> (classiques Rockstar et autres)',
+    ])
+    . $p('Un argument de plus pour la précommande numérique, surtout si tu comptes mettre les pieds dans le online. À voir selon ta plateforme.'));
 
 $add('blog', null, 'Précommander GTA VI : faut-il craquer maintenant ?',
-    'L’éternel débat refait surface. Précommande maligne ou patience récompensée ?',
-    $p('Précommander, c’est s’assurer le jeu (et le Collector) dès la sortie. Mais c’est aussi payer avant d’avoir vu le produit final. Alors, on craque ou on attend ?')
-    . $p('Notre position : précommande si tu veux une édition limitée ou si tu es certain de jouer day-one. Sinon, rien ne t’empêche d’attendre les premiers retours. Un bon jeu reste un bon jeu une semaine après.')
-    . $p('Dans tous les cas, garde la tête froide : la hype est immense, mais ton portefeuille mérite une décision réfléchie.'));
-
-$add('guides', null, 'Où précommander GTA VI au meilleur prix ?',
-    'Boutiques officielles, revendeurs, versions régionales : nos repères pour payer le juste prix.',
-    $p('Le prix d’une précommande peut varier selon l’endroit. Quelques réflexes pour éviter de payer trop cher — sans tomber dans les pièges.')
-    . $ul([
-        'Compare boutique officielle et revendeurs sérieux.',
-        'Méfie-toi des offres trop belles : clés régionales, sites douteux, faux bonus.',
-        'Vérifie la date de débit et les conditions d’annulation.',
-        'Surveille les codes promo des grandes enseignes à l’approche de la sortie.',
-    ])
-    . $p('Un bon plan, c’est un prix correct chez un vendeur fiable. La sécurité de ta commande prime sur quelques euros.'));
+    'L’éternel débat. Avec seulement deux éditions et un bonus limité dans le temps, on fait le point.',
+    $p('Précommander, c’est s’assurer le jeu dès la sortie et décrocher le <strong>Vintage Vice City Pack</strong> (réservé aux achats numériques avant le 20 novembre 2026). Mais c’est aussi payer avant d’avoir vu le produit final.')
+    . $p('Notre position : si tu es certain de jouer day-one et que le bonus te parle, fonce — il est limité dans le temps. Si tu hésites, rien ne presse vraiment côté édition : pas de collector physique en rupture à craindre.')
+    . $p('Garde la tête froide : la hype est immense, mais 80 $ (ou 100 $), ça se décide à tête reposée.'));
 
 $add('news', 'analysis', 'Précommandes GTA VI : la folie mondiale est lancée',
-    'Serveurs saturés, files d’attente, éditions collector qui s’arrachent : le phénomène dépasse tout.',
-    $p('À peine ouvertes, les précommandes de GTA VI ont déclenché une ruée mondiale. Sites ralentis, collectors en rupture, réseaux sociaux en ébullition : l’ampleur est à la hauteur de l’attente.')
-    . $p('Ce raz-de-marée confirme ce que tout le monde pressentait : GTA VI s’annonce comme le plus gros lancement de l’histoire du jeu vidéo. Et on n’en est qu’à la précommande.')
-    . $p('Chez ViceHub X, on vit ce moment avec vous. Racontez-nous votre précommande sur le forum — la communauté s’enflamme déjà.'));
+    'Serveurs saturés, files d’attente : la ruée sur GTA VI a commencé dès l’ouverture.',
+    $p('À peine ouvertes, les précommandes de GTA VI ont déclenché une ruée mondiale. Sites ralentis, réseaux sociaux en ébullition : l’ampleur est à la hauteur de l’attente.')
+    . $p('Avec une Standard à 79,99 $ et une Ultimate à 99,99 $, chacun choisit son niveau d’engagement — mais tout le monde vise le même rendez-vous : le 19 novembre 2026.')
+    . $p('Chez ViceHub X, on vit ce moment avec vous. Raconte-nous ta précommande sur le forum — la communauté s’enflamme déjà dans la section GTA VI.'));
 
 $add('guides', null, 'PS5 ou Xbox Series : sur quelle console précommander GTA VI ?',
-    'Manette, écosystème, perspective d’abonnement : les critères pour choisir sereinement.',
-    $p('GTA VI sortira d’abord sur consoles de nouvelle génération. PS5 ou Xbox Series : sur laquelle réserver ? Tout dépend de ton écosystème et de tes habitudes.')
+    'Manette, écosystème, bonus GTA+ : les critères pour choisir sereinement.',
+    $p('GTA VI sort sur consoles de nouvelle génération. PS5 ou Xbox Series ? Tout dépend de ton écosystème — et le <strong>mois de GTA+ offert</strong> s’applique aux deux stores en précommande numérique.')
     . $ul([
-        'Tu as déjà une console et des amis dessus ? Reste où est ta communauté.',
-        'Tu aimes le retour haptique ? La manette PS5 est un argument.',
-        'Tu mises sur la flexibilité d’un abonnement ? Surveille l’écosystème Xbox.',
+        'Tu as déjà des amis sur une plateforme ? Reste où est ta communauté.',
+        'Tu aimes le retour haptique ? La manette PS5 est un argument pour la conduite.',
+        'Tu veux la boîte physique (code in box) ? C’est possible avec la Standard.',
         'Dans tous les cas, vise une version optimisée nouvelle génération.',
     ])
     . $p('Le plus important : le jeu sera magnifique sur les deux. Choisis le confort, pas la guéguerre.'));
 
-$add('leaks', 'rumor', 'Édition Collector de GTA VI : ce qu’elle pourrait contenir',
-    'Statuette, steelbook, art book, carte de Leonida… tour d’horizon des hypothèses (non officielles).',
-    $p('Une édition Collector fait rêver tous les fans. En attendant le contenu officiel, voici ce que la communauté espère y trouver — à prendre comme des hypothèses, pas des certitudes.')
-    . $ul([
-        'Une statuette du duo Lucia & Jason.',
-        'Un steelbook exclusif et un art book.',
-        'Une carte de Leonida en tissu, façon « feelies ».',
-        'Des objets bonus dans le thème néon de Vice City.',
-    ])
-    . $p('Tant que Rockstar n’a rien dévoilé, ces idées restent spéculatives. Mais avoue que ça donne envie.'));
-
-$add('blog', null, 'Les bonus de précommande de GTA VI valent-ils le coup ?',
-    'Cash in-game, tenues, accès anticipés : on fait le point sur ce qui compte vraiment.',
-    $p('Les bonus de précommande font partie du jeu marketing. Mais lesquels valent vraiment le détour, et lesquels sont du bonus de confort ?')
-    . $p('Notre avis : les bonus cosmétiques sont sympas mais rarement décisifs. Un peu de cash de départ peut aider, à condition de ne pas déséquilibrer l’économie. L’essentiel reste le jeu de base, pas la carotte.')
-    . $p('Bref, précommande pour le jeu et l’édition que tu veux — pas seulement pour un bonus. Le plaisir durera bien plus longtemps qu’une tenue exclusive.'));
+$add('blog', null, 'Ce que l’Ultimate Edition change vraiment dans ta partie',
+    'Cinq véhicules, des boutiques exclusives, une mission en plus : décryptage de la valeur réelle.',
+    $p('L’<strong>Ultimate Edition</strong> n’est pas qu’un pack de skins. Elle distribue ses contenus <strong>tout au long de l’histoire</strong> de Jason et Lucia, ce qui change un peu l’expérience day-one.')
+    . $p('Concrètement : <strong>5 véhicules</strong> et <strong>4 variantes d’armes</strong> en plus, des <strong>packs cosmétiques</strong>, <strong>5 boutiques</strong> supplémentaires (dont Rideout Customs et Electric Fang Tattoo), un <strong>garage dédié</strong> et une <strong>mission annexe</strong> que les joueurs Standard ne verront pas au lancement.')
+    . $p('Vaut-elle ses 20 $ de plus ? Si tu veux un démarrage plus garni et soutenir le studio, oui. Si tu privilégies l’histoire brute, la Standard reste un excellent choix. À toi de voir.'));
 
 /* ---- SQL ---- */
 function slugify($s) {
@@ -99,8 +101,8 @@ foreach ($A as $i => $a) {
         $a['badge'] ? q($a['badge']) : 'NULL', q('published'), q(date('Y-m-d H:i:s', $ts)));
     $ts -= mt_rand(6, 14) * 3600;
 }
-$sql = "-- ViceHub X — Articles précommandes GTA VI (généré par scripts/gen-preorder.php)\n"
+$sql = "-- ViceHub X — Articles précommandes GTA VI (infos officielles) — scripts/gen-preorder.php\n"
      . "INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, status, published_at) VALUES\n"
      . implode(",\n", $rows) . ";\n";
 file_put_contents(dirname(__DIR__) . '/database/seed_preorder.sql', $sql);
-echo "OK : " . count($rows) . " articles précommande écrits.\n";
+echo "OK : " . count($rows) . " articles précommande (infos officielles) écrits.\n";
