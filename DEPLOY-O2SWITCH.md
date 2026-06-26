@@ -7,23 +7,24 @@ peaufiner dessus, puis basculer sur le domaine public quand c'est prêt.
 
 ---
 
-## 0. Avant tout — générer et committer les médias IA (sur ton Mac)
+## 0. Les médias IA se chargent tout seuls depuis le CDN ✅
 
-Les vidéos/images générées par IA ne sont pas dans le dépôt (elles sont
-téléchargées localement). Sans elles, le site en ligne affiche les emojis de
-repli. Depuis le dossier du projet :
+Bonne nouvelle : **rien à générer pour que les images s'affichent**. Le site
+résout automatiquement chaque visuel depuis le CDN (`config/cdn_map.php`,
+`config/wallpapers.php`). Les articles, produits, scènes et wallpapers
+s'affichent dès la mise en ligne (le serveur récupère l'image du CDN au besoin).
 
-```bash
-bash scripts/make-hero-video.sh          # vidéo hero + scènes + photos véhicules
-bash scripts/make-wallpapers.sh          # wallpapers HD (fichiers privés vendus 5 €)
-git add public/assets storage/wallpapers && git commit -m "médias: hero + scènes + véhicules + wallpapers"
-git push
-```
+> 🖼️ **Wallpapers** : à la première demande, le serveur télécharge le fichier propre
+> depuis le CDN vers `storage/wallpapers/` (privé), puis sert un **aperçu filigrané**
+> (`preview.php`). À l'achat, l'acheteur reçoit le fichier **sans filigrane** par
+> e-mail (PNG+JPEG+PDF) et via `download.php` — lien valide après paiement Stripe.
+>
+> Pré-requis : que le serveur O2Switch puisse faire des requêtes HTTPS sortantes
+> (c'est le cas par défaut). Les dossiers `storage/wallpapers/` et
+> `public/assets/img/shop/cache/` doivent être **inscriptibles** (voir étape 6).
 
-> 🖼️ **Wallpapers** : les fichiers propres vont dans `storage/wallpapers/` (privé, non
-> accessible au public). L'aperçu affiché en boutique est filigrané automatiquement
-> (`preview.php`). À l'achat, l'acheteur reçoit le fichier propre via `download.php`
-> (lien valide uniquement après paiement Stripe confirmé).
+*(Optionnel : `bash scripts/make-wallpapers.sh` sur ton Mac pour vendre des fichiers
+locaux au lieu de les récupérer du CDN — non nécessaire pour le lancement.)*
 
 ---
 
@@ -78,11 +79,13 @@ sélectionne `database/schema.sql` → **Exécuter**.
 **Option B — installateur web** : ouvre `https://dev.tondomaine.fr/install.php`
 puis clique « Installer maintenant ». **⚠️ Supprime `install.php` juste après.**
 
-## 6. Permissions du dossier d'upload
+## 6. Permissions des dossiers inscriptibles
 
-Le dossier `uploads/` doit être inscriptible (images de l'admin) :
+Ces dossiers doivent être inscriptibles par le serveur :
 ```bash
-chmod 755 uploads
+chmod 755 uploads                          # images téléversées (admin)
+chmod 755 storage/wallpapers               # cache des wallpapers propres (CDN)
+chmod 755 public/assets/img/shop/cache     # cache des aperçus filigranés
 ```
 
 ## 7. Sécurité — à vérifier
@@ -134,6 +137,30 @@ règle dans **Admin → Boutique** (type de vente, prix, lien, image, mise en av
 
 > 💡 Tu peux aussi lier un **ID de prix Stripe** (`price_…`) par produit si tu
 > préfères gérer les prix dans le Dashboard Stripe.
+
+---
+
+## 11. Activer les e-mails automatiques (Resend)
+
+Pour la **livraison automatique des wallpapers** (sans filigrane, par e-mail) et
+le formulaire de contact :
+
+1. Crée un compte sur **[resend.com](https://resend.com)** et **vérifie ton domaine**.
+2. Génère une **clé API** (`re_…`).
+3. Dans l'admin ViceHub : **Réglages → E-mails automatiques (Resend)** → colle la clé,
+   l'**adresse d'expéditeur** (sur le domaine vérifié) et l'e-mail de contact.
+   *(Ou via `.env` : `RESEND_API_KEY=re_…`.)*
+4. Clique **« Envoyer un test »** pour vérifier. Sans Resend, le site utilise le
+   `mail()` du serveur en repli.
+
+---
+
+## 12. CTA produits & rotation (immersion)
+
+Dans **Admin → Boutique** :
+- Coche 🚀 les produits à **propulser** (t-shirts, mugs, wallpapers…).
+- Règle le **nombre de produits en rotation** : ce nombre tourne au hasard chaque
+  jour dans les encarts des articles. Laisse vide les 🚀 = tout le catalogue tourne.
 
 ---
 
