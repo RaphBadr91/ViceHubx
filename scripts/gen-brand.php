@@ -1,12 +1,13 @@
 <?php
 /**
- * ViceHub X — Identité de marque « GTA VI » (logo, réseaux, favicon) via GD.
- * Style : clé visuelle Vice City — soleil rétro, grille néon, palmiers, flamant,
- * chiffre romain VI glossy et wordmark en dégradé rose→jaune (signature GTA VI).
+ * ViceHub X — Identité de marque façon GTA VI (couleurs + style) via GD.
+ * Pas de chiffre « VI ». Le wordmark VICEHUB X reprend la signature GTA VI :
+ * lettrage glossy en dégradé crème→rose→magenta, sur un coucher de soleil
+ * Vice City épuré (sun glow, palmiers, ciel violet→magenta→orange).
  *   Usage : php scripts/gen-brand.php
  */
-$ROOT = dirname(__DIR__);
-$IMG  = $ROOT . '/public/assets/img';
+$ROOT  = dirname(__DIR__);
+$IMG   = $ROOT . '/public/assets/img';
 $BRAND = $IMG . '/brand';
 @mkdir($BRAND, 0775, true);
 
@@ -15,200 +16,154 @@ $FONTI = '/usr/share/fonts/truetype/liberation/LiberationSans-BoldItalic.ttf';
 if (!is_file($FONT))  { $FONT  = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'; }
 if (!is_file($FONTI)) { $FONTI = $FONT; }
 
-function col($im,$r,$g,$b,$a=0){ return imagecolorallocatealpha($im,(int)$r,(int)$g,(int)$b,(int)$a); }
-function clampi($v,$lo,$hi){ return max($lo,min($hi,$v)); }
+function cc($im,$r,$g,$b,$a=0){ return imagecolorallocatealpha($im,(int)max(0,min(255,$r)),(int)max(0,min(255,$g)),(int)max(0,min(255,$b)),(int)$a); }
+function clampf($v,$lo,$hi){ return max($lo,min($hi,$v)); }
 
-/* Ciel GTA VI : violet profond -> magenta -> orange. */
-function sky($im,$w,$h,$horizon){
-    for($y=0;$y<$horizon;$y++){
-        $t=$y/max(1,$horizon);
-        $r=43+(255-43)*pow($t,1.6); $g=11+(120-11)*pow($t,2.3); $b=63+(70-63)*(1-$t)+ (90)*(1-$t);
-        imagefilledrectangle($im,0,$y,$w,$y,col($im,clampi($r,0,255),clampi($g,0,255),clampi($b,0,255)));
-    }
-    for($y=$horizon;$y<$h;$y++){
-        $t=($y-$horizon)/max(1,$h-$horizon);
-        imagefilledrectangle($im,0,$y,$w,$y,col($im,(int)(30*(1-$t)+8),6,(int)(52*(1-$t)+16)));
-    }
-}
-/* Soleil rétro à bandes (jaune -> magenta). */
-function retroSun($im,$cx,$cy,$R){
-    for($y=-$R;$y<=$R;$y++){
-        $t=($y+$R)/(2*$R);
-        $r=255; $g=230*(1-$t)+40*$t; $b=70*(1-$t)+150*$t;
-        $half=(int)sqrt(max(0,$R*$R-$y*$y));
-        imagefilledrectangle($im,$cx-$half,$cy+$y,$cx+$half,$cy+$y,col($im,$r,$g,$b));
-    }
-    for($i=0;$i<8;$i++){
-        $by=$cy+(int)($R*0.14)+$i*(int)($R*0.12);
-        $half=(int)sqrt(max(0,$R*$R-($by-$cy)*($by-$cy)));
-        imagefilledrectangle($im,$cx-$half,$by,$cx+$half,$by+max(2,(int)($R*0.025)+$i),col($im,28,8,46));
-    }
-}
-function neonGrid($im,$w,$h,$horizon,$pink,$cyan){
-    for($i=-14;$i<=14;$i++){ $x=$w/2+$i*($w/14); imageline($im,(int)($w/2),$horizon,(int)$x,$h,$cyan); }
-    for($i=1;$i<=11;$i++){ $p=$i/11; $y=$horizon+(int)(pow($p,2.2)*($h-$horizon)); imageline($im,0,$y,$w,$y,$pink); }
-}
-function skyline($im,$w,$h,$baseY,$dark){
-    $x=0; $seed=[0.5,0.85,0.35,0.95,0.6,0.45,0.85,0.4,0.7,0.55,0.92,0.5,0.78,0.6,0.4,0.82,0.5]; $i=0;
-    while($x<$w){ $bw=(int)($w*(0.035+($i%3)*0.011)); $bh=(int)($h*0.17*$seed[$i%count($seed)]);
-        imagefilledrectangle($im,$x,$baseY-$bh,$x+$bw-2,$baseY,$dark); $x+=$bw+(int)($w*0.006); $i++; }
-}
-function palm($im,$x,$y,$s,$dark){
-    $pts=[]; for($t=0;$t<=1;$t+=0.1){ $pts[]=[$x+(int)(sin($t*1.2)*$s*0.18),$y-(int)($t*$s)]; }
-    imagesetthickness($im,max(2,(int)($s*0.05)));
-    for($k=0;$k<count($pts)-1;$k++) imageline($im,$pts[$k][0],$pts[$k][1],$pts[$k+1][0],$pts[$k+1][1],$dark);
-    $top=end($pts);
-    foreach([200,228,256,286,316,338] as $a){ $rad=deg2rad($a);
-        $ex=$top[0]+(int)(cos($rad)*$s*0.5); $ey=$top[1]+(int)(sin($rad)*$s*0.42);
-        imageline($im,$top[0],$top[1],(int)$ex,(int)$ey,$dark); }
-    imagesetthickness($im,1);
-}
-/* Flamant néon stylisé (silhouette rose). */
-function flamingo($im,$cx,$cy,$s,$c){
-    imagesetthickness($im,max(3,(int)($s*0.06)));
-    // pattes
-    imageline($im,$cx-(int)($s*0.05),$cy+(int)($s*0.3),$cx-(int)($s*0.12),$cy+(int)($s*0.95),$c);
-    imageline($im,$cx+(int)($s*0.05),$cy+(int)($s*0.3),$cx+(int)($s*0.10),$cy+(int)($s*0.95),$c);
-    // corps
-    imagefilledellipse($im,$cx,$cy+(int)($s*0.18),(int)($s*0.5),(int)($s*0.32),$c);
-    // cou en S
-    $neck=[[$cx-(int)($s*0.08),$cy+(int)($s*0.05)],[$cx-(int)($s*0.22),$cy-(int)($s*0.18)],
-           [$cx-(int)($s*0.05),$cy-(int)($s*0.42)],[$cx+(int)($s*0.16),$cy-(int)($s*0.52)]];
-    for($k=0;$k<count($neck)-1;$k++) imageline($im,$neck[$k][0],$neck[$k][1],$neck[$k+1][0],$neck[$k+1][1],$c);
-    // tête + bec
-    imagefilledellipse($im,$cx+(int)($s*0.18),$cy-(int)($s*0.54),(int)($s*0.14),(int)($s*0.12),$c);
-    imagefilledpolygon($im,[$cx+(int)($s*0.26),$cy-(int)($s*0.56),$cx+(int)($s*0.42),$cy-(int)($s*0.46),$cx+(int)($s*0.27),$cy-(int)($s*0.48)],$c);
-    imagesetthickness($im,1);
-}
-/* Halo lumineux radial. */
-function glow($im,$cx,$cy,$R,$r,$g,$b){
-    for($i=$R;$i>0;$i-=2){ $a=clampi(118-(int)(($R-$i)*0.9),60,126);
-        imagefilledellipse($im,$cx,$cy,$i*2,$i*2,col($im,$r,$g,$b,$a)); }
+/* Interpolation multi-paliers : $stops = [[pos,[r,g,b]], ...] triés. */
+function stopColor($stops,$t){
+    $t=clampf($t,0,1); $n=count($stops);
+    if($t<=$stops[0][0]) return $stops[0][1];
+    if($t>=$stops[$n-1][0]) return $stops[$n-1][1];
+    for($i=0;$i<$n-1;$i++){ [$p0,$c0]=$stops[$i]; [$p1,$c1]=$stops[$i+1];
+        if($t>=$p0 && $t<=$p1){ $f=($t-$p0)/max(1e-6,$p1-$p0);
+            return [$c0[0]+($c1[0]-$c0[0])*$f,$c0[1]+($c1[1]-$c0[1])*$f,$c0[2]+($c1[2]-$c0[2])*$f]; } }
+    return $stops[$n-1][1];
 }
 
-/* Texte rempli d'un dégradé vertical (gloss) + halo néon — signature GTA VI. */
-function gradientText($im,$font,$size,$x,$y,$text,$top,$bot,$glow){
-    $bbox=imagettfbbox($size,0,$font,$text);
-    $tw=abs($bbox[2]-$bbox[0]); $th=abs($bbox[7]-$bbox[1]); $pad=(int)($size*0.5);
-    $w=$tw+$pad*2; $h=$th+$pad*2;
-    // halo sur l'image principale
-    for($i=0;$i<6;$i++){ $g=col($im,$glow[0],$glow[1],$glow[2],clampi(86-$i*7,44,120));
-        foreach([[-3,0],[3,0],[0,-3],[0,3],[3,3],[-3,-3],[4,0],[0,4]] as $o)
-            imagettftext($im,$size,0,$x+$o[0],$y+$o[1],$g,$font,$text); }
-    // calque texte blanc (masque)
-    $layer=imagecreatetruecolor($w,$h); imagesavealpha($layer,true); imagealphablending($layer,false);
-    imagefilledrectangle($layer,0,0,$w,$h,col($layer,0,0,0,127)); imagealphablending($layer,true);
-    $baseY=$pad+$th;
-    imagettftext($layer,$size,0,$pad,$baseY,col($layer,255,255,255),$font,$text);
+/* Fond coucher de soleil GTA VI (dégradé vertical riche + lueur de soleil). */
+function background($w,$h){
+    $im=imagecreatetruecolor($w,$h); imagealphablending($im,true);
+    // Palette GTA VI : teal/indigo en haut -> violet -> magenta -> orange au ras de l'horizon.
+    $stops=[[0.0,[18,16,58]],[0.18,[40,18,82]],[0.40,[96,28,104]],[0.56,[190,46,108]],[0.63,[255,118,72]],[0.70,[120,34,72]],[0.86,[22,12,38]],[1.0,[7,5,15]]];
+    for($y=0;$y<$h;$y++){ $c=stopColor($stops,$y/$h); imagefilledrectangle($im,0,$y,$w,$y,cc($im,$c[0],$c[1],$c[2])); }
+    $horizon=(int)($h*0.62);
+    $cx=(int)($w/2); $cy=(int)($horizon*0.94);
+    // lueur de soleil : large et basse (accent à l'horizon, pas un gros disque central)
+    $R=(int)(min($w,$h)*0.40);
+    for($i=$R;$i>0;$i-=3){ $a=clampf(96-($R-$i)*0.7,44,104); imagefilledellipse($im,$cx,$cy,(int)($i*2.3),(int)($i*1.25),cc($im,255,140,72,(int)$a)); }
+    // disque solaire compact
+    $sr=(int)(min($w,$h)*0.135);
+    for($y=-$sr;$y<=$sr;$y++){ $t=($y+$sr)/(2*$sr); $half=(int)sqrt(max(0,$sr*$sr-$y*$y));
+        imagefilledrectangle($im,$cx-$half,$cy+$y,$cx+$half,$cy+$y,cc($im,255,228*(1-$t)+95*$t,95*(1-$t)+150*$t)); }
+    // reflet sur l'eau
+    for($y=$horizon;$y<$h;$y++){ $a=clampf(54-($y-$horizon)*0.3,0,54); if($a<=0) break;
+        imagefilledrectangle($im,$cx-(int)($w*0.05),$y,$cx+(int)($w*0.05),$y,cc($im,255,130,80,(int)(127-$a))); }
+    return [$im,$horizon,$cx,$cy];
+}
+
+/* Palmier silhouette avec frondes feuillues. */
+function palm($im,$bx,$by,$s,$dark){
+    $seg=12; $prev=[$bx,$by];
+    for($i=1;$i<=$seg;$i++){ $t=$i/$seg; $x=$bx+sin($t*1.05)*$s*0.17; $y=$by-$t*$s;
+        imagesetthickness($im,(int)max(2,(1-$t)*$s*0.07)); imageline($im,(int)$prev[0],(int)$prev[1],(int)$x,(int)$y,$dark); $prev=[$x,$y]; }
+    imagesetthickness($im,1); $tx=$prev[0]; $ty=$prev[1];
+    $fronds=[[-205,1.0],[-238,1.05],[-268,1.1],[-292,1.05],[-322,1.0],[-352,0.85],[-18,0.8]];
+    foreach($fronds as [$a,$lf]){ $rad=deg2rad($a); $len=$s*0.46*$lf;
+        $ex=$tx+cos($rad)*$len; $ey=$ty+sin($rad)*$len+$s*0.14;
+        $mx=($tx+$ex)/2+cos($rad+1.57)*$s*0.07; $my=($ty+$ey)/2+sin($rad+1.57)*$s*0.07-$s*0.04;
+        $wd=$s*0.055;
+        imagefilledpolygon($im,array_map('intval',[$tx,$ty,$mx+$wd,$my,$ex,$ey,$mx-$wd,$my]),$dark); }
+}
+
+/* Skyline discrète. */
+function skyline($im,$w,$baseY,$dark){
+    $x=0; $seed=[0.45,0.8,0.3,0.9,0.55,0.4,0.8,0.35,0.65,0.5,0.88,0.45]; $i=0;
+    while($x<$w){ $bw=(int)($w*(0.03+($i%3)*0.01)); $bh=(int)($baseY*0.22*$seed[$i%count($seed)]);
+        imagefilledrectangle($im,$x,$baseY-$bh,$x+$bw-2,$baseY,$dark); $x+=$bw+(int)($w*0.005); $i++; }
+}
+
+/* Texte glossy en dégradé multi-paliers (signature GTA VI) : contour + halo + gloss. */
+function gtaText($im,$font,$size,$x,$y,$text,$stops,$glow){
+    // halo néon
+    for($i=0;$i<6;$i++){ $g=cc($im,$glow[0],$glow[1],$glow[2],clampf(92-$i*8,46,120));
+        foreach([[-4,0],[4,0],[0,-4],[0,4],[3,3],[-3,3],[3,-3],[-3,-3]] as $o) imagettftext($im,$size,0,$x+$o[0],$y+$o[1],$g,$font,$text); }
+    // contour foncé (définition)
+    $dk=cc($im,40,8,40);
+    foreach([[-2,0],[2,0],[0,-2],[0,2],[2,2],[-2,-2],[2,-2],[-2,2]] as $o) imagettftext($im,$size,0,$x+$o[0],$y+$o[1],$dk,$font,$text);
+    // calque masque
+    $b=imagettfbbox($size,0,$font,$text); $tw=abs($b[2]-$b[0]); $th=abs($b[7]-$b[1]); $pad=(int)($size*0.55);
+    $w=$tw+$pad*2; $h=$th+$pad*2; $layer=imagecreatetruecolor($w,$h);
+    imagesavealpha($layer,true); imagealphablending($layer,false);
+    imagefilledrectangle($layer,0,0,$w,$h,cc($layer,0,0,0,127)); imagealphablending($layer,true);
+    $baseY=$pad+$th; imagettftext($layer,$size,0,$pad,$baseY,cc($layer,255,255,255),$font,$text);
     imagealphablending($im,true);
     for($yy=0;$yy<$h;$yy++){
-        $t=clampi(($yy-$pad)/max(1,$th),0,1);
-        // gloss : éclaircit le tiers supérieur
-        $gl=$t<0.34?(1-$t/0.34)*0.5:0;
-        $r=$top[0]*(1-$t)+$bot[0]*$t; $g=$top[1]*(1-$t)+$bot[1]*$t; $b=$top[2]*(1-$t)+$bot[2]*$t;
-        $r=clampi($r+(255-$r)*$gl,0,255); $g=clampi($g+(255-$g)*$gl,0,255); $b=clampi($b+(255-$b)*$gl,0,255);
+        $t=clampf(($yy-$pad)/max(1,$th),0,1); $c=stopColor($stops,$t);
+        // gloss : bande lumineuse vers le haut + léger assombrissement en bas
+        $gl=exp(-pow($t-0.30,2)/(2*0.10*0.10))*0.55;
+        $r=$c[0]+(255-$c[0])*$gl; $g=$c[1]+(255-$c[1])*$gl; $bl=$c[2]+(255-$c[2])*$gl;
+        if($t>0.82){ $d=1-($t-0.82)*0.9; $r*=$d;$g*=$d;$bl*=$d; }
         $dy=$y-$baseY+$yy; if($dy<0||$dy>=imagesy($im)) continue;
-        for($xx=0;$xx<$w;$xx++){
-            $a=(imagecolorat($layer,$xx,$yy)>>24)&0x7F;
-            if($a>=120) continue;
-            $dx=$x+$xx-$pad; if($dx<0||$dx>=imagesx($im)) continue;
-            $al=(127-$a)/127;
+        for($xx=0;$xx<$w;$xx++){ $a=(imagecolorat($layer,$xx,$yy)>>24)&0x7F; if($a>=120) continue;
+            $dx=$x+$xx-$pad; if($dx<0||$dx>=imagesx($im)) continue; $al=(127-$a)/127;
             $ex=imagecolorat($im,$dx,$dy); $er=($ex>>16)&255; $eg=($ex>>8)&255; $eb=$ex&255;
-            imagesetpixel($im,$dx,$dy,col($im,$er*(1-$al)+$r*$al,$eg*(1-$al)+$g*$al,$eb*(1-$al)+$b*$al));
-        }
+            imagesetpixel($im,$dx,$dy,cc($im,$er*(1-$al)+$r*$al,$eg*(1-$al)+$g*$al,$eb*(1-$al)+$bl*$al)); }
     }
-    imagedestroy($layer);
-    return $tw;
+    imagedestroy($layer); return $tw;
 }
-function textW($size,$font,$text){ $b=imagettfbbox($size,0,$font,$text); return abs($b[2]-$b[0]); }
+function tW($size,$font,$text){ $b=imagettfbbox($size,0,$font,$text); return abs($b[2]-$b[0]); }
 
-/* Construit la scène Vice City (sans texte). */
-function scene($w,$h){
-    $im=imagecreatetruecolor($w,$h); imagealphablending($im,true);
-    $horizon=(int)($h*0.60);
-    sky($im,$w,$h,$horizon);
-    $pink=col($im,255,46,136,74); $cyan=col($im,43,214,255,80); $dark=col($im,12,8,28);
-    // halo soleil
-    glow($im,(int)($w/2),(int)($horizon*0.72),(int)(min($w,$h)*0.34),255,120,60);
-    retroSun($im,(int)($w/2),(int)($horizon*0.72),(int)(min($w,$h)*0.19));
-    neonGrid($im,$w,$h,$horizon,$pink,$cyan);
-    skyline($im,$w,$h,$horizon+1,$dark);
-    palm($im,(int)($w*0.07),$horizon+(int)($h*0.03),(int)($h*0.36),$dark);
-    palm($im,(int)($w*0.93),$horizon+(int)($h*0.03),(int)($h*0.36),$dark);
-    return [$im,$horizon];
+/* Dégradé signature (crème → rose → magenta). */
+$G=[[0.0,[255,236,179]],[0.32,[255,138,170]],[0.66,[255,46,136]],[1.0,[182,38,140]]];
+$GX=[[0.0,[198,245,255]],[0.5,[64,200,255]],[1.0,[40,120,235]]];
+
+function scene($w,$h,$withPalms=true){
+    [$im,$hz,$cx,$cy]=background($w,$h);
+    $dark=cc($im,10,7,24);
+    skyline($im,$w,$hz+1,$dark);
+    if($withPalms){ palm($im,(int)($w*0.085),$hz+(int)($h*0.05),(int)($h*0.42),$dark);
+        palm($im,(int)($w*0.915),$hz+(int)($h*0.05),(int)($h*0.42),$dark); }
+    return [$im,$hz];
 }
-function vignette($im,$w,$h){
-    for($i=0;$i<70;$i++){ $a=110-$i; if($a<0)break; imagerectangle($im,$i,$i,$w-$i-1,$h-$i-1,col($im,0,0,8,clampi(127-(int)($a/2.2),60,127))); }
+function vignette($im,$w,$h){ for($i=0;$i<80;$i++){ $a=120-$i; if($a<0)break; imagerectangle($im,$i,$i,$w-$i-1,$h-$i-1,cc($im,0,0,8,(int)clampf(127-$a/2.4,58,127))); } }
+
+/* Wordmark VICEHUB X centré (taille auto pour rentrer dans $maxW). */
+function wordmark($im,$cxImg,$cy,$font,$fonti,$size,$G,$GX,$tagline=true){
+    $wWord=tW($size,$font,'VICEHUB'); $gap=(int)($size*0.14); $wX=tW($size*1.12,$fonti,'X');
+    $total=$wWord+$gap+$wX; $x=(int)($cxImg-$total/2);
+    gtaText($im,$font,$size,$x,$cy,'VICEHUB',$G,[255,46,136]);
+    gtaText($im,$fonti,$size*1.12,$x+$wWord+$gap,$cy+(int)($size*0.04),'X',$GX,[43,170,255]);
+    if($tagline){ $tag='G T A   V I   ·   F A N   H U B'; $ts=max(11,(int)($size*0.19)); $tw=tW($ts,$font,$tag);
+        imagettftext($im,$ts,0,(int)($cxImg-$tw/2),$cy+(int)($size*0.52),cc($im,255,209,120),$font,$tag); }
+    return $total;
 }
-
-/* Dégradé signature GTA VI (jaune chaud -> rose magenta). */
-$GT=[255,214,77]; $GB=[255,40,120];
-
-/* Wordmark VICEHUB X + chiffre VI glossy + tagline. */
-function wordmark($im,$w,$cy,$font,$fonti,$size,$GT,$GB,$tagline=true){
-    $cx=(int)($w/2);
-    $wWord=textW($size,$font,'VICEHUB'); $wX=textW($size*1.18,$fonti,'X'); $gap=(int)($size*0.16);
-    $total=$wWord+$gap+$wX; $x=$cx-(int)($total/2);
-    gradientText($im,$font,$size,$x,$cy,'VICEHUB',$GT,$GB,[255,46,136]);
-    gradientText($im,$fonti,$size*1.18,$x+$wWord+$gap,$cy+(int)($size*0.05),'X',[120,230,255],[43,140,255],[43,214,255]);
-    if($tagline){
-        $tag='G T A   V I   ·   F A N   H U B'; $ts=max(11,(int)($size*0.2)); $tw=textW($ts,$font,$tag);
-        imagettftext($im,$ts,0,$cx-(int)($tw/2),$cy+(int)($size*0.5),col($im,255,209,102),$font,$tag);
-    }
+function fitSize($font,$fonti,$text,$xtext,$maxW){
+    for($s=160;$s>30;$s-=2){ $tot=tW($s,$font,$text)+(int)($s*0.14)+tW($s*1.12,$fonti,$xtext); if($tot<=$maxW) return $s; }
+    return 40;
 }
 
-/* ---- Asset 1 : carré post Instagram/TikTok 1080² ---- */
-[$sq,$hz]=scene(1080,1080);
-// gros VI glossy en filigrane derrière le wordmark
-gradientText($sq,'/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf',360,540-300,560,'VI',[255,225,120],[181,60,255],[181,60,255]);
-flamingo($sq,150,720,150,col($sq,255,60,150));
-wordmark($sq,1080,640,$GLOBALS['FONT'],$GLOBALS['FONTI'],92,$GT,$GB,true);
-vignette($sq,1080,1080);
-imagepng($sq,"$BRAND/logo-square.png");
+/* ---- 1) Carré post (Instagram / TikTok / Facebook) 1080² ---- */
+[$sq,]=scene(1080,1080);
+wordmark($sq,540,580,$FONT,$FONTI,116,$G,$GX,true);
+vignette($sq,1080,1080); imagepng($sq,"$BRAND/logo-square.png");
 
-/* ---- Asset 2 : photo de profil ronde IG/TikTok (emblème VI) ---- */
-[$pf,]=scene(1080,1080);
-gradientText($pf,'/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf',560,540-330,720,'VI',[255,225,120],[255,40,120],[255,46,136]);
-$tw=textW(58,$GLOBALS['FONT'],'VICEHUB X');
-imagettftext($pf,58,0,540-(int)($tw/2),900,col($pf,255,255,255),$GLOBALS['FONT'],'VICEHUB X');
-// masque circulaire + anneau néon
-$mask=imagecreatetruecolor(1080,1080); imagesavealpha($mask,true); imagealphablending($mask,false);
-for($y=0;$y<1080;$y++) for($x=0;$x<1080;$x++){
-    $d=sqrt(($x-540)**2+($y-540)**2);
-    if($d>530){ imagesetpixel($mask,$x,$y,imagecolorat($pf,$x,$y)); imagesetpixel($pf,$x,$y,col($pf,0,0,0,127)); }
-}
-imagedestroy($mask);
-imagealphablending($pf,true);
-for($r=520;$r<=532;$r++) imageellipse($pf,540,540,$r*2,$r*2,col($pf,255,46,136,20));
+/* ---- 2) Avatar rond (profil IG / TikTok / FB) 1080² ---- */
+[$pf,]=scene(1080,1080,false);
+$ps=fitSize($FONT,$FONTI,'VICEHUB','X',640);
+wordmark($pf,540,560,$FONT,$FONTI,$ps,$G,$GX,true);
+for($y=0;$y<1080;$y++) for($x=0;$x<1080;$x++){ if(sqrt(($x-540)**2+($y-540)**2)>532) imagesetpixel($pf,$x,$y,cc($pf,0,0,0,127)); }
+imagesavealpha($pf,true);
+for($r=522;$r<=534;$r++) imageellipse($pf,540,540,$r*2,$r*2,cc($pf,255,46,136,22));
 imagepng($pf,"$BRAND/logo-profile.png");
 imagepng(imagescale($pf,512,512),"$IMG/icon-512.png");
 imagepng(imagescale($pf,192,192),"$IMG/icon-192.png");
 imagepng(imagescale($pf,180,180),"$IMG/apple-touch-icon.png");
 
-/* ---- Asset 3 : bannière Facebook 1640 x 624 ---- */
-$SERIF='/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf';
+/* ---- 3) Bannière Facebook 1640 x 624 ---- */
 [$cov,]=scene(1640,624);
-$viW=textW(270,$SERIF,'VI');
-gradientText($cov,$SERIF,270,(int)(820-$viW/2),360,'VI',[255,225,120],[181,60,255],[181,60,255]);
-flamingo($cov,200,440,165,col($cov,255,60,150));
-wordmark($cov,1640,360,$GLOBALS['FONT'],$GLOBALS['FONTI'],104,$GT,$GB,true);
-vignette($cov,1640,624);
-imagepng($cov,"$BRAND/fb-cover.png");
+wordmark($cov,820,330,$FONT,$FONTI,118,$G,$GX,true);
+vignette($cov,1640,624); imagepng($cov,"$BRAND/fb-cover.png");
 
-/* ---- Asset 4 : story / TikTok 9:16 (1080 x 1920) ---- */
-[$st,$sh]=scene(1080,1920);
-gradientText($st,'/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf',460,540-280,1180,'VI',[255,225,120],[181,60,255],[181,60,255]);
-flamingo($st,200,1320,200,col($st,255,60,150));
-wordmark($st,1080,1000,$GLOBALS['FONT'],$GLOBALS['FONTI'],96,$GT,$GB,true);
-vignette($st,1080,1920);
-imagepng($st,"$BRAND/story-9x16.png");
+/* ---- 4) Vertical 9:16 (TikTok / Stories) 1080 x 1920 ---- */
+[$st,]=scene(1080,1920);
+wordmark($st,540,1000,$FONT,$FONTI,120,$G,$GX,true);
+vignette($st,1080,1920); imagepng($st,"$BRAND/story-9x16.png");
 
-/* ---- Asset 5 : favicon (emblème VI carré) ---- */
-[$fav,]=scene(256,256);
-gradientText($fav,'/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf',150,128-78,185,'VI',[255,225,120],[255,40,120],[255,46,136]);
-imagepng($fav,"$IMG/favicon-256.png");
-imagepng(imagescale($fav,32,32),"$IMG/favicon-32.png");
+/* ---- 5) Favicon : monogramme X glossy ---- */
+[$fav,]=scene(256,256,false);
+$xw=tW(150,$FONTI,'X'); gtaText($fav,$FONTI,150,(int)(128-$xw/2),178,'X',$G,[255,46,136]);
+imagepng($fav,"$IMG/favicon-256.png"); imagepng(imagescale($fav,32,32),"$IMG/favicon-32.png");
 
-echo "OK — identité GTA VI générée :\n";
+echo "OK — identité GTA VI (sans chiffre VI) générée :\n";
 foreach(["$BRAND/logo-square.png","$BRAND/logo-profile.png","$BRAND/fb-cover.png","$BRAND/story-9x16.png","$IMG/icon-512.png","$IMG/favicon-256.png"] as $f)
     echo "  ".str_replace($ROOT,'',$f)." (".(is_file($f)?filesize($f).' o':'ERR').")\n";

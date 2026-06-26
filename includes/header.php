@@ -12,7 +12,7 @@ $SEO_TITLE    = $SEO_TITLE    ?? (APP_NAME . ' — ' . (lang() === 'fr' ? APP_SL
 $SEO_DESC     = $SEO_DESC     ?? (lang() === 'fr'
     ? 'ViceHub X : news, guides, leaks et analyses de trailers GTA VI dans une interface immersive Vice City OS.'
     : 'ViceHub X: GTA VI news, guides, leaks and trailer analysis in an immersive Vice City OS interface.');
-$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (cdn_url('aerial.png') ?: asset('img/og-default.svg'));
+$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (cdn_url('brand-cover.png') ?: cdn_url('aerial.png') ?: asset('img/og-default.svg'));
 $BODY_CLASS   = $BODY_CLASS   ?? '';
 
 // Base absolue du site (pour canonical, og:url, hreflang, JSON-LD)
@@ -71,7 +71,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <link rel="icon" type="image/svg+xml" href="<?= e(asset('img/favicon.svg')) ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?= e(asset('img/favicon-32.png')) ?>">
     <link rel="icon" type="image/png" sizes="192x192" href="<?= e(asset('img/icon-192.png')) ?>">
-    <link rel="apple-touch-icon" href="<?= e(asset('img/apple-touch-icon.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= e(cdn_url('brand-profile.png') ?: asset('img/apple-touch-icon.png')) ?>">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
