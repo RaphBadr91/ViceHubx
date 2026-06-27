@@ -143,10 +143,12 @@ if ($doBack && $agentIds) {
         if ((int) $th['n'] >= 8) { continue; } // déjà fourni → on passe
         $add = mt_rand(6, 20);
         $startTs = strtotime($th['created_at']) ?: ($nowTs - 30 * 86400);
+        $hi = $nowTs - 600;
+        $lo = min($startTs + 60, $hi - 60); // garantit lo < hi même pour un sujet récent
         for ($k = 0; $k < $add; $k++) {
             $uid = $agentIds[array_rand($agentIds)];
             $body = fv_reply($th['title'], $emojiOf[$uid] ?? '');
-            $ts = mt_rand($startTs + 60, $nowTs - 3600);
+            $ts = mt_rand($lo, $hi);
             $insPost->execute([(int) $th['id'], $uid, $body, date('Y-m-d H:i:s', $ts)]);
             $backfilled++;
         }
