@@ -173,6 +173,16 @@ Les packs apparaissent dans l'onglet **📦 Packs** de la boutique et sur la pag
 SEO `pages/fonds-ecran-gta6.php`. À l'achat, tous les fichiers du pack sont
 livrés ensemble par e-mail. Relançable sans risque (met à jour la composition).
 
+**Articles d'actu (vraie recherche)** — pour publier les 60 articles factuels
+supplémentaires (en plus de ceux du schéma) :
+
+```bash
+cd ~/vicehubx && php scripts/gen-news-research.php
+```
+
+Le **maillage interne** (liens vers GTA 6, carte, persos, fonds d'écran…) est
+posé **automatiquement au rendu** sur tous les articles — rien à faire.
+
 ## 13. Forum vivant : 1000 membres + animation automatique 🌴
 
 Pour donner de la vie au forum dès le premier jour, puis en continu.

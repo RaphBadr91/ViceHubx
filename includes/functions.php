@@ -1022,6 +1022,89 @@ function set_setting(string $key, string $value): void
 /*  Date de sortie & compte à rebours                                 */
 /* ================================================================== */
 
+/**
+ * Maillage interne automatique : transforme certaines expressions-clés du corps
+ * d'un article en liens vers les pages piliers (GTA 6, carte, persos, boutique…).
+ * Sûr (hrefs contrôlés), appliqué après strip_tags. Une fois par expression et
+ * par article, hors titres/liens existants, plafonné pour rester naturel.
+ */
+function internal_autolink(string $html): string
+{
+    static $defs = null;
+    if ($defs === null) {
+        $defs = [
+            'Lucia Caminos'     => 'pages/characters.php',
+            'Jason Duval'       => 'pages/characters.php',
+            'Jason et Lucia'    => 'pages/characters.php',
+            'Mount Kalaga'      => 'pages/map.php',
+            'Port Gellhorn'     => 'pages/map.php',
+            'carte de Leonida'  => 'pages/map.php',
+            'État de Leonida'   => 'pages/map.php',
+            'Vintage Vice City' => 'pages/gta6.php',
+            'édition Ultimate'  => 'pages/gta6.php',
+            'édition Standard'  => 'pages/gta6.php',
+            'date de sortie'    => 'pages/gta6.php',
+            'précommande'       => 'pages/gta6.php',
+            'fonds d’écran'     => 'pages/fonds-ecran-gta6.php',
+            'GTA 5'             => 'pages/gta6-vs-gta5.php',
+            'GTA V'             => 'pages/gta6-vs-gta5.php',
+            'Leonida'           => 'pages/map.php',
+            'Vice City'         => 'pages/map.php',
+            'véhicules'         => 'pages/vehicles.php',
+            'boutique'          => 'pages/shop.php',
+        ];
+        // Plus longue expression d'abord (évite de capter « Leonida » avant « État de Leonida »).
+        uksort($defs, static fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+    }
+
+    $segments = preg_split('/(<[^>]+>)/u', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+    $store = [];
+    $usedPage = [];       // une page liée au plus 2 fois / article
+    $usedPhrase = [];     // une expression au plus 1 fois / article
+    $total = 0; $maxTotal = 6; $skip = 0;
+
+    foreach ($segments as $idx => $seg) {
+        if ($seg === '') {
+            continue;
+        }
+        if ($seg[0] === '<') {
+            if (preg_match('~^<\s*(h[1-6]|a|aside|blockquote)\b~i', $seg)) {
+                $skip++;
+            } elseif (preg_match('~^<\s*/\s*(h[1-6]|a|aside|blockquote)\b~i', $seg) && $skip > 0) {
+                $skip--;
+            }
+            continue;
+        }
+        if ($skip > 0 || $total >= $maxTotal) {
+            continue;
+        }
+        foreach ($defs as $phrase => $page) {
+            if ($total >= $maxTotal) {
+                break;
+            }
+            if (isset($usedPhrase[$phrase]) || ($usedPage[$page] ?? 0) >= 2) {
+                continue;
+            }
+            $pat = '/(?<![\p{L}\p{N}])' . preg_quote($phrase, '/') . '(?![\p{L}\p{N}])/u';
+            $cnt = 0;
+            $seg = preg_replace_callback($pat, static function ($m) use ($page, &$store) {
+                $token = "\x01" . count($store) . "\x01";
+                $store[$token] = '<a href="' . e(with_lang(url($page))) . '">' . $m[0] . '</a>';
+                return $token;
+            }, $seg, 1, $cnt);
+            if ($cnt > 0) {
+                $usedPhrase[$phrase] = true;
+                $usedPage[$page] = ($usedPage[$page] ?? 0) + 1;
+                $total += $cnt;
+            }
+        }
+        $segments[$idx] = $seg;
+    }
+
+    $out = implode('', $segments);
+    return $store ? strtr($out, $store) : $out;
+}
+
 /** Date de sortie GTA VI (surchargée par le réglage release_date). */
 function release_date(): string
 {

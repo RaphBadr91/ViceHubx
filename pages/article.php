@@ -22,6 +22,8 @@ $safe_body = strip_tags(
     (string) $article['body'],
     '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br>'
 );
+// Maillage interne automatique (liens vers pages piliers) — sûr, après strip_tags
+$safe_body = internal_autolink($safe_body);
 // Encart Boutique (CTA wallpaper) inséré au cœur de l'article pour inciter à l'achat
 $safe_body = inject_after_paragraph($safe_body, 2, article_shop_cta('full'));
 
