@@ -17,13 +17,19 @@ $step   = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['step'] ?? 'install') 
 // Étape 1 — import du schéma (création des tables + contenu de base).
 if ($step === 'install') {
     try {
-        $dsn = sprintf('mysql:host=%s;port=%s;charset=utf8mb4', DB_HOST, DB_PORT);
+        // Hébergement mutualisé (O2Switch…) : la base est déjà créée via cPanel
+        // sous un nom préfixé (ex. compte_vicehubx) et l'utilisateur n'a PAS le
+        // droit CREATE DATABASE. On se connecte donc directement à DB_NAME (.env).
+        $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', DB_HOST, DB_PORT, DB_NAME);
         $pdo = new PDO($dsn, DB_USER, DB_PASS, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $sql = @file_get_contents(ROOT_PATH . '/database/schema.sql');
         if ($sql === false) {
             throw new RuntimeException('Fichier introuvable : database/schema.sql');
         }
-        $pdo->exec($sql); // exécute toutes les instructions (driver mysql)
+        // La base existe déjà (autre nom) : on retire CREATE DATABASE / USE.
+        $sql = preg_replace('/CREATE\s+DATABASE\b[^;]*;/i', '', $sql, 1);
+        $sql = preg_replace('/\bUSE\s+`?\w+`?\s*;/i', '', $sql, 1);
+        $pdo->exec($sql);
         $done = true;
     } catch (Throwable $e) {
         $error = $e->getMessage();
