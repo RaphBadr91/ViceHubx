@@ -1,0 +1,17 @@
+KIT TEMPLATES VICEHUB X (style GTA VI)
+=====================================
+
+Les fichiers '*-overlay' (reel-9x16-*, ig-square, ig-portrait-4x5, fb-square) ont un CENTRE TRANSPARENT.
+Dans Canva / CapCut / InShot : mets ta VIDEO ou ta PHOTO en fond, puis pose le PNG du template par-dessus.
+Les barres (logo, catégorie, titre, @vicehubx, CTA) s'affichent par-dessus ta vidéo.
+
+Zones de texte à remplacer (par-dessus, avec ton outil de montage) :
+  - Badge catégorie en haut a gauche : NEWS / LEAK / GUIDE / HOT (versions fournies)
+  - Gros titre en bas : remplace 'TON TITRE ACCROCHEUR ICI'
+  - @vicehubx · vicehubx.fr (modifiable)
+
+Formats :
+  - reel-9x16-*.png  -> TikTok / Reels / Stories (1080x1920)
+  - ig-square.png    -> Instagram & Facebook (1080x1080)
+  - ig-portrait-4x5  -> Instagram nouveau format portrait (1080x1350)
+  - *-exemple.png    -> apercu du rendu fini
