@@ -34,6 +34,7 @@ $nav = [
     ]],
     ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
         ['gta6.php',        lang() === 'fr' ? '🎮 GTA 6 : tout savoir' : '🎮 GTA 6: everything'],
+        ['gta6-vs-gta5.php', lang() === 'fr' ? '⚔️ GTA 6 vs GTA 5' : '⚔️ GTA 6 vs GTA 5'],
         ['dossier.php',     lang() === 'fr' ? 'Le Dossier' : 'The Files'],
         ['map.php',         t('nav_map')],
         ['vehicles.php',    t('nav_vehicles')],
