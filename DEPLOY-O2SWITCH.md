@@ -162,6 +162,37 @@ Dans **Admin → Boutique** :
 - Règle le **nombre de produits en rotation** : ce nombre tourne au hasard chaque
   jour dans les encarts des articles. Laisse vide les 🚀 = tout le catalogue tourne.
 
+## 13. Forum vivant : 1000 membres + animation automatique 🌴
+
+Pour donner de la vie au forum dès le premier jour, puis en continu.
+
+**a) Peupler le forum (une seule fois, après l'import de la base) :**
+
+```bash
+cd ~/vicehubx   # le dossier de ton site
+php scripts/gen-forum-users.php --users=1000 --backfill=1 --threads=2
+```
+
+Crée ~1000 membres avec des **rythmes de réponse** variés (réguliers, chaque
+semaine, tous les 4 jours, tous les 10 jours), remplit les sujets existants de
+messages d'historique et ouvre de nouveaux sujets. Relançable sans risque
+(il complète jusqu'à la cible, sans doublons).
+
+**b) Animation continue (cron O2Switch → cPanel → « Tâches Cron ») :**
+
+```
+# Toutes les 2 h : les membres « dus » répondent selon leur rythme
+0 */2 * * *  cd ~/vicehubx && php scripts/forum-life.php --max=18 >/dev/null 2>&1
+```
+
+- `--max=18` : nombre max de réponses par passage (monte-le pour plus d'activité).
+- `--newchance=4` : % de chance d'ouvrir un nouveau sujet à chaque passage.
+- **Aucune clé API requise** : les messages sont générés localement (gratuit).
+
+**c) (Option premium) Discussions rédigées par IA** — pour des messages encore
+plus riches, le script historique `scripts/forum-bot.php` utilise l'API Anthropic
+(nécessite `ANTHROPIC_API_KEY`). Les deux peuvent cohabiter.
+
 ---
 
 ### Dépannage rapide

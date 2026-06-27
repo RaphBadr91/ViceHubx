@@ -1063,3 +1063,22 @@ INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, stat
 (1,'fr','Précommandes GTA VI : la folie mondiale est lancée','precommandes-gta-vi-la-folie-mondiale-est-lancee','Serveurs saturés, files d’attente : la ruée sur GTA VI a commencé dès l’ouverture.','<p>À peine ouvertes, les précommandes de GTA VI ont déclenché une ruée mondiale. Sites ralentis, réseaux sociaux en ébullition : l’ampleur est à la hauteur de l’attente.</p><p>Avec une Standard à 79,99 $ et une Ultimate à 99,99 $, chacun choisit son niveau d’engagement — mais tout le monde vise le même rendez-vous : le 19 novembre 2026.</p><p>Chez ViceHub X, on vit ce moment avec vous. Raconte-nous ta précommande sur le forum — la communauté s’enflamme déjà dans la section GTA VI.</p>','analysis','published','2026-06-24 08:00:00'),
 (2,'fr','PS5 ou Xbox Series : sur quelle console précommander GTA VI ?','ps5-ou-xbox-series-sur-quelle-console-precommander-gta-vi','Manette, écosystème, bonus GTA+ : les critères pour choisir sereinement.','<p>GTA VI sort sur consoles de nouvelle génération. PS5 ou Xbox Series ? Tout dépend de ton écosystème — et le <strong>mois de GTA+ offert</strong> s’applique aux deux stores en précommande numérique.</p><ul><li>Tu as déjà des amis sur une plateforme ? Reste où est ta communauté.</li><li>Tu aimes le retour haptique ? La manette PS5 est un argument pour la conduite.</li><li>Tu veux la boîte physique (code in box) ? C’est possible avec la Standard.</li><li>Dans tous les cas, vise une version optimisée nouvelle génération.</li></ul><p>Le plus important : le jeu sera magnifique sur les deux. Choisis le confort, pas la guéguerre.</p>',NULL,'published','2026-06-24 00:00:00'),
 (5,'fr','Ce que l’Ultimate Edition change vraiment dans ta partie','ce-que-l-ultimate-edition-change-vraiment-dans-ta-partie','Cinq véhicules, des boutiques exclusives, une mission en plus : décryptage de la valeur réelle.','<p>L’<strong>Ultimate Edition</strong> n’est pas qu’un pack de skins. Elle distribue ses contenus <strong>tout au long de l’histoire</strong> de Jason et Lucia, ce qui change un peu l’expérience day-one.</p><p>Concrètement : <strong>5 véhicules</strong> et <strong>4 variantes d’armes</strong> en plus, des <strong>packs cosmétiques</strong>, <strong>5 boutiques</strong> supplémentaires (dont Rideout Customs et Electric Fang Tattoo), un <strong>garage dédié</strong> et une <strong>mission annexe</strong> que les joueurs Standard ne verront pas au lancement.</p><p>Vaut-elle ses 20 $ de plus ? Si tu veux un démarrage plus garni et soutenir le studio, oui. Si tu privilégies l’histoire brute, la Standard reste un excellent choix. À toi de voir.</p>',NULL,'published','2026-06-23 16:00:00');
+
+-- ============================================================================
+-- Forum « vivant » : agents qui pilotent le rythme de réponse des membres-bots
+-- (réguliers / 4j / 7j / 10j). Peuplé par scripts/gen-forum-users.php, animé
+-- par scripts/forum-life.php (cron). Voir DEPLOY-O2SWITCH.md.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS forum_bot_agents (
+    user_id      INT PRIMARY KEY,
+    cadence_days DECIMAL(4,1) NOT NULL DEFAULT 7.0,
+    tier         VARCHAR(16) NOT NULL DEFAULT 'hebdo',
+    emojis       VARCHAR(24) NOT NULL DEFAULT '',
+    fav          VARCHAR(12) NOT NULL DEFAULT 'GTA6',
+    bio          VARCHAR(300) NOT NULL DEFAULT '',
+    active       TINYINT(1) NOT NULL DEFAULT 1,
+    last_post_at DATETIME NULL,
+    next_post_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_due (active, next_post_at),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
