@@ -9,6 +9,8 @@ AddDefaultCharset UTF-8
 # (PHP continue de les inclure côté serveur ; seul l'accès direct est interdit.)
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    # Déploiement Git : on interdit l'accès web au dossier .git et fichiers Git
+    RewriteRule (^|/)\.git - [F,L]
     RewriteRule ^(config|database|includes|scripts|scripts-python|agents|seo|lang)/ - [F,L]
     # robots.txt & sitemap.xml dynamiques (Sitemap en URL absolue pour Google)
     RewriteRule ^robots\.txt$ robots.php [L]
