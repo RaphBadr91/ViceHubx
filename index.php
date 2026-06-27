@@ -107,6 +107,21 @@ require __DIR__ . '/includes/header.php';
 <!-- ============ WEAZEL NEWS — fil d'actu immersif ============ -->
 <?= weazel_ticker_html() ?>
 
+<!-- ============ GTA 6 : page pilier (entrée mise en avant) ============ -->
+<section class="section">
+    <a class="banner glass reveal vh-pillar-cta" href="<?= e(with_lang(url('pages/gta6.php'))) ?>"
+       style="display:flex;align-items:center;justify-content:space-between;gap:1.2rem;flex-wrap:wrap;text-align:left">
+        <span>
+            <span class="eyebrow">🎮 <?= lang() === 'fr' ? 'Le guide complet' : 'The complete guide' ?></span>
+            <h2 style="margin:.25rem 0 .1rem"><?= lang() === 'fr' ? 'GTA 6 : tout savoir' : 'GTA 6: everything you need to know' ?></h2>
+            <p class="muted" style="margin:0"><?= lang() === 'fr'
+                ? 'Date, prix &amp; éditions, plateformes, carte de Leonida, Jason &amp; Lucia, version PC…'
+                : 'Date, price &amp; editions, platforms, Leonida map, Jason &amp; Lucia, PC version…' ?></p>
+        </span>
+        <span class="btn btn--primary"><?= lang() === 'fr' ? 'Lire le guide' : 'Read the guide' ?> →</span>
+    </a>
+</section>
+
 <!-- ============ BANDE-ANNONCE ============ -->
 <section class="section" id="trailer">
     <div class="section-head">

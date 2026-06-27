@@ -16,6 +16,7 @@ $abs = static function (string $path) use ($base): string {
 
 $urls = [
     ['index.php', 'daily', '1.0'],
+    ['pages/gta6.php', 'weekly', '0.9'],
     ['pages/news.php', 'daily', '0.9'],
     ['pages/recherche.php', 'monthly', '0.4'],
     ['pages/blog.php', 'daily', '0.8'],

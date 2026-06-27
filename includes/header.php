@@ -33,6 +33,7 @@ $nav = [
         ['trailer-lab.php', t('nav_trailer')],
     ]],
     ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
+        ['gta6.php',        lang() === 'fr' ? '🎮 GTA 6 : tout savoir' : '🎮 GTA 6: everything'],
         ['dossier.php',     lang() === 'fr' ? 'Le Dossier' : 'The Files'],
         ['map.php',         t('nav_map')],
         ['vehicles.php',    t('nav_vehicles')],
