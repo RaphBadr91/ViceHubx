@@ -8,6 +8,7 @@ $article = $slug !== '' ? get_article_by_slug($slug) : null;
 if (!$article || $article['status'] !== 'published') {
     http_response_code(404);
     $SEO_TITLE = '404 — ' . APP_NAME;
+    $ROBOTS = 'noindex, follow';
     require ROOT_PATH . '/includes/header.php';
     echo '<section class="section" style="text-align:center"><h1>404</h1><p class="muted">'
         . e(lang() === 'fr' ? 'Article introuvable.' : 'Article not found.')
@@ -41,18 +42,45 @@ $related = array_slice($related, 0, 3);
 
 $SEO_TITLE    = $article['title'] . ' — ' . APP_NAME;
 $SEO_DESC     = $article['excerpt'] ?: APP_NAME;
-$SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : asset('img/og-default.svg');
+$SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : (cdn_url('brand-cover.png') ?: asset('img/og-default.svg'));
 
-$JSONLD = [
-    '@context' => 'https://schema.org',
-    '@type'    => 'NewsArticle',
-    'headline' => $article['title'],
-    'description' => $article['excerpt'],
-    'inLanguage' => $article['lang'],
-    'datePublished' => date('c', strtotime($article['published_at'] ?: $article['created_at'])),
-    'author'    => ['@type' => 'Organization', 'name' => 'ViceHub X'],
-    'publisher' => ['@type' => 'Organization', 'name' => 'ViceHub X'],
-];
+// URL absolue de l'article (pour og:type=article + schema enrichi)
+$__base  = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/')
+    : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+$art_url = $__base . '/pages/article.php?slug=' . urlencode($article['slug']);
+$pub_iso = date('c', strtotime($article['published_at'] ?: $article['created_at']));
+$img_abs = preg_match('#^https?://#', (string) $SEO_OG_IMAGE) ? $SEO_OG_IMAGE : $__base . '/' . ltrim((string) $SEO_OG_IMAGE, '/');
+
+$OG_TYPE      = 'article';
+$OG_PUBLISHED = $pub_iso;
+$OG_SECTION   = $article['category_name'] ?? 'News';
+
+$JSONLD = ['@context' => 'https://schema.org', '@graph' => [
+    [
+        '@type'    => 'NewsArticle',
+        '@id'      => $art_url . '#article',
+        'headline' => mb_substr($article['title'], 0, 110),
+        'description' => $article['excerpt'],
+        'inLanguage'  => $article['lang'],
+        'datePublished' => $pub_iso,
+        'dateModified'  => $pub_iso,
+        'articleSection' => $article['category_name'] ?? 'News',
+        'image'     => [$img_abs],
+        'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $art_url],
+        'author'    => ['@type' => 'Organization', 'name' => 'ViceHub X', 'url' => $__base . '/'],
+        'publisher' => ['@type' => 'Organization', 'name' => 'ViceHub X',
+            'logo' => ['@type' => 'ImageObject', 'url' => cdn_url('brand-logo.png') ?: $img_abs]],
+    ],
+    [
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => [
+            ['@type' => 'ListItem', 'position' => 1, 'name' => 'Accueil', 'item' => $__base . '/'],
+            ['@type' => 'ListItem', 'position' => 2, 'name' => $article['category_name'] ?? 'News',
+                'item' => $__base . '/pages/' . ($article['category_slug'] ?? 'news') . '.php'],
+            ['@type' => 'ListItem', 'position' => 3, 'name' => $article['title']],
+        ],
+    ],
+]];
 
 require ROOT_PATH . '/includes/header.php';
 ?>

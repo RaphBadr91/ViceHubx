@@ -19,7 +19,16 @@ $BODY_CLASS   = $BODY_CLASS   ?? '';
 $__scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 $site_base  = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : $__scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 $path_only  = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
-$canonical  = $site_base . $path_only;
+// Canonical : on PRÉSERVE les paramètres identifiants (slug, id, cat, theme, u…)
+// et on retire seulement le bruit (tracking, langue) — sinon tous les articles
+// ?slug=… partageraient la même URL canonique (catastrophe d'indexation).
+$__noise = ['lang', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
+    'gclid', 'fbclid', 'gbraid', 'wbraid', 'msclkid', 'ref', 'mc_cid', 'mc_eid', 'igshid'];
+parse_str((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY), $__q);
+foreach ($__noise as $__k) { unset($__q[$__k]); }
+$__qs       = $__q ? '?' . http_build_query($__q) : '';
+$canon_path = $path_only . $__qs;
+$canonical  = $site_base . $canon_path;
 $og_image_abs = (function ($img) use ($site_base) {
     return preg_match('#^https?://#', (string) $img) ? $img : $site_base . '/' . ltrim((string) $img, '/');
 })($SEO_OG_IMAGE);
@@ -79,14 +88,16 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
     <!-- Versions linguistiques (hreflang) -->
-    <?php foreach (array_keys(available_languages()) as $hl): ?>
-    <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($site_base . $path_only . ($hl === 'fr' ? '' : '?lang=' . $hl)) ?>">
+    <?php foreach (array_keys(available_languages()) as $hl): $__sep = $__qs === '' ? '?' : '&'; ?>
+    <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($site_base . $canon_path . ($hl === 'fr' ? '' : $__sep . 'lang=' . $hl)) ?>">
     <?php endforeach; ?>
-    <link rel="alternate" hreflang="x-default" href="<?= e($site_base . $path_only) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e($canonical) ?>">
 
     <!-- Open Graph -->
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="<?= e($OG_TYPE ?? 'website') ?>">
     <meta property="og:site_name" content="<?= e(APP_NAME) ?>">
+    <?php if (!empty($OG_PUBLISHED)): ?><meta property="article:published_time" content="<?= e($OG_PUBLISHED) ?>"><?php endif; ?>
+    <?php if (!empty($OG_SECTION)): ?><meta property="article:section" content="<?= e($OG_SECTION) ?>"><?php endif; ?>
     <meta property="og:title" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:description" content="<?= e($SEO_DESC) ?>">
     <meta property="og:image" content="<?= e($og_image_abs) ?>">

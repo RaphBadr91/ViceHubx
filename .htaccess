@@ -10,6 +10,9 @@ AddDefaultCharset UTF-8
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(config|database|includes|scripts|scripts-python|agents|seo|lang)/ - [F,L]
+    # robots.txt & sitemap.xml dynamiques (Sitemap en URL absolue pour Google)
+    RewriteRule ^robots\.txt$ robots.php [L]
+    RewriteRule ^sitemap\.xml$ sitemap.php [L]
 </IfModule>
 
 # --- Sécurité : fichiers sensibles inaccessibles depuis le web ---
