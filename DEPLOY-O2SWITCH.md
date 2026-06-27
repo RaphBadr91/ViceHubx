@@ -183,6 +183,17 @@ cd ~/vicehubx && php scripts/gen-news-research.php
 Le **maillage interne** (liens vers GTA 6, carte, persos, fonds d'écran…) est
 posé **automatiquement au rendu** sur tous les articles — rien à faire.
 
+**Génération d'articles par IA (dashboard admin)** — va dans
+**Admin → 🤖 Articles IA** :
+1. Connecte ta **clé API Anthropic** (`sk-ant-…`) — ou définis la variable
+   d'environnement `ANTHROPIC_API_KEY`.
+2. Choisis le statut (brouillon ou publication directe) et clique **5 / 10 /
+   15 / 20**. Chaque article est rédigé dans la niche GTA VI, **illustré** depuis
+   la banque d'images IA, et reçoit un **prompt image (en OFF)** prêt à coller
+   dans Higgsfield pour une illustration sur-mesure.
+3. Pour de gros lots / un cron, utilise :
+   `php scripts/gen-ai-articles.php --count=20 --status=draft`
+
 ## 13. Forum vivant : 1000 membres + animation automatique 🌴
 
 Pour donner de la vie au forum dès le premier jour, puis en continu.

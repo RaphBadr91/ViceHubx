@@ -46,6 +46,7 @@ CREATE TABLE articles (
     body         MEDIUMTEXT,
     badge        VARCHAR(20) DEFAULT NULL,
     image        VARCHAR(255) DEFAULT NULL,
+    image_prompt TEXT DEFAULT NULL,            -- prompt Higgsfield (OFF, admin-only) pour illustration sur-mesure
     author_id    INT DEFAULT NULL,
     status       ENUM('draft','pending','published') NOT NULL DEFAULT 'draft',
     published_at DATETIME DEFAULT NULL,

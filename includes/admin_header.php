@@ -10,6 +10,7 @@ $admin_nav = [
     ['analytics.php', '📊 Analytics'],
     ['articles.php',  t('admin_articles')],
     ['article-create.php', t('admin_new')],
+    ['ai-articles.php', '🤖 Articles IA'],
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],
     ['fanarts.php',   'Fan-arts'],
