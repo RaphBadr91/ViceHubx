@@ -19,7 +19,7 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/_forum_voices.php';
 
-$opts     = getopt('', ['users::', 'backfill::', 'threads::']);
+$opts     = getopt('', ['users::', 'backfill::', 'threads::']) ?: []; // ?: [] => robuste hors CLI (installateur web)
 $target   = (int) ($opts['users'] ?? 1000);
 $doBack   = (int) ($opts['backfill'] ?? 1);
 $nThreads = (int) ($opts['threads'] ?? 2);
