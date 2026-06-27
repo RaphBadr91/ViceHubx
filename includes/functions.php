@@ -827,8 +827,8 @@ function inject_after_paragraph(string $html, int $after, string $insert): strin
 function wallpaper_themes(): array
 {
     return lang() === 'fr'
-        ? ['voiture' => '🚗 Voiture', 'avion' => '✈️ Avion', 'ville' => '🌆 Ville', 'nuit' => '🌃 Nuit', 'fille' => '💃 Fille']
-        : ['voiture' => '🚗 Cars', 'avion' => '✈️ Planes', 'ville' => '🌆 City', 'nuit' => '🌃 Night', 'fille' => '💃 Girls'];
+        ? ['pack' => '📦 Packs', 'voiture' => '🚗 Voiture', 'avion' => '✈️ Avion', 'ville' => '🌆 Ville', 'nuit' => '🌃 Nuit', 'fille' => '💃 Fille']
+        : ['pack' => '📦 Bundles', 'voiture' => '🚗 Cars', 'avion' => '✈️ Planes', 'ville' => '🌆 City', 'nuit' => '🌃 Night', 'fille' => '💃 Girls'];
 }
 
 /** Produits mis en avant (page d'accueil). */
@@ -1520,23 +1520,42 @@ function send_mail_attachments(string $to, string $subject, string $html, array 
 function digital_items_from_spec(string $spec): array
 {
     $items = [];
+    $byId = db()->prepare('SELECT id, name, price, digital_file FROM products WHERE id = ? LIMIT 1');
+    $push = static function (array $p, int $qty) use (&$items) {
+        if (empty($p['digital_file'])) {
+            return;
+        }
+        $items[] = [
+            'id'           => (int) $p['id'],
+            'name'         => $p['name'],
+            'qty'          => max(1, $qty),
+            'price'        => (float) $p['price'],
+            'digital_file' => $p['digital_file'],
+        ];
+    };
     foreach (array_filter(array_map('trim', explode(',', $spec))) as $pair) {
         [$id, $qty] = array_pad(explode(':', $pair, 2), 2, '1');
         $id = (int) $id;
+        $qty = max(1, (int) $qty);
         if ($id <= 0) {
             continue;
         }
-        $st = db()->prepare('SELECT id, name, price, digital_file FROM products WHERE id = ? LIMIT 1');
-        $st->execute([$id]);
-        $p = $st->fetch();
-        if ($p && !empty($p['digital_file'])) {
-            $items[] = [
-                'id'           => (int) $p['id'],
-                'name'         => $p['name'],
-                'qty'          => max(1, (int) $qty),
-                'price'        => (float) $p['price'],
-                'digital_file' => $p['digital_file'],
-            ];
+        // Un bundle s'expanse en ses produits constituants (livrés ensemble).
+        $bs = db()->prepare('SELECT bundle_items FROM products WHERE id = ? LIMIT 1');
+        $bs->execute([$id]);
+        $spec2 = (string) ($bs->fetchColumn() ?: '');
+        if ($spec2 !== '') {
+            foreach (array_filter(array_map('intval', explode(',', $spec2))) as $cid) {
+                $byId->execute([$cid]);
+                if ($p = $byId->fetch()) {
+                    $push($p, $qty);
+                }
+            }
+            continue;
+        }
+        $byId->execute([$id]);
+        if ($p = $byId->fetch()) {
+            $push($p, $qty);
         }
     }
     return $items;

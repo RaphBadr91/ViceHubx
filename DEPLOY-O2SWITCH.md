@@ -162,6 +162,17 @@ Dans **Admin → Boutique** :
 - Règle le **nombre de produits en rotation** : ce nombre tourne au hasard chaque
   jour dans les encarts des articles. Laisse vide les 🚀 = tout le catalogue tourne.
 
+**Packs de fonds d'écran (bundles)** — pour générer les packs à prix réduit
+(par thème + méga-pack + intégral), lance une fois après l'import :
+
+```bash
+cd ~/vicehubx && php scripts/gen-bundles.php
+```
+
+Les packs apparaissent dans l'onglet **📦 Packs** de la boutique et sur la page
+SEO `pages/fonds-ecran-gta6.php`. À l'achat, tous les fichiers du pack sont
+livrés ensemble par e-mail. Relançable sans risque (met à jour la composition).
+
 ## 13. Forum vivant : 1000 membres + animation automatique 🌴
 
 Pour donner de la vie au forum dès le premier jour, puis en continu.

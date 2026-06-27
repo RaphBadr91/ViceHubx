@@ -52,6 +52,7 @@ $nav = [
     ]],
     ['label' => t('nav_shop'), 'children' => [
         ['shop.php',  lang() === 'fr' ? 'La Boutique' : 'The Shop'],
+        ['fonds-ecran-gta6.php', lang() === 'fr' ? '🖥️ Fonds d’écran' : '🖥️ Wallpapers'],
         ['deals.php', t('nav_deals')],
     ]],
 ];

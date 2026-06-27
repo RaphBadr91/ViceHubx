@@ -29,10 +29,10 @@ $has_physical = false;
 $digital_meta = [];
 $line_items = [];
 foreach ($lines as $l) {
-    if (empty($l['digital_file'])) {
+    if (empty($l['digital_file']) && empty($l['bundle_items'])) {
         $has_physical = true;
     } else {
-        // On note les produits numériques (id:qty) pour que le webhook puisse livrer.
+        // Numérique ou bundle : on note (id:qty) ; le webhook expanse et livre.
         $digital_meta[] = ((int) $l['id']) . ':' . max(1, (int) $l['qty']);
     }
     if (!empty($l['stripe_price_id'])) {

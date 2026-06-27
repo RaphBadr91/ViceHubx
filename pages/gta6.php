@@ -179,6 +179,7 @@ require ROOT_PATH . '/includes/header.php';
         <a class="os-card glass" href="<?= e(with_lang(url('pages/gta6-vs-gta5.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">⚔️ <?= e($fr ? 'GTA 6 vs GTA 5' : 'GTA 6 vs GTA 5') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/vehicles.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🚗 <?= e($fr ? 'Véhicules' : 'Vehicles') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/forum.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">💬 <?= e($fr ? 'Le Forum' : 'The Forum') ?></span></span><span class="os-card__arrow">→</span></a>
+        <a class="os-card glass" href="<?= e(with_lang(url('pages/fonds-ecran-gta6.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🖥️ <?= e($fr ? 'Fonds d’écran HD' : 'HD wallpapers') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/shop.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🛍️ <?= e($fr ? 'La Boutique' : 'The Shop') ?></span></span><span class="os-card__arrow">→</span></a>
     </div>
 

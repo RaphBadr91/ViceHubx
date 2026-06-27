@@ -134,6 +134,7 @@ CREATE TABLE products (
     url             VARCHAR(500),            -- lien externe (si sale_type='external')
     stripe_price_id VARCHAR(120),            -- ID de prix Stripe (optionnel ; sinon price+currency)
     digital_file    VARCHAR(255),            -- fichier livré après achat (produit numérique)
+    bundle_items    VARCHAR(255) DEFAULT NULL, -- bundle : IDs produits inclus, ex. "12,15,18" (livrés ensemble)
     merchant        VARCHAR(60),
     badge           VARCHAR(40),
     featured        TINYINT(1) NOT NULL DEFAULT 0,
