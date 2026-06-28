@@ -9,6 +9,9 @@
 $CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E';
 
 return [
+    // --- Vidéo d'accueil (hero) : virée néon Vice City, 16:9 ---
+    'hero.mp4'          => "$CDN/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4",
+
     // --- Scènes / univers (16:9) ---
     'night.png'         => "$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png",
     'beach-cruise.png'  => "$CDN/hf_20260622_093428_1b56209f-dc8e-4d0c-90f9-940c7eef4a14.png",

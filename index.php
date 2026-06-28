@@ -35,7 +35,14 @@ $hero_video = trim((string) get_setting('hero_video', ''));
 if ($hero_video === '' && is_file(ROOT_PATH . '/public/assets/video/hero.mp4')) {
     $hero_video = asset('video/hero.mp4');
 }
+// Sinon : la vidéo « virée néon Vice City » du CDN par défaut (fond d'accueil).
+if ($hero_video === '') {
+    $hero_video = cdn_url('hero.mp4');
+}
 $hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset('img/hero-poster.png') : '';
+if ($hero_poster === '') {
+    $hero_poster = cdn_url('night.png'); // image de prévisualisation pendant le chargement
+}
 $deadline   = release_date();
 
 $modules = [
