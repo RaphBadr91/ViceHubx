@@ -31,13 +31,23 @@ $deals    = get_deals();
 $featured_products = get_featured_products(4);
 
 $hero_video = trim((string) get_setting('hero_video', ''));
-// Vidéo locale générée : utilisée par défaut si présente (réglage admin prioritaire)
-if ($hero_video === '' && is_file(ROOT_PATH . '/public/assets/video/hero.mp4')) {
-    $hero_video = asset('video/hero.mp4');
-}
-// Sinon : la vidéo « virée néon Vice City » du CDN par défaut (fond d'accueil).
+$hero_playlist = [];
 if ($hero_video === '') {
-    $hero_video = cdn_url('hero.mp4');
+    // 1) Montage unique local (si ffmpeg a tourné via make-hero.php).
+    if (is_file(ROOT_PATH . '/public/assets/video/hero.mp4')) {
+        $hero_video = asset('video/hero.mp4');
+    } else {
+        // 2) Sinon : playlist de scènes (hero-1.mp4…hero-6.mp4) jouée en boucle par JS.
+        for ($i = 1; $i <= 6; $i++) {
+            if (is_file(ROOT_PATH . '/public/assets/video/hero-' . $i . '.mp4')) {
+                $hero_playlist[] = asset('video/hero-' . $i . '.mp4');
+            }
+        }
+        // 3) Sinon : la vidéo CDN par défaut (1er plan).
+        if (!$hero_playlist) {
+            $hero_video = cdn_url('hero.mp4');
+        }
+    }
 }
 $hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset('img/hero-poster.png') : '';
 if ($hero_poster === '') {
@@ -70,7 +80,21 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <?php if ($hero_video !== ''): ?>
+    <?php if ($hero_playlist): ?>
+        <!-- Montage « playlist » : les scènes s'enchaînent en boucle (sans ffmpeg) -->
+        <video class="hero__video" autoplay muted playsinline preload="metadata"
+               <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true"></video>
+        <script>
+        (function(){var v=document.querySelector('.hero__video');if(!v)return;
+        var clips=<?= json_encode($hero_playlist, JSON_UNESCAPED_SLASHES) ?>,i=0;
+        v.muted=true;v.setAttribute('muted','');
+        function play(n){try{v.src=clips[n];v.load();var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
+        v.addEventListener('ended',function(){i=(i+1)%clips.length;play(i);});
+        v.addEventListener('error',function(){i=(i+1)%clips.length;play(i);});
+        document.addEventListener('click',function(){var p=v.play();if(p&&p.catch)p.catch(function(){});},{once:true});
+        play(0);})();
+        </script>
+    <?php elseif ($hero_video !== ''): ?>
         <video class="hero__video" autoplay muted loop playsinline preload="metadata"
                <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
             <source src="<?= e($hero_video) ?>" type="video/mp4">

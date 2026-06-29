@@ -67,11 +67,19 @@ function run_cmd(string $cmd): array
 
 function find_ffmpeg(): ?string
 {
-    [$out, $can] = run_cmd('command -v ffmpeg 2>/dev/null');
-    $p = trim((string) $out);
-    if ($p !== '' && @is_file($p)) { return $p; }
-    foreach (['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/bin/ffmpeg', '/opt/cpanel/ea-ffmpeg/root/usr/bin/ffmpeg'] as $c) {
+    foreach (['command -v ffmpeg', 'which ffmpeg', 'type -p ffmpeg'] as $probe) {
+        [$out, ] = run_cmd($probe . ' 2>/dev/null');
+        $p = trim((string) strtok((string) $out, "\n"));
+        if ($p !== '' && @is_file($p)) { return $p; }
+    }
+    foreach (['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/bin/ffmpeg',
+              '/opt/cpanel/ea-ffmpeg/root/usr/bin/ffmpeg', '/usr/local/cpanel/3rdparty/bin/ffmpeg'] as $c) {
         if (@is_file($c)) { return $c; }
+    }
+    [$out, ] = run_cmd('ls /usr/bin/ffmpeg /usr/local/bin/ffmpeg /opt/*/ffmpeg /opt/*/*/ffmpeg 2>/dev/null');
+    foreach (explode("\n", trim((string) $out)) as $line) {
+        $line = trim($line);
+        if ($line !== '' && @is_file($line)) { return $line; }
     }
     return null;
 }
@@ -127,19 +135,31 @@ if ($ffmpeg) {
     @rmdir($tmp);
 }
 
-// Repli : le 1er plan (trafic dense) comme hero.
+// Sans ffmpeg : on télécharge les 5 plans → lecture en PLAYLIST (boucle dans le navigateur).
 if ($method === null) {
-    $d = grab($CLIPS[0]);
-    if ($d !== null) {
-        file_put_contents($out, $d);
-        $method = 'clip';
-        $log[] = 'Repli : 1er plan (trafic dense) installé comme hero.';
-    } else {
-        $log[] = 'Repli : ÉCHEC du téléchargement.';
+    foreach (glob($videoDir . '/hero.mp4') ?: [] as $f) { @unlink($f); } // retire un montage single éventuel
+    $dl = 0;
+    foreach ($CLIPS as $i => $u) {
+        $d = grab($u);
+        if ($d !== null) {
+            file_put_contents($videoDir . '/hero-' . ($i + 1) . '.mp4', $d);
+            $dl++;
+            $log[] = 'Plan ' . ($i + 1) . ' : téléchargé (' . round(strlen($d) / 1048576, 1) . ' Mo)';
+        } else {
+            $log[] = 'Plan ' . ($i + 1) . ' : ÉCHEC';
+        }
     }
+    if ($dl > 0) {
+        $method = 'playlist';
+        $log[] = "Playlist : {$dl} scènes prêtes (défilement en boucle dans le navigateur).";
+    }
+} else {
+    // Montage réussi : on retire les éventuels plans de playlist d'un run précédent.
+    foreach (glob($videoDir . '/hero-*.mp4') ?: [] as $f) { @unlink($f); }
 }
 
-$okFinal = (@is_file($out) && filesize($out) > 200000);
+$okFinal = ($method === 'montage' && @is_file($out) && filesize($out) > 200000)
+        || ($method === 'playlist' && count(glob($videoDir . '/hero-*.mp4') ?: []) > 0);
 ?>
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
