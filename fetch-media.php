@@ -89,9 +89,11 @@ function vh_fetch(string $url): ?string
 $ok = 0; $skip = 0; $fail = 0; $log = [];
 foreach ($targets as $rel => $url) {
     $dest = ROOT_PATH . '/' . $rel;
+    // Le hero se rafraîchit TOUJOURS (pour pouvoir changer de vidéo facilement).
+    $isHero = ($rel === 'public/assets/video/hero.mp4');
     // Vidéo : on exige une vraie taille (sinon = téléchargement partiel à refaire).
     $minKeep = preg_match('/\.(mp4|webm|mov)$/i', $rel) ? 200000 : 1000;
-    if (is_file($dest) && filesize($dest) > $minKeep) { $skip++; continue; }
+    if (!$isHero && is_file($dest) && filesize($dest) > $minKeep) { $skip++; continue; }
     @mkdir(dirname($dest), 0755, true);
     $data = vh_fetch($url);
     if ($data !== null && @file_put_contents($dest, $data) !== false) {
