@@ -31,23 +31,20 @@ $deals    = get_deals();
 $featured_products = get_featured_products(4);
 
 $hero_video = trim((string) get_setting('hero_video', ''));
-$hero_playlist = [];
+// Vidéo locale utilisée UNIQUEMENT si c'est un montage léger (<6 Mo, optimisé
+// ffmpeg). Un gros clip brut rame en autoplay → on préfère le montage d'images.
+$heroFile = ROOT_PATH . '/public/assets/video/hero.mp4';
+if ($hero_video === '' && is_file($heroFile) && filesize($heroFile) < 6000000) {
+    $hero_video = asset('video/hero.mp4');
+}
+// Sinon : montage cinématique d'IMAGES (léger, fluide, fiable) — 5 scènes en
+// fondu enchaîné + zoom lent. Les visuels sont déjà en local (fetch-media.php).
+$hero_scenes = [];
 if ($hero_video === '') {
-    // 1) Montage unique local (si ffmpeg a tourné via make-hero.php).
-    if (is_file(ROOT_PATH . '/public/assets/video/hero.mp4')) {
-        $hero_video = asset('video/hero.mp4');
-    } else {
-        // 2) Sinon : playlist de scènes (hero-1.mp4…hero-6.mp4) jouée en boucle par JS.
-        for ($i = 1; $i <= 6; $i++) {
-            if (is_file(ROOT_PATH . '/public/assets/video/hero-' . $i . '.mp4')) {
-                $hero_playlist[] = asset('video/hero-' . $i . '.mp4');
-            }
-        }
-        // 3) Sinon : la vidéo CDN par défaut (1er plan).
-        if (!$hero_playlist) {
-            $hero_video = cdn_url('hero.mp4');
-        }
+    foreach (['nightlife', 'police', 'heli-night', 'aerial', 'beach-sunset'] as $k) {
+        $hero_scenes[] = img_src('/public/assets/img/scenes/' . $k . '.png');
     }
+    $hero_scenes = array_values(array_filter($hero_scenes));
 }
 $hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset('img/hero-poster.png') : '';
 if ($hero_poster === '') {
@@ -80,26 +77,19 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <?php if ($hero_playlist): ?>
-        <!-- Montage « playlist » : les scènes s'enchaînent en boucle (sans ffmpeg) -->
-        <video class="hero__video" autoplay muted playsinline preload="metadata"
-               <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true"></video>
-        <script>
-        (function(){var v=document.querySelector('.hero__video');if(!v)return;
-        var clips=<?= json_encode($hero_playlist, JSON_UNESCAPED_SLASHES) ?>,i=0;
-        v.muted=true;v.setAttribute('muted','');
-        function play(n){try{v.src=clips[n];v.load();var p=v.play();if(p&&p.catch)p.catch(function(){});}catch(e){}}
-        v.addEventListener('ended',function(){i=(i+1)%clips.length;play(i);});
-        v.addEventListener('error',function(){i=(i+1)%clips.length;play(i);});
-        document.addEventListener('click',function(){var p=v.play();if(p&&p.catch)p.catch(function(){});},{once:true});
-        play(0);})();
-        </script>
-    <?php elseif ($hero_video !== ''): ?>
+    <?php if ($hero_video !== ''): ?>
         <video class="hero__video" autoplay muted loop playsinline preload="metadata"
                <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
             <source src="<?= e($hero_video) ?>" type="video/mp4">
         </video>
         <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('canplay',go);document.addEventListener('click',go,{once:true});})();</script>
+    <?php elseif ($hero_scenes): ?>
+        <!-- Montage cinématique d'images : 5 scènes en fondu enchaîné + zoom lent (léger & fluide) -->
+        <div class="hero__montage" aria-hidden="true">
+            <?php foreach ($hero_scenes as $i => $img): ?>
+                <span class="hero__slide" style="background-image:url('<?= e($img) ?>');animation-delay:<?= $i * 5 ?>s"></span>
+            <?php endforeach; ?>
+        </div>
     <?php else: ?>
         <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
     <?php endif; ?>
