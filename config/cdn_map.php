@@ -9,8 +9,10 @@
 $CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E';
 
 return [
-    // --- Vidéo d'accueil (hero) : virée néon Vice City, 16:9 ---
-    'hero.mp4'          => "$CDN/hf_20260622_093447_8c39b466-cde1-4c43-8a37-43470c00da5e.mp4",
+    // --- Vidéo d'accueil (hero) : plan d'ouverture du montage (trafic dense + passants) ---
+    // Le vrai hero est un MONTAGE de 5 scènes recréé par make-hero.php (ffmpeg).
+    // Ceci est le repli (1er plan du montage) si make-hero.php n'a pas tourné.
+    'hero.mp4'          => "$CDN/hf_20260622_163349_83ec4749-81dc-406e-a59c-bd961d63db73.mp4",
 
     // --- Scènes / univers (16:9) ---
     'night.png'         => "$CDN/hf_20260622_091459_e851b3ac-912c-4cfe-a04e-264f17f2fc5c.png",

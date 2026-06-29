@@ -19,11 +19,7 @@ $isCli = (PHP_SAPI === 'cli');
 /* --- Construit la liste { chemin local => URL CDN } --------------------- */
 $targets = [];
 
-// 1) Vidéo d'accueil (hero) — la pièce maîtresse.
-$hero = cdn_url('hero.mp4');
-if ($hero !== '') {
-    $targets['public/assets/video/hero.mp4'] = $hero;
-}
+// (La vidéo hero est gérée à part par make-hero.php — montage des 5 plans.)
 
 // 2) Images du cdn_map : on range selon la famille (préfixe du nom).
 $map = is_file(ROOT_PATH . '/config/cdn_map.php') ? require ROOT_PATH . '/config/cdn_map.php' : [];
@@ -89,11 +85,8 @@ function vh_fetch(string $url): ?string
 $ok = 0; $skip = 0; $fail = 0; $log = [];
 foreach ($targets as $rel => $url) {
     $dest = ROOT_PATH . '/' . $rel;
-    // Le hero se rafraîchit TOUJOURS (pour pouvoir changer de vidéo facilement).
-    $isHero = ($rel === 'public/assets/video/hero.mp4');
-    // Vidéo : on exige une vraie taille (sinon = téléchargement partiel à refaire).
     $minKeep = preg_match('/\.(mp4|webm|mov)$/i', $rel) ? 200000 : 1000;
-    if (!$isHero && is_file($dest) && filesize($dest) > $minKeep) { $skip++; continue; }
+    if (is_file($dest) && filesize($dest) > $minKeep) { $skip++; continue; }
     @mkdir(dirname($dest), 0755, true);
     $data = vh_fetch($url);
     if ($data !== null && @file_put_contents($dest, $data) !== false) {
