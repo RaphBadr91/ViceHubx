@@ -73,7 +73,7 @@ require __DIR__ . '/includes/header.php';
     <?php if ($hero_video !== ''): ?>
         <video class="hero__video" autoplay muted loop playsinline preload="auto"
                <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
-            <source src="<?= e($hero_video) ?>">
+            <source src="<?= e($hero_video) ?>" type="video/mp4">
         </video>
     <?php else: ?>
         <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>

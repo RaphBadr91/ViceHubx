@@ -10,6 +10,7 @@
  * Idempotent : saute les articles dont le slug existe déjà.
  */
 require_once __DIR__ . '/../config/config.php';
+require_once __DIR__ . '/../includes/ai.php'; // ai_pick_image() : illustration par titre
 
 $CAT = ['news' => 1, 'guides' => 2, 'leaks' => 3, 'trailers' => 4, 'blog' => 5];
 $p  = fn(string $s) => '<p>' . $s . '</p>';
@@ -333,8 +334,8 @@ $pdo = db();
 $now = time();
 $find = $pdo->prepare('SELECT 1 FROM articles WHERE slug = ? LIMIT 1');
 $ins = $pdo->prepare(
-    "INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, status, published_at, created_at)
-     VALUES (?, 'fr', ?, ?, ?, ?, ?, 'published', ?, NOW())"
+    "INSERT INTO articles (category_id, lang, title, slug, excerpt, body, badge, image, status, published_at, created_at)
+     VALUES (?, 'fr', ?, ?, ?, ?, ?, ?, 'published', ?, NOW())"
 );
 
 $made = 0; $skip = 0;
@@ -343,7 +344,8 @@ foreach ($A as $a) {
     $find->execute([$slug]);
     if ($find->fetchColumn()) { $skip++; continue; }
     $pub = date('Y-m-d H:i:s', $now - $a['days'] * 86400 - random_int(0, 50000));
-    $ins->execute([$CAT[$a['cat']], $a['title'], $slug, $a['excerpt'], $a['body'], $a['badge'], $pub]);
+    $img = '/public/assets/img/scenes/' . ai_pick_image('', $a['title']);
+    $ins->execute([$CAT[$a['cat']], $a['title'], $slug, $a['excerpt'], $a['body'], $a['badge'], $img, $pub]);
     $made++;
 }
 

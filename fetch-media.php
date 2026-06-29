@@ -98,7 +98,20 @@ foreach ($targets as $rel => $url) {
         $fail++; $log[] = "ÉCHEC $rel";
     }
 }
-$summary = "Téléchargés : {$ok} · déjà présents : {$skip} · échecs : {$fail} (total " . count($targets) . ")";
+// 5) Illustrer les articles sans image (visuel des cartes) avec une scène Vice City.
+$illustrated = 0;
+try {
+    require_once ROOT_PATH . '/includes/ai.php'; // ai_pick_image()
+    $arts = db()->query("SELECT id, title FROM articles WHERE image IS NULL OR image = ''")->fetchAll(PDO::FETCH_ASSOC);
+    $updImg = db()->prepare('UPDATE articles SET image = ? WHERE id = ?');
+    foreach ($arts as $a) {
+        $key = ai_pick_image('', (string) $a['title']); // scène/véhicule selon le titre
+        $updImg->execute(['/public/assets/img/scenes/' . $key, (int) $a['id']]);
+        $illustrated++;
+    }
+} catch (Throwable $e) { /* base indispo : on ignore */ }
+
+$summary = "Téléchargés : {$ok} · déjà présents : {$skip} · échecs : {$fail} · articles illustrés : {$illustrated} (médias : " . count($targets) . ")";
 
 if ($isCli) {
     echo $summary . "\n" . implode("\n", $log) . "\n";
