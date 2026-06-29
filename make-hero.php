@@ -89,12 +89,14 @@ if ($ffmpeg) {
     if ($okAll) {
         $n = count($CLIPS);
         $fc = '';
-        for ($i = 0; $i < $n; $i++) { $fc .= "[$i:v]scale=1280:720,setsar=1,fps=30,format=yuv420p[v$i];"; }
+        // Chaque plan tronqué à 3,5 s (montage ~17 s) + compression web légère → fluide.
+        for ($i = 0; $i < $n; $i++) { $fc .= "[$i:v]trim=0:3.5,setpts=PTS-STARTPTS,scale=1280:720,setsar=1,fps=30,format=yuv420p[v$i];"; }
         for ($i = 0; $i < $n; $i++) { $fc .= "[v$i]"; }
         $fc .= "concat=n=$n:v=1:a=0[outv]";
         $cmd = escapeshellarg($ffmpeg) . ' -y -loglevel error' . $inputs
             . ' -filter_complex ' . escapeshellarg($fc)
-            . ' -map ' . escapeshellarg('[outv]') . ' -an -c:v libx264 -crf 23 -preset veryfast -movflags +faststart '
+            . ' -map ' . escapeshellarg('[outv]') . ' -an -c:v libx264 -crf 28 -maxrate 2500k -bufsize 5000k'
+            . ' -preset veryfast -pix_fmt yuv420p -movflags +faststart '
             . escapeshellarg($out) . ' 2>&1';
         $res = function_exists('shell_exec') ? @shell_exec($cmd) : null;
         if (@is_file($out) && filesize($out) > 200000) {
