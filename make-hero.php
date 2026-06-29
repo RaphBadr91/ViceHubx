@@ -43,20 +43,35 @@ function grab(string $url): ?string
     return ($d !== false && strlen($d) > 500) ? $d : null;
 }
 
-function find_ffmpeg(): ?string
+function fn_allowed(string $f): bool
 {
     $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
-    $canShell = function_exists('shell_exec') && !in_array('shell_exec', $disabled, true);
-    if ($canShell) {
-        $p = trim((string) @shell_exec('command -v ffmpeg 2>/dev/null'));
-        if ($p !== '' && @is_file($p)) {
-            return $p;
+    return function_exists($f) && !in_array($f, $disabled, true);
+}
+
+/** Exécute une commande shell via la 1re méthode dispo. Retourne [sortie, peutExécuter]. */
+function run_cmd(string $cmd): array
+{
+    if (fn_allowed('shell_exec')) { return [(string) @shell_exec($cmd), true]; }
+    if (fn_allowed('exec'))       { $o = []; @exec($cmd . ' 2>&1', $o); return [implode("\n", $o), true]; }
+    if (fn_allowed('proc_open')) {
+        $p = @proc_open($cmd, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        if (is_resource($p)) {
+            $o = stream_get_contents($pipes[1]) . stream_get_contents($pipes[2]);
+            fclose($pipes[1]); fclose($pipes[2]); proc_close($p);
+            return [$o, true];
         }
     }
+    return ['', false];
+}
+
+function find_ffmpeg(): ?string
+{
+    [$out, $can] = run_cmd('command -v ffmpeg 2>/dev/null');
+    $p = trim((string) $out);
+    if ($p !== '' && @is_file($p)) { return $p; }
     foreach (['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/bin/ffmpeg', '/opt/cpanel/ea-ffmpeg/root/usr/bin/ffmpeg'] as $c) {
-        if (@is_file($c)) {
-            return $c;
-        }
+        if (@is_file($c)) { return $c; }
     }
     return null;
 }
@@ -71,8 +86,10 @@ if ($pdata !== null) {
     $log[] = 'Poster : OK';
 }
 
+$execMethod = fn_allowed('shell_exec') ? 'shell_exec' : (fn_allowed('exec') ? 'exec' : (fn_allowed('proc_open') ? 'proc_open' : 'AUCUNE (exécution shell bloquée)'));
 $ffmpeg = find_ffmpeg();
-$log[] = 'ffmpeg : ' . ($ffmpeg ?: 'INDISPONIBLE (repli sur le 1er plan)');
+$log[] = 'Méthode shell : ' . $execMethod;
+$log[] = 'ffmpeg : ' . ($ffmpeg ?: 'INTROUVABLE (repli sur le 1er plan)');
 
 if ($ffmpeg) {
     $tmp = sys_get_temp_dir() . '/vhhero_' . substr(md5($out . PHP_VERSION), 0, 8);
@@ -98,7 +115,7 @@ if ($ffmpeg) {
             . ' -map ' . escapeshellarg('[outv]') . ' -an -c:v libx264 -crf 28 -maxrate 2500k -bufsize 5000k'
             . ' -preset veryfast -pix_fmt yuv420p -movflags +faststart '
             . escapeshellarg($out) . ' 2>&1';
-        $res = function_exists('shell_exec') ? @shell_exec($cmd) : null;
+        [$res, ] = run_cmd($cmd);
         if (@is_file($out) && filesize($out) > 200000) {
             $method = 'montage';
             $log[] = 'Montage : OK (' . round(filesize($out) / 1048576, 1) . ' Mo)';
