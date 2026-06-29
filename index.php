@@ -71,7 +71,7 @@ require __DIR__ . '/includes/header.php';
 <!-- ============ HERO ============ -->
 <section class="hero">
     <?php if ($hero_video !== ''): ?>
-        <video class="hero__video" autoplay muted loop playsinline preload="auto"
+        <video class="hero__video" autoplay muted loop playsinline preload="metadata"
                <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
             <source src="<?= e($hero_video) ?>" type="video/mp4">
         </video>
