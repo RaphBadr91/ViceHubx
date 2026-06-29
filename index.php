@@ -75,6 +75,7 @@ require __DIR__ . '/includes/header.php';
                <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
             <source src="<?= e($hero_video) ?>" type="video/mp4">
         </video>
+        <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('canplay',go);document.addEventListener('click',go,{once:true});})();</script>
     <?php else: ?>
         <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
     <?php endif; ?>
