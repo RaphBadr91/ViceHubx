@@ -103,7 +103,15 @@ function lang_url(string $code): string
 
 function asset(string $path): string
 {
-    return BASE_URL . '/public/assets/' . ltrim($path, '/');
+    $rel  = 'public/assets/' . ltrim($path, '/');
+    $url  = BASE_URL . '/' . $rel;
+    $full = ROOT_PATH . '/' . $rel;
+    // Anti-cache : ?v=<date de modif> → toute mise à jour (CSS, JS, vidéo, image)
+    // est servie fraîche aux visiteurs, sans cache navigateur périmé.
+    if (is_file($full)) {
+        $url .= (strpos($url, '?') === false ? '?' : '&') . 'v=' . filemtime($full);
+    }
+    return $url;
 }
 
 function url(string $path): string

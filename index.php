@@ -37,19 +37,15 @@ $heroFile = ROOT_PATH . '/public/assets/video/hero.mp4';
 if ($hero_video === '' && is_file($heroFile) && filesize($heroFile) < 7000000) {
     $hero_video = asset('video/hero.mp4');
 }
-// Sinon : montage cinématique d'IMAGES (léger, fluide, fiable) — 5 scènes en
-// fondu enchaîné + zoom lent. Les visuels sont déjà en local (fetch-media.php).
+// Montage cinématique d'IMAGES : TOUJOURS présent comme fond « vivant » (5 scènes
+// en fondu enchaîné + zoom lent, léger & fiable). Si une vidéo hero existe, elle se
+// superpose et ne prend le dessus QUE lorsqu'elle JOUE réellement — sinon le montage
+// reste visible. Plus jamais d'image figée, quoi qu'il arrive.
 $hero_scenes = [];
-if ($hero_video === '') {
-    foreach (['nightlife', 'police', 'heli-night', 'aerial', 'beach-sunset'] as $k) {
-        $hero_scenes[] = img_src('/public/assets/img/scenes/' . $k . '.png');
-    }
-    $hero_scenes = array_values(array_filter($hero_scenes));
+foreach (['nightlife', 'police', 'heli-night', 'aerial', 'beach-sunset'] as $k) {
+    $hero_scenes[] = img_src('/public/assets/img/scenes/' . $k . '.png');
 }
-$hero_poster = is_file(ROOT_PATH . '/public/assets/img/hero-poster.png') ? asset('img/hero-poster.png') : '';
-if ($hero_poster === '') {
-    $hero_poster = cdn_url('night.png'); // image de prévisualisation pendant le chargement
-}
+$hero_scenes = array_values(array_filter($hero_scenes));
 $deadline   = release_date();
 
 $modules = [
@@ -77,20 +73,21 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <?php if ($hero_video !== ''): ?>
-        <video class="hero__video" autoplay muted loop playsinline preload="metadata"
-               <?= $hero_poster !== '' ? 'poster="' . e($hero_poster) . '"' : '' ?> aria-hidden="true">
-            <source src="<?= e($hero_video) ?>" type="video/mp4">
-        </video>
-        <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('canplay',go);document.addEventListener('click',go,{once:true});})();</script>
-    <?php elseif ($hero_scenes): ?>
-        <!-- Montage cinématique d'images : 5 scènes en fondu enchaîné + zoom lent (léger & fluide) -->
+    <?php if ($hero_scenes): ?>
+        <!-- Fond « vivant » de base : montage 5 scènes en fondu enchaîné + zoom lent -->
         <div class="hero__montage" aria-hidden="true">
             <?php foreach ($hero_scenes as $i => $img): ?>
                 <span class="hero__slide" style="background-image:url('<?= e($img) ?>');animation-delay:<?= $i * 5 ?>s"></span>
             <?php endforeach; ?>
         </div>
-    <?php else: ?>
+    <?php endif; ?>
+    <?php if ($hero_video !== ''): ?>
+        <!-- Vidéo hero : se révèle (par-dessus le montage) seulement quand elle JOUE vraiment -->
+        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="<?= e($hero_video) ?>" type="video/mp4">
+        </video>
+        <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('loadeddata',go);v.addEventListener('canplay',go);v.addEventListener('playing',function(){v.classList.add('is-playing');});document.addEventListener('click',go,{once:true});document.addEventListener('touchstart',go,{once:true});})();</script>
+    <?php elseif (!$hero_scenes): ?>
         <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
     <?php endif; ?>
     <div class="hero__veil" aria-hidden="true"></div>

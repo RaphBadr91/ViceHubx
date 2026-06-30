@@ -249,7 +249,10 @@ $sizeMo = (@is_file($out) && $success) ? round(filesize($out) / 1048576, 1) : 0;
         : '⚠️ Impossible de générer la vidéo ici → le site utilise le montage animé d\'images (fluide). Détail ci-dessous.' ?>
 </div>
 <?php if ($success): ?>
-<p class="muted">Recharge le site en <strong>navigation privée</strong> (Ctrl+Maj+N) pour voir la vidéo animée du hero.</p>
+<p class="muted">Aperçu en direct de la vidéo générée (elle doit bouger toute seule) :</p>
+<video src="<?= e(asset('video/hero.mp4')) ?>" autoplay muted loop playsinline controls
+       style="width:100%;border-radius:12px;margin:.4rem 0 1rem;background:#000;aspect-ratio:16/9"></video>
+<p class="muted" style="font-size:.82rem">Si elle bouge ici → c'est bon. Recharge ensuite le site en <strong>navigation privée</strong> (Ctrl+Maj+N).</p>
 <?php endif; ?>
 <pre style="max-height:300px;overflow:auto;background:rgba(0,0,0,.3);padding:.8rem;border-radius:8px;font-size:.74rem;line-height:1.5"><?= e(implode("\n", $log)) ?></pre>
 <a class="btn btn--primary" href="<?= e(url('index.php')) ?>" style="justify-content:center;width:100%">Voir le site →</a>
