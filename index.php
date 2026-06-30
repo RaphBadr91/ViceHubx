@@ -34,7 +34,7 @@ $hero_video = trim((string) get_setting('hero_video', ''));
 // Vidéo locale utilisée UNIQUEMENT si c'est un montage léger (<6 Mo, optimisé
 // ffmpeg). Un gros clip brut rame en autoplay → on préfère le montage d'images.
 $heroFile = ROOT_PATH . '/public/assets/video/hero.mp4';
-if ($hero_video === '' && is_file($heroFile) && filesize($heroFile) < 6000000) {
+if ($hero_video === '' && is_file($heroFile) && filesize($heroFile) < 7000000) {
     $hero_video = asset('video/hero.mp4');
 }
 // Sinon : montage cinématique d'IMAGES (léger, fluide, fiable) — 5 scènes en
