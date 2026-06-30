@@ -193,11 +193,14 @@ $__tip = $__tips[array_rand($__tips)];
     <div class="vh-loader__pct"><b data-loader-pct>0</b>% — <?= lang() === 'fr' ? 'Chargement de Vice City' : 'Loading Vice City' ?>&hellip;</div>
     <div class="vh-loader__tip">💡 <?= e($__tip) ?></div>
 </div>
-<script>(function(){var b=document.querySelector('[data-loader-pct]'),id;if(b){var n=0;id=setInterval(function(){n+=Math.random()*9+4;if(n>=98){n=98;clearInterval(id);}b.textContent=Math.floor(n);},95);}
-function hide(){var l=document.querySelector('.vh-loader');if(l)l.classList.add('hidden');}
-window.addEventListener('load',function(){if(id)clearInterval(id);if(b)b.textContent=100;setTimeout(hide,300);});
-/* filet de sécurité ABSOLU : le loader disparaît au plus tard après 3 s, même si une vidéo est lourde ou si un script échoue */
-setTimeout(hide,3000);})();</script>
+<script>(function(){var b=document.querySelector('[data-loader-pct]'),id;if(b){var n=0;id=setInterval(function(){n+=Math.random()*12+7;if(n>=98){n=98;clearInterval(id);}b.textContent=Math.floor(n);},80);}
+var done=false;function hide(){if(done)return;done=true;if(id)clearInterval(id);if(b)b.textContent=100;var l=document.querySelector('.vh-loader');if(l)l.classList.add('hidden');}
+/* Le loader part dès que la page est INTERACTIVE (DOM prêt), SANS attendre la vidéo
+   (qui se charge en arrière-plan et se révèle quand elle joue). */
+if(document.readyState!=='loading'){setTimeout(hide,450);}
+else{document.addEventListener('DOMContentLoaded',function(){setTimeout(hide,450);});}
+window.addEventListener('load',hide);
+setTimeout(hide,2200);})();</script>
 
 <!-- Calques cinéma -->
 <div class="fx-cursor" aria-hidden="true"></div>

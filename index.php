@@ -31,21 +31,32 @@ $deals    = get_deals();
 $featured_products = get_featured_products(4);
 
 $hero_video = trim((string) get_setting('hero_video', ''));
-// Vidéo locale utilisée UNIQUEMENT si c'est un montage léger (<6 Mo, optimisé
-// ffmpeg). Un gros clip brut rame en autoplay → on préfère le montage d'images.
+// Vidéo locale utilisée UNIQUEMENT si c'est un montage léger (<7 Mo, optimisé
+// ffmpeg). Un gros clip brut rame en autoplay → repli sur le montage d'images.
 $heroFile = ROOT_PATH . '/public/assets/video/hero.mp4';
 if ($hero_video === '' && is_file($heroFile) && filesize($heroFile) < 7000000) {
     $hero_video = asset('video/hero.mp4');
 }
-// Montage cinématique d'IMAGES : TOUJOURS présent comme fond « vivant » (5 scènes
-// en fondu enchaîné + zoom lent, léger & fiable). Si une vidéo hero existe, elle se
-// superpose et ne prend le dessus QUE lorsqu'elle JOUE réellement — sinon le montage
-// reste visible. Plus jamais d'image figée, quoi qu'il arrive.
-$hero_scenes = [];
-foreach (['nightlife', 'police', 'heli-night', 'aerial', 'beach-sunset'] as $k) {
-    $hero_scenes[] = img_src('/public/assets/img/scenes/' . $k . '.png');
+// Image de fond LÉGÈRE affichée instantanément (poster extrait de la vidéo par
+// ffmpeg, ~100 Ko). Quand une vidéo existe, on ne charge QUE cette image en fond
+// (pas les 5 lourds PNG) → page rapide + la vidéo a toute la bande passante.
+$hero_poster = '';
+foreach (['img/hero-poster.jpg', 'img/hero-poster.png'] as $p) {
+    if (is_file(ROOT_PATH . '/public/assets/' . $p)) { $hero_poster = asset($p); break; }
 }
-$hero_scenes = array_values(array_filter($hero_scenes));
+// Montage cinématique de 5 scènes : fond « vivant » UNIQUEMENT s'il n'y a pas de
+// vidéo (sinon il alourdit la page pour rien). Fondu enchaîné + zoom lent.
+$hero_scenes = [];
+if ($hero_video === '') {
+    foreach (['nightlife', 'police', 'heli-night', 'aerial', 'beach-sunset'] as $k) {
+        $hero_scenes[] = img_src('/public/assets/img/scenes/' . $k . '.png');
+    }
+    $hero_scenes = array_values(array_filter($hero_scenes));
+}
+if ($hero_poster === '') {
+    // Pas de poster ffmpeg : on prend une scène comme image de fond de repli.
+    $hero_poster = img_src('/public/assets/img/scenes/nightlife.png');
+}
 $deadline   = release_date();
 
 $modules = [
@@ -73,21 +84,25 @@ require __DIR__ . '/includes/header.php';
 
 <!-- ============ HERO ============ -->
 <section class="hero">
-    <?php if ($hero_scenes): ?>
-        <!-- Fond « vivant » de base : montage 5 scènes en fondu enchaîné + zoom lent -->
+    <?php if ($hero_video !== ''): ?>
+        <!-- 1 image de fond légère (affichée tout de suite) + vidéo qui se révèle quand elle JOUE -->
+        <?php if ($hero_poster !== ''): ?>
+            <span class="hero__poster" style="background-image:url('<?= e($hero_poster) ?>')" aria-hidden="true"></span>
+        <?php endif; ?>
+        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="<?= e($hero_video) ?>" type="video/mp4">
+        </video>
+        <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('loadeddata',go);v.addEventListener('canplay',go);v.addEventListener('playing',function(){v.classList.add('is-playing');});document.addEventListener('click',go,{once:true});document.addEventListener('touchstart',go,{once:true});})();</script>
+    <?php elseif ($hero_scenes): ?>
+        <!-- Pas de vidéo : montage « vivant » de 5 scènes en fondu enchaîné + zoom lent -->
         <div class="hero__montage" aria-hidden="true">
             <?php foreach ($hero_scenes as $i => $img): ?>
                 <span class="hero__slide" style="background-image:url('<?= e($img) ?>');animation-delay:<?= $i * 5 ?>s"></span>
             <?php endforeach; ?>
         </div>
-    <?php endif; ?>
-    <?php if ($hero_video !== ''): ?>
-        <!-- Vidéo hero : se révèle (par-dessus le montage) seulement quand elle JOUE vraiment -->
-        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
-            <source src="<?= e($hero_video) ?>" type="video/mp4">
-        </video>
-        <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('loadeddata',go);v.addEventListener('canplay',go);v.addEventListener('playing',function(){v.classList.add('is-playing');});document.addEventListener('click',go,{once:true});document.addEventListener('touchstart',go,{once:true});})();</script>
-    <?php elseif (!$hero_scenes): ?>
+    <?php elseif ($hero_poster !== ''): ?>
+        <span class="hero__poster" style="background-image:url('<?= e($hero_poster) ?>')" aria-hidden="true"></span>
+    <?php else: ?>
         <canvas class="hero__canvas" id="vh-canvas" aria-hidden="true"></canvas>
     <?php endif; ?>
     <div class="hero__veil" aria-hidden="true"></div>

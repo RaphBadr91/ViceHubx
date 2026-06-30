@@ -225,6 +225,14 @@ if ($ffmpeg) {
             $log[] = 'Montage : OK (' . round(filesize($out) / 1048576, 1) . ' Mo)';
             // On retire d'éventuels plans de playlist d'un ancien run.
             foreach (glob($videoDir . '/hero-*.mp4') ?: [] as $f) { @unlink($f); }
+            // Poster LÉGER (1re image, ~100 Ko) → fond instantané du hero sous la vidéo.
+            $poster = $imgDir . '/hero-poster.jpg';
+            run_cmd(escapeshellarg($ffmpeg) . ' -y -loglevel error -i ' . escapeshellarg($out)
+                . ' -frames:v 1 -q:v 4 ' . escapeshellarg($poster) . ' 2>&1');
+            if (@is_file($poster) && filesize($poster) > 2000) {
+                @unlink($imgDir . '/hero-poster.png'); // l'ancien poster lourd n'est plus utile
+                $log[] = 'Poster léger : OK (' . round(filesize($poster) / 1024) . ' Ko)';
+            }
         } else {
             $log[] = 'Montage : échec ffmpeg → ' . trim((string) $res);
         }
