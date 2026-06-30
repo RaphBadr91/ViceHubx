@@ -1249,18 +1249,34 @@ function cdn_url(string $filename): string
 }
 
 /**
- * Résout la source d'une image : fichier local s'il existe, sinon CDN public,
- * sinon le chemin d'origine. Les URL absolues et /preview.php sont laissées telles quelles.
+ * Source d'une image, optimisée et redimensionnée à la volée via /img.php
+ * (WebP léger + cache disque + auto-réparation depuis le CDN). Rend tout le site
+ * TRÈS rapide. Les SVG, data:, /preview.php et /img.php sont laissés tels quels.
+ *
+ * @param int $w Largeur cible (px). 1000 par défaut (cartes/hero). Plus petit = plus léger.
  */
-function img_src(?string $path): string
+function img_src(?string $path, int $w = 1000): string
 {
     $path = trim((string) $path);
-    if ($path === '' || preg_match('#^https?://#', $path) || str_starts_with($path, '/preview.php')) {
+    if ($path === '' || str_contains($path, '/img.php') || str_contains($path, '/preview.php') || str_starts_with($path, 'data:')) {
         return $path;
     }
+    // Image distante (CDN Higgsfield…) → on la passe par le redimensionneur (cache + WebP).
+    if (preg_match('#^https?://#i', $path)) {
+        $p = (string) (parse_url($path, PHP_URL_PATH) ?: $path);
+        if (preg_match('#\.(png|jpe?g|webp)$#i', $p)) {
+            return BASE_URL . '/img.php?f=' . rawurlencode(basename($p)) . '&w=' . $w;
+        }
+        return $path; // URL non image (vidéo, etc.) → telle quelle
+    }
+    // Chemins locaux / noms de fichiers raster → redimensionneur.
+    if (preg_match('#\.(png|jpe?g)$#i', $path)) {
+        return BASE_URL . '/img.php?f=' . rawurlencode(ltrim($path, '/')) . '&w=' . $w;
+    }
+    // Autres (SVG, gif…) : résolution locale/CDN classique.
     $rel = ltrim($path, '/');
     if (is_file(ROOT_PATH . '/' . $rel)) {
-        return $path; // fichier local présent
+        return $path;
     }
     $cdn = cdn_url(basename($rel));
     return $cdn !== '' ? $cdn : $path;
