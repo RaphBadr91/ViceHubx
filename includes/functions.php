@@ -1249,37 +1249,42 @@ function cdn_url(string $filename): string
 }
 
 /**
- * Source d'une image, optimisée et redimensionnée à la volée via /img.php
- * (WebP léger + cache disque + auto-réparation depuis le CDN). Rend tout le site
- * TRÈS rapide. Les SVG, data:, /preview.php et /img.php sont laissés tels quels.
- *
- * @param int $w Largeur cible (px). 1000 par défaut (cartes/hero). Plus petit = plus léger.
+ * Source d'une image, en privilégiant une variante WebP STATIQUE locale (légère,
+ * servie directement par le serveur web → ultra-rapide, sans PHP par image).
+ * Ordre : WebP local → original local → variante _min.webp du CDN → original.
+ * Les SVG, data: et /preview.php sont laissés tels quels.
  */
-function img_src(?string $path, int $w = 1000): string
+function img_src(?string $path): string
 {
     $path = trim((string) $path);
-    if ($path === '' || str_contains($path, '/img.php') || str_contains($path, '/preview.php') || str_starts_with($path, 'data:')) {
+    if ($path === '' || str_contains($path, '/preview.php') || str_contains($path, '/img.php') || str_starts_with($path, 'data:')) {
         return $path;
     }
-    // Image distante (CDN Higgsfield…) → on la passe par le redimensionneur (cache + WebP).
+    // URL distante (CDN Higgsfield) → variante _min.webp légère si c'est une image.
     if (preg_match('#^https?://#i', $path)) {
-        $p = (string) (parse_url($path, PHP_URL_PATH) ?: $path);
-        if (preg_match('#\.(png|jpe?g|webp)$#i', $p)) {
-            return BASE_URL . '/img.php?f=' . rawurlencode(basename($p)) . '&w=' . $w;
+        if (preg_match('#cloudfront\.net/#i', $path) && preg_match('#\.(png|jpe?g)$#i', $path)) {
+            return preg_replace('#\.(png|jpe?g)$#i', '_min.webp', $path);
         }
-        return $path; // URL non image (vidéo, etc.) → telle quelle
+        return $path;
     }
-    // Chemins locaux / noms de fichiers raster → redimensionneur.
-    if (preg_match('#\.(png|jpe?g)$#i', $path)) {
-        return BASE_URL . '/img.php?f=' . rawurlencode(ltrim($path, '/')) . '&w=' . $w;
-    }
-    // Autres (SVG, gif…) : résolution locale/CDN classique.
     $rel = ltrim($path, '/');
+    // 1) Variante WebP locale (statique, légère) — la plus rapide.
+    if (preg_match('#\.(png|jpe?g)$#i', $rel)) {
+        $webp = preg_replace('#\.(png|jpe?g)$#i', '.webp', $rel);
+        if (is_file(ROOT_PATH . '/' . $webp)) {
+            return BASE_URL . '/' . $webp;
+        }
+    }
+    // 2) Fichier original local.
     if (is_file(ROOT_PATH . '/' . $rel)) {
         return $path;
     }
+    // 3) CDN connu → variante _min.webp légère (sinon l'original CDN).
     $cdn = cdn_url(basename($rel));
-    return $cdn !== '' ? $cdn : $path;
+    if ($cdn !== '') {
+        return preg_match('#\.(png|jpe?g)$#i', $cdn) ? preg_replace('#\.(png|jpe?g)$#i', '_min.webp', $cdn) : $cdn;
+    }
+    return $path;
 }
 
 /**

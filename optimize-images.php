@@ -19,12 +19,12 @@ require_once __DIR__ . '/config/config.php';
 
 $isCli = (PHP_SAPI === 'cli');
 
-// Dossier => [largeur max, qualité WebP]
+// Dossier => [largeur max, qualité WebP] — légers pour un chargement très rapide.
 $jobs = [
-    'public/assets/img/scenes' => [1280, 80],
-    'public/assets/img/shop'   => [1000, 82],
+    'public/assets/img/scenes' => [1200, 76],
+    'public/assets/img/shop'   => [900, 80],
     'public/assets/img/brand'  => [1000, 86],
-    'public/assets/img'        => [1280, 82], // images à la racine (poster, social…)
+    'public/assets/img'        => [1280, 80], // images à la racine (poster, social…)
 ];
 
 $hasWebp = function_exists('imagewebp') && function_exists('imagecreatefromstring');
@@ -54,7 +54,61 @@ function to_webp(string $src, string $dst, int $maxW, int $q): array
     return ['ok', $srcBytes, (int) filesize($dst)];
 }
 
-$made = 0; $skip = 0; $fail = 0; $srcTotal = 0; $webpTotal = 0; $log = [];
+function vh_fetch(string $url): ?string
+{
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_TIMEOUT => 120, CURLOPT_CONNECTTIMEOUT => 20, CURLOPT_USERAGENT => 'ViceHubX/1.0']);
+        $d = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ($d !== false && $code < 400 && strlen($d) > 500) ? $d : null;
+    }
+    $d = @file_get_contents($url);
+    return ($d !== false && strlen($d) > 500) ? $d : null;
+}
+
+/** Dossier local cible selon le préfixe du nom de fichier. */
+function dir_for(string $base): string
+{
+    if (preg_match('/^brand-/', $base)) { return 'public/assets/img/brand'; }
+    if (preg_match('/^(poster-|tshirt|hoodie|cap|mug|mousepad|console|game-case|shop-)/', $base)) { return 'public/assets/img/shop'; }
+    return 'public/assets/img/scenes';
+}
+
+$made = 0; $skip = 0; $fail = 0; $srcTotal = 0; $webpTotal = 0; $dl = 0; $log = [];
+
+/* --- Étape 0 : s'assurer que TOUTES les images originales sont en local ---
+   (sinon on ne peut pas générer leur WebP). On télécharge ce qui manque depuis
+   le CDN : entrées du cdn_map + images réellement utilisées en base. */
+$want = []; // chemin local relatif => URL CDN
+$map = is_file(ROOT_PATH . '/config/cdn_map.php') ? (require ROOT_PATH . '/config/cdn_map.php') : [];
+foreach ($map as $key => $url) {
+    if ($key === 'hero.mp4' || !is_string($url) || $url === '' || !preg_match('/\.(png|jpe?g)$/i', $key)) { continue; }
+    $want[dir_for($key) . '/' . $key] = $url;
+}
+try {
+    $rows = db()->query(
+        "SELECT image FROM products WHERE image LIKE '/public/%'
+         UNION SELECT image FROM vehicles WHERE image LIKE '/public/%'
+         UNION SELECT image FROM articles WHERE image LIKE '/public/%'"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($rows as $img) {
+        $rel = ltrim((string) $img, '/');
+        if (!preg_match('/\.(png|jpe?g)$/i', $rel)) { continue; }
+        $url = cdn_url(basename($rel));
+        if ($url !== '') { $want[$rel] = $url; }
+    }
+} catch (Throwable $e) { /* base indispo : on continue avec le cdn_map */ }
+
+foreach ($want as $rel => $url) {
+    $dest = ROOT_PATH . '/' . $rel;
+    if (is_file($dest) && filesize($dest) > 1000) { continue; }
+    @mkdir(dirname($dest), 0755, true);
+    $data = vh_fetch($url);
+    if ($data !== null && @file_put_contents($dest, $data) !== false) { $dl++; }
+}
 
 if (!$hasWebp) {
     $log[] = '✗ GD/imagewebp indisponible sur ce serveur (impossible de générer du WebP).';
@@ -80,8 +134,8 @@ if (!$hasWebp) {
 }
 
 $savedMo = $srcTotal > 0 ? round(($srcTotal - $webpTotal) / 1048576, 1) : 0;
-$summary = "WebP générés : {$made} · déjà à jour : {$skip} · échecs : {$fail}"
-         . ($made > 0 ? " · poids économisé : {$savedMo} Mo (sur les images converties)" : '');
+$summary = "Originaux rapatriés : {$dl} · WebP générés : {$made} · déjà à jour : {$skip} · échecs : {$fail}"
+         . ($made > 0 ? " · poids économisé : {$savedMo} Mo" : '');
 
 if ($isCli) {
     echo $summary . "\n" . implode("\n", $log) . "\n";
