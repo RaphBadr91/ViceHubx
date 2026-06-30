@@ -114,9 +114,35 @@ function find_system_ffmpeg(): ?string
     return null;
 }
 
+/** Vérifie qu'un binaire ffmpeg est exécutable (répond à -version). */
+function verify_ffmpeg(string $bin): bool
+{
+    if (!@is_file($bin)) { return false; }
+    @chmod($bin, 0755);
+    [$v, ] = run_cmd(escapeshellarg($bin) . ' -version 2>&1');
+    return stripos((string) $v, 'ffmpeg version') !== false;
+}
+
+/** Décompresse un .gz vers un fichier, en flux (faible mémoire), via zlib natif PHP. */
+function gunzip_file(string $src, string $dest): bool
+{
+    if (!function_exists('gzopen')) { return false; }
+    $in  = @gzopen($src, 'rb');
+    $out = @fopen($dest, 'wb');
+    if (!$in || !$out) { if ($in) { gzclose($in); } if ($out) { fclose($out); } return false; }
+    while (!gzeof($in)) {
+        $chunk = gzread($in, 262144);
+        if ($chunk === false || $chunk === '') { break; }
+        fwrite($out, $chunk);
+    }
+    gzclose($in); fclose($out);
+    return (int) (@filesize($dest) ?: 0) > 1000000;
+}
+
 /**
- * Garantit un ffmpeg utilisable : système, sinon binaire statique déjà téléchargé,
- * sinon télécharge un build statique autonome (johnvansickle, amd64) et l'installe.
+ * Garantit un ffmpeg utilisable : système, sinon binaire statique déjà installé,
+ * sinon télécharge un binaire statique autonome (eugeneware/ffmpeg-static, linux-x64).
+ * On évite xz/tar (absents d'O2Switch) : binaire BRUT, ou .gz décompressé en PHP natif.
  */
 function ensure_ffmpeg(array &$log): ?string
 {
@@ -126,51 +152,33 @@ function ensure_ffmpeg(array &$log): ?string
     if ($sys) { $log[] = 'ffmpeg système : ' . $sys; return $sys; }
 
     $local = $binDir . '/ffmpeg';
-    if (@is_file($local)) {
-        @chmod($local, 0755);
-        [$v, ] = run_cmd(escapeshellarg($local) . ' -version 2>&1');
-        if (stripos((string) $v, 'ffmpeg version') !== false) { $log[] = 'ffmpeg statique (déjà installé) : ' . $local; return $local; }
-    }
+    if (verify_ffmpeg($local)) { $log[] = 'ffmpeg statique (déjà installé) : ' . $local; return $local; }
 
     if (!can_shell()) { $log[] = 'ffmpeg statique : impossible (exécution shell bloquée par l\'hébergeur)'; return null; }
 
-    $tarball = $binDir . '/ffmpeg-static.tar.xz';
-    $url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz';
-    $log[] = 'Téléchargement de ffmpeg statique (~40 Mo, une seule fois)…';
-    if (!grab_to_file($url, $tarball)) {
-        $log[] = 'ffmpeg statique : téléchargement ÉCHEC (' . $url . ')';
-        return null;
+    $base = 'https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1';
+
+    // 1) Binaire BRUT (aucune décompression) — le plus fiable.
+    $log[] = 'Téléchargement de ffmpeg statique (binaire brut, ~80 Mo, une seule fois)…';
+    if (grab_to_file("$base/ffmpeg-linux-x64", $local) && verify_ffmpeg($local)) {
+        $log[] = 'ffmpeg statique installé (brut) : ' . round((int) filesize($local) / 1048576, 1) . ' Mo';
+        return $local;
     }
-    $log[] = 'Téléchargé : ' . round((int) filesize($tarball) / 1048576, 1) . ' Mo';
+    @unlink($local);
+    $log[] = 'Binaire brut indispo/non exécutable → essai version .gz…';
 
-    $ex = $binDir . '/_extract';
-    run_cmd('rm -rf ' . escapeshellarg($ex)); @mkdir($ex, 0755, true);
-
-    // Plusieurs stratégies d'extraction (tar -J, xz puis tar, unxz puis tar).
-    $strategies = [
-        'tar -xJf ' . escapeshellarg($tarball) . ' -C ' . escapeshellarg($ex),
-        'xz -dc ' . escapeshellarg($tarball) . ' | tar -xf - -C ' . escapeshellarg($ex),
-        'cp ' . escapeshellarg($tarball) . ' ' . escapeshellarg($ex . '/f.tar.xz') . ' && unxz -f ' . escapeshellarg($ex . '/f.tar.xz') . ' && tar -xf ' . escapeshellarg($ex . '/f.tar') . ' -C ' . escapeshellarg($ex),
-    ];
-    $found = null;
-    foreach ($strategies as $cmd) {
-        run_cmd($cmd . ' 2>&1');
-        [$ls, ] = run_cmd('find ' . escapeshellarg($ex) . ' -type f -name ffmpeg 2>/dev/null');
-        $cand = trim((string) strtok((string) $ls, "\n"));
-        if ($cand !== '' && @is_file($cand)) { $found = $cand; break; }
+    // 2) Binaire .gz décompressé en PHP natif (gzopen) — pas besoin de xz ni tar.
+    $gz = $binDir . '/ffmpeg.gz';
+    if (grab_to_file("$base/ffmpeg-linux-x64.gz", $gz) && gunzip_file($gz, $local)) {
+        @unlink($gz);
+        if (verify_ffmpeg($local)) {
+            $log[] = 'ffmpeg statique installé (gzip) : ' . round((int) filesize($local) / 1048576, 1) . ' Mo';
+            return $local;
+        }
     }
+    @unlink($gz); @unlink($local);
 
-    if ($found && @copy($found, $local)) {
-        @chmod($local, 0755);
-        run_cmd('rm -rf ' . escapeshellarg($ex) . ' ' . escapeshellarg($tarball));
-        [$v, ] = run_cmd(escapeshellarg($local) . ' -version 2>&1');
-        if (stripos((string) $v, 'ffmpeg version') !== false) { $log[] = 'ffmpeg statique installé : ' . $local; return $local; }
-        $log[] = 'ffmpeg statique : binaire copié mais non exécutable → ' . trim((string) $v);
-        return null;
-    }
-
-    run_cmd('rm -rf ' . escapeshellarg($ex) . ' ' . escapeshellarg($tarball));
-    $log[] = 'ffmpeg statique : extraction ÉCHEC (xz/tar indisponibles ?).';
+    $log[] = 'ffmpeg statique : installation ÉCHEC (GitHub injoignable depuis le serveur ?).';
     return null;
 }
 
