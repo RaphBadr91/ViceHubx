@@ -192,7 +192,9 @@ function ai_generate_article(?string $topic = null): array
         'title'        => $title,
         'excerpt'      => $excerpt !== '' ? $excerpt : mb_substr(strip_tags($body), 0, 160),
         'body'         => $body,
-        'image'        => ai_pick_image($theme, $title),
+        // Chemin LOCAL complet → l'illustration est servie depuis l'hébergement
+        // (et non depuis le CDN) dès que le fichier est présent en local.
+        'image'        => '/public/assets/img/scenes/' . ai_pick_image($theme, $title),
         'image_prompt' => $iprompt,
         'category'     => $cat,
     ];
