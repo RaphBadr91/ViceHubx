@@ -798,7 +798,7 @@ function article_shop_cta(string $variant = 'full'): string
 
     return '<aside class="art-cta">'
         . '<a class="art-cta__media" href="' . e($purl) . '" aria-label="' . e($p['name']) . '">'
-        . '<img src="' . e(img_src($p['image'])) . '" alt="' . e($p['name']) . '" loading="lazy" decoding="async" onerror="this.style.display=\'none\'">'
+        . picture_html((string) $p['image'], (string) $p['name'], '', 'loading="lazy" decoding="async" onerror="(this.closest(\'picture\')||this).style.display=\'none\'"')
         . '<span class="art-cta__badge">' . e($badge) . '</span></a>'
         . '<div class="art-cta__body">'
         . '<span class="art-cta__tag">🛍️ ' . ($fr ? 'Boutique ViceHub X' : 'ViceHub X Shop') . '</span>'
@@ -1294,6 +1294,19 @@ function webp_variant(string $src): string
         }
     }
     return '';
+}
+
+/** <picture> avec variante WebP légère + repli PNG/JPEG, pour une image locale ou CDN. */
+function picture_html(string $img, string $alt = '', string $class = '', string $attrs = 'loading="lazy" decoding="async"'): string
+{
+    $src = img_src($img);
+    if ($src === '') {
+        return '';
+    }
+    $cls = $class !== '' ? ' class="' . e($class) . '"' : '';
+    $tag = '<img' . $cls . ' src="' . e($src) . '" alt="' . e($alt) . '" ' . $attrs . '>';
+    $webp = webp_variant($src);
+    return $webp !== '' ? '<picture><source srcset="' . e($webp) . '" type="image/webp">' . $tag . '</picture>' : $tag;
 }
 
 /** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
