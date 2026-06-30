@@ -209,14 +209,14 @@ if ($ffmpeg) {
     if ($okAll) {
         $n = count($CLIPS);
         $fc = '';
-        // Chaque plan tronqué à 3,5 s (montage ~17,5 s), 720p 30fps, compression web
-        // légère (CRF 27, plafond 2200 kb/s) → ~4-5 Mo, autoplay instantané et fluide.
-        for ($i = 0; $i < $n; $i++) { $fc .= "[$i:v]trim=0:3.5,setpts=PTS-STARTPTS,scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=30,format=yuv420p[v$i];"; }
+        // Chaque plan tronqué à 3 s (montage ~15 s), 720p 24fps, compression web TRÈS
+        // légère (CRF 31, plafond 1400 kb/s) → ~2-2,5 Mo, démarrage instantané et fluide.
+        for ($i = 0; $i < $n; $i++) { $fc .= "[$i:v]trim=0:3,setpts=PTS-STARTPTS,scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,setsar=1,fps=24,format=yuv420p[v$i];"; }
         for ($i = 0; $i < $n; $i++) { $fc .= "[v$i]"; }
         $fc .= "concat=n=$n:v=1:a=0[outv]";
         $cmd = escapeshellarg($ffmpeg) . ' -y -loglevel error' . $inputs
             . ' -filter_complex ' . escapeshellarg($fc)
-            . ' -map ' . escapeshellarg('[outv]') . ' -an -c:v libx264 -crf 27 -maxrate 2200k -bufsize 4400k'
+            . ' -map ' . escapeshellarg('[outv]') . ' -an -c:v libx264 -crf 31 -maxrate 1400k -bufsize 2800k'
             . ' -preset veryfast -pix_fmt yuv420p -movflags +faststart '
             . escapeshellarg($out) . ' 2>&1';
         [$res, ] = run_cmd($cmd);
