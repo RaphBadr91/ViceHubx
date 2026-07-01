@@ -105,6 +105,18 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta property="og:locale" content="<?= lang() === 'fr' ? 'fr_FR' : 'en_US' ?>">
     <meta name="twitter:card" content="summary_large_image">
 
+    <?php if ($gsv = trim((string) get_setting('google_site_verification', ''))): ?>
+    <meta name="google-site-verification" content="<?= e($gsv) ?>">
+    <?php endif; ?>
+    <?php if ($ga = trim((string) get_setting('analytics_id', ''))): ?>
+    <!-- Google Analytics 4 — chargé uniquement APRÈS acceptation des cookies (RGPD) -->
+    <script>(function(){try{if(localStorage.getItem('vhx_cookie')!=='accept')return;
+    var id=<?= json_encode($ga) ?>;var s=document.createElement('script');s.async=true;
+    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);document.head.appendChild(s);
+    window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;
+    gtag('js',new Date());gtag('config',id,{anonymize_ip:true});}catch(e){}})();</script>
+    <?php endif; ?>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>

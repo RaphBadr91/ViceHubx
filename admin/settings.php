@@ -24,6 +24,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? ['ok', 'E-mail de test envoyé à ' . $dest . ' ' . (resend_enabled() ? '(via Resend).' : '(via mail système).')]
                 : ['err', 'Échec de l’envoi. Vérifiez la clé Resend, le domaine vérifié et l’adresse d’expédition.'];
         }
+    } elseif (($_POST['action'] ?? '') === 'change_password') {
+        // --- Changement du mot de passe admin ---
+        $cur = (string) ($_POST['current_password'] ?? '');
+        $new = (string) ($_POST['new_password'] ?? '');
+        $uid = (int) (current_user()['id'] ?? 0);
+        $row = $uid ? db()->prepare('SELECT password_hash FROM users WHERE id = ?') : null;
+        if ($row) { $row->execute([$uid]); }
+        $hash = $row ? (string) $row->fetchColumn() : '';
+        if (!$uid || $hash === '' || !password_verify($cur, $hash)) {
+            $flash = ['err', 'Mot de passe actuel incorrect.'];
+        } elseif (strlen($new) < 8) {
+            $flash = ['err', 'Le nouveau mot de passe doit faire au moins 8 caractères.'];
+        } else {
+            db()->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+                ->execute([password_hash($new, PASSWORD_BCRYPT), $uid]);
+            $flash = ['ok', '✅ Mot de passe modifié.'];
+        }
     } else {
         set_setting('adsense_client', trim((string) ($_POST['adsense_client'] ?? '')));
         set_setting('adsense_slot', trim((string) ($_POST['adsense_slot'] ?? '')));
@@ -50,6 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('contact_email', trim((string) ($_POST['contact_email'] ?? '')));
         $rk = trim((string) ($_POST['resend_api_key'] ?? ''));
         if ($rk !== '') { set_setting('resend_api_key', $rk); }
+        // --- Google / SEO ---
+        // On garde uniquement le code de vérification (pas la balise complète).
+        $gv = trim((string) ($_POST['google_site_verification'] ?? ''));
+        if (preg_match('/content=["\']([^"\']+)["\']/i', $gv, $m)) { $gv = $m[1]; }
+        set_setting('google_site_verification', $gv);
+        set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
         $flash = ['ok', 'Réglages enregistrés.'];
     }
 }
@@ -59,6 +82,8 @@ $mail_name_v = (string) get_setting('mail_from_name', '');
 $contact_v   = (string) get_setting('contact_email', '');
 $has_resend  = resend_enabled();
 
+$gverify = (string) get_setting('google_site_verification', '');
+$ga_id   = (string) get_setting('analytics_id', '');
 $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
@@ -87,6 +112,20 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Date de sortie (compte à rebours)</label>
         <input type="datetime-local" name="release_date" value="<?= e($release_input) ?>">
         <small class="muted">Par défaut : 19 novembre 2026.</small>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">
+    <h2 style="font-size:1.1rem;margin:0 0 .2rem">🔎 Google — Référencement (SEO)</h2>
+    <div>
+        <label>Google Search Console — code de vérification</label>
+        <input type="text" name="google_site_verification" value="<?= e($gverify) ?>" placeholder="collez le code (ou la balise meta entière)">
+        <small class="muted">Dans <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console</a> → « Balise HTML » : copiez le <code>content="…"</code> ici (la balise complète marche aussi). Active la vérification du site.</small>
+    </div>
+
+    <div>
+        <label>Google Analytics 4 — ID de mesure</label>
+        <input type="text" name="analytics_id" value="<?= e($ga_id) ?>" placeholder="G-XXXXXXXXXX">
+        <small class="muted">Statistiques de visites. Ne se charge <strong>qu'après acceptation des cookies</strong> (conforme RGPD).</small>
     </div>
 
     <div>
@@ -195,6 +234,22 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
     </div>
 
     <button class="btn btn--primary" type="submit">Enregistrer</button>
+</form>
+
+<form method="post" class="form glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="change_password">
+    <h2 style="font-size:1.05rem;margin:0 0 .2rem">🔒 Changer mon mot de passe</h2>
+    <p class="muted" style="margin:.1rem 0 .6rem;font-size:.85rem">Important pour la mise en ligne : remplacez le mot de passe par défaut.</p>
+    <div>
+        <label>Mot de passe actuel</label>
+        <input type="password" name="current_password" required autocomplete="current-password">
+    </div>
+    <div>
+        <label>Nouveau mot de passe (8 caractères min.)</label>
+        <input type="password" name="new_password" required minlength="8" autocomplete="new-password">
+    </div>
+    <button class="btn btn--primary" type="submit">Mettre à jour le mot de passe</button>
 </form>
 
 <form method="post" class="form glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">

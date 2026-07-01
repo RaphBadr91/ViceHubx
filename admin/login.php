@@ -59,9 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button class="btn btn--primary" type="submit" style="justify-content:center"><?= e(t('admin_signin')) ?></button>
         </form>
-        <p class="muted" style="text-align:center;font-size:.8rem;margin-top:1rem">
-            Démo : <code>admin</code> / <code>vicehubx</code>
-        </p>
     </div>
 </div>
 </body>
