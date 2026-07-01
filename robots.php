@@ -25,4 +25,4 @@ echo "Disallow: /pages/checkout-cancel.php\n";
 // Note : on NE bloque PAS ?lang= (les hreflang pointent vers ces URL ; le
 // canonical retire déjà le paramètre de langue pour éviter les doublons).
 echo "\n";
-echo "Sitemap: {$base}/sitemap.php\n";
+echo "Sitemap: {$base}/sitemap.xml\n";
