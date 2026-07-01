@@ -1300,6 +1300,9 @@ body.sunset-mode { filter: hue-rotate(-18deg) saturate(1.3) brightness(1.04); }
 .cookie-bar p a { color: var(--blue); }
 .cookie-bar__btns { display: flex; gap: .5rem; }
 .cookie-bar__btns .btn { padding: .5rem 1rem; font-size: .85rem; }
+/* L'attribut [hidden] doit l'emporter sur le display:flex ci-dessus
+   (sinon « Accepter/Refuser » ne ferme jamais le bandeau). */
+.cookie-bar[hidden] { display: none !important; }
 
 /* ============================================================
    POLISH DESIGN & ANIMATIONS (additif, GPU-friendly)
