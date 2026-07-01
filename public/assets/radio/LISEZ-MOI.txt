@@ -1,0 +1,28 @@
+ViceHub X — WebRadio auto-hébergée 📻
+=====================================
+
+COMMENT AJOUTER TA MUSIQUE (100% légale, sans droits d'auteur) :
+
+1. Récupère des musiques LIBRES DE DROITS (royalty-free), par exemple :
+   - https://pixabay.com/music/  (gratuit, usage commercial autorisé)
+   - https://freemusicarchive.org/  (vérifie la licence Creative Commons)
+   - https://incompetech.com/  (Kevin MacLeod, CC-BY : crédite l'auteur)
+   - https://uppbeat.io/  (gratuit avec crédit)
+   Choisis un style synthwave / retrowave / 80s pour coller à Vice City.
+
+2. Dépose les fichiers .mp3 DANS CE DOSSIER :
+   public/assets/radio/
+
+   Astuce pour l'ordre et les titres : nomme-les proprement, par ex.
+     01 - Neon Drive.mp3
+     02 - Miami Sunset.mp3
+   Le numéro au début sert juste à l'ordre ; le titre affiché sera « Neon Drive ».
+
+3. C'est tout ! La radio (bouton 📻 en bas à droite du site) joue automatiquement
+   tes morceaux en boucle, en continu, comme une vraie station. S'il n'y a aucun
+   fichier ici, la radio synthwave « générée » prend le relais (jamais de silence).
+
+IMPORTANT : n'ajoute QUE des musiques dont tu as le droit d'usage (libres de droits
+ou dont tu possèdes la licence). Ne mets pas de titres commerciaux protégés.
+
+Formats acceptés : .mp3 (recommandé), .ogg, .m4a
