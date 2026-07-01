@@ -1260,11 +1260,8 @@ function img_src(?string $path): string
     if ($path === '' || str_contains($path, '/preview.php') || str_contains($path, '/img.php') || str_starts_with($path, 'data:')) {
         return $path;
     }
-    // URL distante (CDN Higgsfield) → variante _min.webp légère si c'est une image.
+    // URL distante → telle quelle (déjà servie par un CDN).
     if (preg_match('#^https?://#i', $path)) {
-        if (preg_match('#cloudfront\.net/#i', $path) && preg_match('#\.(png|jpe?g)$#i', $path)) {
-            return preg_replace('#\.(png|jpe?g)$#i', '_min.webp', $path);
-        }
         return $path;
     }
     $rel = ltrim($path, '/');
@@ -1279,12 +1276,10 @@ function img_src(?string $path): string
     if (is_file(ROOT_PATH . '/' . $rel)) {
         return $path;
     }
-    // 3) CDN connu → variante _min.webp légère (sinon l'original CDN).
+    // 3) Sinon, l'original du CDN (CloudFront, fiable et rapide). PAS de variante
+    //    devinée (_min.webp) : elle n'existe pas toujours → requêtes en échec = lenteur.
     $cdn = cdn_url(basename($rel));
-    if ($cdn !== '') {
-        return preg_match('#\.(png|jpe?g)$#i', $cdn) ? preg_replace('#\.(png|jpe?g)$#i', '_min.webp', $cdn) : $cdn;
-    }
-    return $path;
+    return $cdn !== '' ? $cdn : $path;
 }
 
 /**
@@ -1298,13 +1293,10 @@ function webp_variant(string $src): string
     if ($src === '') {
         return '';
     }
-    if (preg_match('#^https?://[^/]*cloudfront\.net/.+#i', $src)) {
-        if (preg_match('/_min\.webp$/i', $src)) {
-            return $src;
-        }
-        if (preg_match('/\.(png|jpe?g|webp)$/i', $src)) {
-            return preg_replace('/\.(png|jpe?g|webp)$/i', '_min.webp', $src);
-        }
+    // On NE devine PLUS de variante CDN (_min.webp) : elle n'existe pas toujours et
+    // un <source> en 404 casse la balise <picture> (image vide). Seul le WebP LOCAL
+    // (généré par optimize-images.php) est utilisé comme source WebP fiable.
+    if (preg_match('#^https?://#i', $src)) {
         return '';
     }
     $rel = ltrim($src, '/');

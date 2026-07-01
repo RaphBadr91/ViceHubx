@@ -1,15 +1,15 @@
 <?php
 /**
- * ViceHub X — Génère des versions WebP LÉGÈRES (redimensionnées + compressées)
- * de toutes les images locales. Le site sert alors automatiquement ces WebP
- * (via webp_variant() + les balises <picture>), ce qui rend tout TRÈS fluide :
- * une scène passe de plusieurs Mo (PNG) à ~100-200 Ko (WebP).
+ * ViceHub X — Compresse toutes les images en WebP LÉGER (statique), pour un
+ * chargement TRÈS rapide. Fonctionne PAR LOTS et se relance tout seul jusqu'à
+ * la fin (indispensable sur mutualisé : évite le time-out sur 100+ images).
  *
- * Le PNG/JPEG d'origine reste comme repli pour les très vieux navigateurs.
- * Idempotent : ne régénère que les WebP manquants ou périmés.
+ *   1. Télécharge en local les images originales manquantes (depuis le CDN).
+ *   2. Génère un WebP redimensionné + compressé pour chacune (scène ~3 Mo → ~90 Ko).
  *
- * À ouvrir UNE fois : https://vicehubx.com/optimize-images.php → puis SUPPRIMER.
- * (Fonctionne aussi en CLI : php optimize-images.php)
+ * Le site sert alors ces WebP statiques directement (rapide, en parallèle, sans PHP).
+ * Idempotent : ne refait que ce qui manque. Laisse la page se recharger seule
+ * jusqu'au message « TERMINÉ ». À ouvrir : https://vicehubx.com/optimize-images.php
  */
 require_once __DIR__ . '/config/config.php';
 
@@ -19,17 +19,20 @@ require_once __DIR__ . '/config/config.php';
 
 $isCli = (PHP_SAPI === 'cli');
 
+// Budget par passage (le script se relance ensuite pour finir le reste).
+$DL_BUDGET   = 12;  // téléchargements par passage (réseau, lent)
+$CONV_BUDGET = 40;  // conversions WebP par passage (GD, rapide)
+
 // Dossier => [largeur max, qualité WebP] — légers pour un chargement très rapide.
 $jobs = [
     'public/assets/img/scenes' => [1200, 76],
     'public/assets/img/shop'   => [900, 80],
     'public/assets/img/brand'  => [1000, 86],
-    'public/assets/img'        => [1280, 80], // images à la racine (poster, social…)
+    'public/assets/img'        => [1280, 80],
 ];
 
 $hasWebp = function_exists('imagewebp') && function_exists('imagecreatefromstring');
 
-/** Convertit une image en WebP redimensionné. Retourne [statut, octetsSource, octetsWebp]. */
 function to_webp(string $src, string $dst, int $maxW, int $q): array
 {
     $srcBytes = (int) (@filesize($src) ?: 0);
@@ -37,17 +40,11 @@ function to_webp(string $src, string $dst, int $maxW, int $q): array
     if ($data === false) { return ['lecture impossible', $srcBytes, 0]; }
     $im = @imagecreatefromstring($data);
     if (!$im) { return ['décodage impossible', $srcBytes, 0]; }
-
-    $w = imagesx($im); $h = imagesy($im);
-    if ($w > $maxW) {
-        $im2 = imagescale($im, $maxW); // garde le ratio
-        if ($im2) { imagedestroy($im); $im = $im2; }
-    }
-    // Préserve la transparence éventuelle (PNG → WebP alpha).
+    $w = imagesx($im);
+    if ($w > $maxW) { $im2 = imagescale($im, $maxW); if ($im2) { imagedestroy($im); $im = $im2; } }
     @imagepalettetotruecolor($im);
     @imagealphablending($im, false);
     @imagesavealpha($im, true);
-
     $ok = @imagewebp($im, $dst, $q);
     imagedestroy($im);
     if (!$ok || !is_file($dst) || filesize($dst) < 300) { return ['encodage échoué', $srcBytes, 0]; }
@@ -59,7 +56,7 @@ function vh_fetch(string $url): ?string
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_TIMEOUT => 120, CURLOPT_CONNECTTIMEOUT => 20, CURLOPT_USERAGENT => 'ViceHubX/1.0']);
+            CURLOPT_TIMEOUT => 90, CURLOPT_CONNECTTIMEOUT => 15, CURLOPT_USERAGENT => 'ViceHubX/1.0']);
         $d = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -69,7 +66,6 @@ function vh_fetch(string $url): ?string
     return ($d !== false && strlen($d) > 500) ? $d : null;
 }
 
-/** Dossier local cible selon le préfixe du nom de fichier. */
 function dir_for(string $base): string
 {
     if (preg_match('/^brand-/', $base)) { return 'public/assets/img/brand'; }
@@ -79,10 +75,8 @@ function dir_for(string $base): string
 
 $made = 0; $skip = 0; $fail = 0; $srcTotal = 0; $webpTotal = 0; $dl = 0; $log = [];
 
-/* --- Étape 0 : s'assurer que TOUTES les images originales sont en local ---
-   (sinon on ne peut pas générer leur WebP). On télécharge ce qui manque depuis
-   le CDN : entrées du cdn_map + images réellement utilisées en base. */
-$want = []; // chemin local relatif => URL CDN
+/* --- Liste des originaux voulus (cdn_map + images en base) -------------- */
+$want = [];
 $map = is_file(ROOT_PATH . '/config/cdn_map.php') ? (require ROOT_PATH . '/config/cdn_map.php') : [];
 foreach ($map as $key => $url) {
     if ($key === 'hero.mp4' || !is_string($url) || $url === '' || !preg_match('/\.(png|jpe?g)$/i', $key)) { continue; }
@@ -100,18 +94,27 @@ try {
         $url = cdn_url(basename($rel));
         if ($url !== '') { $want[$rel] = $url; }
     }
-} catch (Throwable $e) { /* base indispo : on continue avec le cdn_map */ }
+} catch (Throwable $e) { /* base indispo */ }
 
+/* --- Étape 1 : télécharge les originaux manquants (par lot) -------------- */
+$dlLeft = 0;
 foreach ($want as $rel => $url) {
     $dest = ROOT_PATH . '/' . $rel;
     if (is_file($dest) && filesize($dest) > 1000) { continue; }
+    if ($dl >= $DL_BUDGET) { $dlLeft++; continue; }
     @mkdir(dirname($dest), 0755, true);
     $data = vh_fetch($url);
-    if ($data !== null && @file_put_contents($dest, $data) !== false) { $dl++; }
+    if ($data !== null && @file_put_contents($dest, $data) !== false) {
+        $dl++; $log[] = 'DL   ' . $rel;
+    } else {
+        $fail++; $log[] = 'DL ÉCHEC ' . $rel;
+    }
 }
 
+/* --- Étape 2 : génère les WebP manquants (par lot) ---------------------- */
+$convLeft = 0;
 if (!$hasWebp) {
-    $log[] = '✗ GD/imagewebp indisponible sur ce serveur (impossible de générer du WebP).';
+    $log[] = '✗ GD/imagewebp indisponible sur ce serveur.';
 } else {
     foreach ($jobs as $dir => [$maxW, $q]) {
         $abs = ROOT_PATH . '/' . $dir;
@@ -119,13 +122,12 @@ if (!$hasWebp) {
         foreach (glob($abs . '/*.{png,jpg,jpeg,PNG,JPG,JPEG}', GLOB_BRACE) ?: [] as $src) {
             $dst = preg_replace('/\.(png|jpe?g)$/i', '.webp', $src);
             if ($dst === $src) { continue; }
-            // Déjà fait et à jour ? on saute.
             if (is_file($dst) && filemtime($dst) >= filemtime($src) && filesize($dst) > 300) { $skip++; continue; }
+            if ($made >= $CONV_BUDGET) { $convLeft++; continue; }
             [$status, $sb, $wb] = to_webp($src, $dst, $maxW, $q);
             if ($status === 'ok') {
                 $made++; $srcTotal += $sb; $webpTotal += $wb;
-                $log[] = 'OK   ' . str_replace(ROOT_PATH . '/', '', $dst)
-                       . '  (' . round($sb / 1024) . ' Ko → ' . round($wb / 1024) . ' Ko)';
+                $log[] = 'OK   ' . str_replace(ROOT_PATH . '/', '', $dst) . '  (' . round($sb / 1024) . ' → ' . round($wb / 1024) . ' Ko)';
             } else {
                 $fail++; $log[] = 'ÉCHEC ' . basename($src) . ' — ' . $status;
             }
@@ -133,32 +135,37 @@ if (!$hasWebp) {
     }
 }
 
-$savedMo = $srcTotal > 0 ? round(($srcTotal - $webpTotal) / 1048576, 1) : 0;
-$summary = "Originaux rapatriés : {$dl} · WebP générés : {$made} · déjà à jour : {$skip} · échecs : {$fail}"
-         . ($made > 0 ? " · poids économisé : {$savedMo} Mo" : '');
+$remaining = $dlLeft + $convLeft;      // éléments restants après ce passage
+$done      = ($remaining === 0);
+$savedMo   = $srcTotal > 0 ? round(($srcTotal - $webpTotal) / 1048576, 1) : 0;
+$summary   = "Ce passage — téléchargés : {$dl} · WebP générés : {$made} · déjà à jour : {$skip} · échecs : {$fail}"
+           . ($made > 0 ? " · gagné : {$savedMo} Mo" : '') . ($remaining ? " · RESTE ~{$remaining} à traiter…" : '');
 
 if ($isCli) {
+    // En CLI : boucle jusqu'à la fin automatiquement.
     echo $summary . "\n" . implode("\n", $log) . "\n";
-    exit;
+    if (!$done) { echo "→ relance…\n"; }
+    exit($done ? 0 : 7);
 }
 ?>
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="robots" content="noindex,nofollow"><title>ViceHub X — Optimisation WebP</title>
+<meta name="robots" content="noindex,nofollow">
+<?php if (!$done): ?><meta http-equiv="refresh" content="1"><?php endif; ?>
+<title>ViceHub X — Optimisation WebP</title>
 <link rel="stylesheet" href="<?= e(asset('css/style.css')) ?>"></head>
-<body><div class="admin-login-wrap"><div class="admin-card glass" style="width:min(660px,94vw)">
+<body><div class="admin-login-wrap"><div class="admin-card glass" style="width:min(680px,94vw)">
     <h1 style="text-align:center;font-size:1.2rem">Optimisation WebP ⚡</h1>
-    <div class="alert alert--<?= ($hasWebp && $fail === 0) ? 'ok' : 'err' ?>" style="margin:1rem 0"><?= e($summary) ?></div>
-    <?php if ($made > 0): ?>
-        <p class="muted">✓ Le site sert désormais des images <strong>WebP légères</strong> partout (cartes news, boutique, univers). Recharge en <strong>navigation privée</strong> (Ctrl+Maj+N) : tout devient bien plus fluide.</p>
+    <div class="alert alert--<?= ($done && $fail === 0) ? 'ok' : ($done ? 'err' : 'ok') ?>" style="margin:1rem 0">
+        <?= $done ? '✅ TERMINÉ — toutes les images sont compressées en WebP. Recharge le site (Ctrl+Maj+N).' : '⏳ Traitement en cours… la page se recharge toute seule. NE FERME PAS.' ?>
+    </div>
+    <p class="muted" style="font-size:.9rem"><?= e($summary) ?></p>
+    <?php if ($done): ?>
+        <p class="muted">✓ Le site sert désormais des WebP légers partout (news, boutique, véhicules, univers). C'est instantané.</p>
+        <a class="btn btn--primary" href="<?= e(url('pages/news.php')) ?>" style="justify-content:center;width:100%">Voir les actus →</a>
+        <p class="alert alert--err" style="margin-top:1rem;font-size:.85rem">⚠️ Sécurité : <strong>supprime <code>optimize-images.php</code></strong> maintenant.</p>
+    <?php else: ?>
+        <div class="vh-loader__bar" style="margin:1rem 0"><i style="animation:none;width:60%"></i></div>
     <?php endif; ?>
-    <?php if (!$hasWebp): ?>
-        <p class="muted">⚠️ L'extension GD avec support WebP n'est pas active. Contacte le support O2Switch pour activer <code>imagewebp</code> (souvent déjà dispo en PHP 8).</p>
-    <?php endif; ?>
-    <?php if ($fail > 0): ?>
-        <form method="post"><button class="btn btn--ghost" type="submit" style="width:100%;justify-content:center">Relancer</button></form>
-    <?php endif; ?>
-    <pre style="max-height:320px;overflow:auto;background:rgba(0,0,0,.3);padding:.8rem;border-radius:8px;font-size:.72rem;line-height:1.5"><?= e(implode("\n", $log)) ?></pre>
-    <a class="btn btn--primary" href="<?= e(url('pages/news.php')) ?>" style="justify-content:center;width:100%">Voir les actus →</a>
-    <p class="alert alert--err" style="margin-top:1rem;font-size:.85rem">⚠️ Sécurité : <strong>supprime <code>optimize-images.php</code></strong> une fois terminé.</p>
+    <pre style="max-height:300px;overflow:auto;background:rgba(0,0,0,.3);padding:.8rem;border-radius:8px;font-size:.72rem;line-height:1.5"><?= e(implode("\n", $log)) ?></pre>
 </div></div></body></html>

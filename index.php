@@ -90,12 +90,16 @@ require __DIR__ . '/includes/header.php';
         <?php if ($hero_poster !== ''): ?>
             <span class="hero__poster" style="background-image:url('<?= e($hero_poster) ?>')" aria-hidden="true"></span>
         <?php endif; ?>
-        <video class="hero__video" muted loop playsinline preload="none" aria-hidden="true" data-src="<?= e($hero_video) ?>"></video>
+        <video class="hero__video" autoplay muted loop playsinline preload="auto" aria-hidden="true">
+            <source src="<?= e($hero_video) ?>" type="video/mp4">
+        </video>
         <script>(function(){var v=document.querySelector('.hero__video');if(!v)return;v.muted=true;v.setAttribute('muted','');
-        function start(){if(v.dataset.on)return;v.dataset.on=1;var s=document.createElement('source');s.src=v.getAttribute('data-src');s.type='video/mp4';v.appendChild(s);v.load();var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};go();v.addEventListener('canplay',go);v.addEventListener('playing',function(){v.classList.add('is-playing');});}
-        // La vidéo se charge SEULEMENT après le 1er rendu (page prête) → affichage instantané (juste le poster léger), puis la vidéo arrive.
-        if(document.readyState==='complete'){setTimeout(start,350);}else{window.addEventListener('load',function(){setTimeout(start,350);});}
-        document.addEventListener('click',start,{once:true});document.addEventListener('touchstart',start,{once:true});})();</script>
+        var go=function(){var p=v.play();if(p&&p.catch)p.catch(function(){});};
+        go();
+        ['loadeddata','canplay','canplaythrough'].forEach(function(ev){v.addEventListener(ev,go);});
+        v.addEventListener('playing',function(){v.classList.add('is-playing');});
+        document.addEventListener('visibilitychange',function(){if(!document.hidden)go();});
+        document.addEventListener('click',go,{once:true});document.addEventListener('touchstart',go,{once:true});})();</script>
     <?php elseif ($hero_scenes): ?>
         <!-- Pas de vidéo : montage « vivant » de 5 scènes en fondu enchaîné + zoom lent -->
         <div class="hero__montage" aria-hidden="true">
