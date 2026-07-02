@@ -437,3 +437,30 @@
     })
     .catch(() => { /* hors-ligne : tout reste fonctionnel via CSS */ });
 })();
+
+/* Like SANS rechargement de page (forum & fan-arts) — repli sur POST normal si erreur */
+(function () {
+  document.addEventListener('submit', function (e) {
+    var f = e.target;
+    if (!f || !f.classList || !f.classList.contains('like-form')) return;
+    e.preventDefault();
+    var btn = f.querySelector('.like-btn');
+    if (btn && btn.disabled) return;
+    var data = new FormData(f);
+    data.append('ajax', '1');
+    if (btn) btn.disabled = true;
+    fetch(f.getAttribute('action'), { method: 'POST', body: data, headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) { throw new Error('ko'); }
+        if (btn) {
+          var span = btn.querySelector('span');
+          if (span) { span.textContent = d.count; } else { btn.textContent = '💜 ' + d.count; }
+          btn.classList.toggle('like-btn--on', !!d.liked);
+          btn.classList.remove('like-pop'); void btn.offsetWidth; btn.classList.add('like-pop');
+          btn.disabled = false;
+        }
+      })
+      .catch(function () { f.submit(); }); // en cas d'échec : soumission classique (jamais bloqué)
+  });
+})();
