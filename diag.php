@@ -4,6 +4,7 @@
  * puis SUPPRIMER. Aide à voir pourquoi la vidéo / les images ne s'affichent pas.
  */
 require_once __DIR__ . '/config/config.php';
+setup_guard(); // 🔒 accès réservé (admin connecté ou VICEHUB_SETUP=1)
 header('Content-Type: text/plain; charset=UTF-8');
 
 function human($b) { return $b > 1048576 ? round($b / 1048576, 2) . ' Mo' : round($b / 1024) . ' Ko'; }

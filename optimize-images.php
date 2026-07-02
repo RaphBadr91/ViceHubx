@@ -12,6 +12,7 @@
  * jusqu'au message « TERMINÉ ». À ouvrir : https://vicehubx.com/optimize-images.php
  */
 require_once __DIR__ . '/config/config.php';
+setup_guard(); // 🔒 accès réservé (admin connecté ou VICEHUB_SETUP=1)
 
 @set_time_limit(0);
 @ignore_user_abort(true);

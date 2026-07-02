@@ -15,6 +15,7 @@
  * (Fonctionne aussi en CLI : php fetch-article-images.php)
  */
 require_once __DIR__ . '/config/config.php';
+setup_guard(); // 🔒 accès réservé (admin connecté ou VICEHUB_SETUP=1)
 require_once ROOT_PATH . '/includes/ai.php'; // ai_pick_image()
 
 @set_time_limit(0);

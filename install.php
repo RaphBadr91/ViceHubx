@@ -8,6 +8,7 @@
  * ⚠️ Supprimez ce fichier après usage (il recrée la base à zéro).
  */
 require_once __DIR__ . '/config/config.php';
+setup_guard(false); // 🔒 TRÈS sensible (import schéma/seed) : exige VICEHUB_SETUP=1
 
 $done   = false;   // schéma importé
 $seeded = null;    // sortie du remplissage des données

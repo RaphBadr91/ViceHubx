@@ -67,19 +67,25 @@ define('UPLOAD_ALLOWED', ['image/jpeg', 'image/png', 'image/webp']);
 /* ------------------------------------------------------------------ */
 /*  Affichage des erreurs (dev) — passer à 0 en production             */
 /* ------------------------------------------------------------------ */
-$IS_DEV = (getenv('APP_ENV') ?: 'dev') !== 'prod';
+// Sécurisé par défaut : on n'affiche les erreurs QUE si APP_ENV est explicitement
+// un environnement de développement. En prod (ou si non défini), erreurs masquées.
+$IS_DEV = in_array(strtolower((string) (getenv('APP_ENV') ?: '')), ['dev', 'development', 'local'], true);
 error_reporting($IS_DEV ? E_ALL : 0);
 ini_set('display_errors', $IS_DEV ? '1' : '0');
+ini_set('log_errors', '1'); // toujours journalisées (jamais affichées au visiteur en prod)
 
 /* ------------------------------------------------------------------ */
 /*  Session sécurisée                                                  */
 /* ------------------------------------------------------------------ */
 if (session_status() === PHP_SESSION_NONE) {
+    $__https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => '/',
-        'httponly' => true,
-        'samesite' => 'Lax',
+        'secure'   => $__https, // cookie de session envoyé uniquement en HTTPS
+        'httponly' => true,     // inaccessible au JavaScript (anti-vol de session)
+        'samesite' => 'Lax',    // anti-CSRF inter-site
     ]);
     session_name('VICEHUBX_SID');
     session_start();

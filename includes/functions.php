@@ -44,6 +44,32 @@ function verify_csrf(): bool
     return is_string($sent) && hash_equals($_SESSION['csrf'] ?? '', $sent);
 }
 
+/**
+ * Verrou des scripts d'installation/maintenance (make-hero, optimize-images,
+ * fetch-*, install, diag…). Bloque l'accès PUBLIC : autorisé seulement si connecté
+ * en admin, ou si la variable d'environnement VICEHUB_SETUP=1 est présente (à retirer
+ * après usage). L'idéal reste de SUPPRIMER ces fichiers une fois l'installation faite.
+ *
+ * @param bool $allowAdmin false = exige VICEHUB_SETUP=1 (scripts les plus sensibles).
+ */
+function setup_guard(bool $allowAdmin = true): void
+{
+    $envOk   = getenv('VICEHUB_SETUP') === '1';
+    $adminOk = $allowAdmin && is_logged_in() && is_admin();
+    if ($envOk || $adminOk) {
+        return;
+    }
+    http_response_code(403);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!doctype html><meta charset="utf-8"><title>Désactivé</title>'
+       . '<div style="font-family:system-ui,Arial;max-width:560px;margin:12vh auto;padding:26px;background:#141225;color:#e9e6f5;border-radius:14px;border:1px solid #2a2740">'
+       . '<h1 style="font-size:18px;margin:.2rem 0 1rem">🔒 Script d\'installation désactivé</h1>'
+       . '<p style="color:#cfc9dd;font-size:14px;line-height:1.6">Par sécurité, ce script ne s\'exécute pas en accès public.</p>'
+       . '<p style="color:#cfc9dd;font-size:14px;line-height:1.6"><strong>Supprime ce fichier</strong> du serveur une fois l\'installation faite. Pour le relancer : connecte-toi en <strong>admin</strong>, ou ajoute temporairement <code>VICEHUB_SETUP=1</code> dans ton <code>.env</code>.</p>'
+       . '</div>';
+    exit;
+}
+
 /* ================================================================== */
 /*  Internationalisation                                              */
 /* ================================================================== */

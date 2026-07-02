@@ -15,6 +15,7 @@
  * À ouvrir UNE fois : https://vicehubx.com/make-hero.php  → puis SUPPRIMER.
  */
 require_once __DIR__ . '/config/config.php';
+setup_guard(); // 🔒 accès réservé (admin connecté ou VICEHUB_SETUP=1)
 @set_time_limit(0);
 @ignore_user_abort(true);
 @ini_set('memory_limit', '512M');
