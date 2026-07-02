@@ -107,9 +107,13 @@
 (function(){try{
   var bar=document.getElementById('cookieBar');
   if(!bar)return;
-  if(!localStorage.getItem('vhx_cookie')){bar.hidden=false;}
+  // Masquage INFAILLIBLE : style inline display:none (l'emporte sur toute règle CSS).
+  function hideBar(){bar.hidden=true;bar.style.display='none';}
+  function showBar(){bar.hidden=false;bar.style.display='';}
+  var v=null; try{v=localStorage.getItem('vhx_cookie');}catch(e){}
+  if(v){hideBar();}else{showBar();}
   bar.querySelectorAll('[data-cookie]').forEach(function(b){
-    b.addEventListener('click',function(){localStorage.setItem('vhx_cookie',b.getAttribute('data-cookie'));bar.hidden=true;});
+    b.addEventListener('click',function(){try{localStorage.setItem('vhx_cookie',b.getAttribute('data-cookie'));}catch(e){}hideBar();});
   });
 }catch(e){}})();
 </script>
