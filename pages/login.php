@@ -33,7 +33,10 @@ require ROOT_PATH . '/includes/header.php';
             <input type="password" name="password" required autocomplete="current-password"></div>
         <button class="btn btn--primary" type="submit" style="justify-content:center"><?= lang() === 'fr' ? 'Se connecter' : 'Sign in' ?></button>
     </form>
-    <p class="muted" style="text-align:center;margin-top:1rem">
+    <p class="muted" style="text-align:center;margin-top:.8rem">
+        <a class="link-all" href="<?= e(with_lang(url('pages/mot-de-passe-oublie.php'))) ?>"><?= lang() === 'fr' ? 'Mot de passe oublié ?' : 'Forgot password?' ?></a>
+    </p>
+    <p class="muted" style="text-align:center;margin-top:.4rem">
         <?= lang() === 'fr' ? 'Pas encore de compte ?' : 'No account yet?' ?>
         <a class="link-all" href="<?= e(with_lang(url('pages/register.php'))) ?>"><?= lang() === 'fr' ? 'Créer un compte' : 'Sign up' ?></a>
     </p>

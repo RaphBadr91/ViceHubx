@@ -259,7 +259,121 @@ function register_user(string $username, string $email, string $password, string
     if ($adminId && $adminId !== $newId) {
         send_message($adminId, $newId, 'Bienvenue à Vice City ! 🌴 Présente-toi sur le forum, partage tes fan-arts, débloque des trophées et grimpe les rangs. Bon jeu et à bientôt sur ViceHub X !');
     }
+    // E-mail de bienvenue (non bloquant : n'empêche jamais l'inscription).
+    try {
+        $name = $display !== '' ? $display : $username;
+        send_mail($email, 'Bienvenue sur ' . APP_NAME . ' 🌴', email_layout(
+            'Bienvenue, ' . $name . ' !',
+            '<p>Ton compte <strong>ViceHub X</strong> est créé. Tu peux dès maintenant participer au forum, publier des fan-arts, suivre l\'actu GTA VI et grimper les rangs de Vice City.</p>'
+            . '<p>À très vite sur le site ! 🌴</p>',
+            'Aller sur le site', rtrim(site_base_url(), '/') . '/'
+        ));
+    } catch (Throwable $e) { /* silencieux */ }
     return $newId;
+}
+
+/** Base absolue du site (schéma + hôte), pour les liens dans les e-mails. */
+function site_base_url(): string
+{
+    if (BASE_URL !== '') {
+        return rtrim(BASE_URL, '/');
+    }
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    return $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'vicehubx.com');
+}
+
+/** Gabarit HTML d'e-mail (identité ViceHub X) avec bouton d'action optionnel. */
+function email_layout(string $heading, string $bodyHtml, string $ctaLabel = '', string $ctaUrl = ''): string
+{
+    $btn = ($ctaLabel !== '' && $ctaUrl !== '')
+        ? '<a href="' . e($ctaUrl) . '" style="display:inline-block;margin:18px 0;padding:12px 24px;background:linear-gradient(90deg,#ff2e88,#8a3cff);color:#fff;text-decoration:none;border-radius:10px;font-weight:700">' . e($ctaLabel) . '</a>'
+        : '';
+    return '<div style="font-family:Arial,Helvetica,sans-serif;background:#0b0a14;padding:24px">'
+        . '<div style="max-width:520px;margin:auto;background:#141225;border:1px solid #2a2740;border-radius:16px;padding:28px;color:#e9e6f5">'
+        . '<div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:2px">Vice<span style="color:#ff2e88">Hub</span> <span style="color:#2bd6ff">X</span></div>'
+        . '<h1 style="font-size:19px;color:#fff;margin:.5rem 0 1rem">' . e($heading) . '</h1>'
+        . '<div style="font-size:14px;line-height:1.6;color:#cfc9dd">' . $bodyHtml . '</div>'
+        . $btn
+        . '<hr style="border:none;border-top:1px solid #2a2740;margin:20px 0">'
+        . '<p style="font-size:12px;color:#8a86a0">ViceHub X — média fan indépendant et non officiel dédié à GTA VI / Vice City.</p>'
+        . '</div></div>';
+}
+
+/** Crée la table des jetons de réinitialisation si besoin (auto-installation). */
+function ensure_password_resets_table(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS password_resets (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(190) NOT NULL,
+            token_hash CHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_email (email)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+    $done = true;
+}
+
+/**
+ * Crée un jeton de réinitialisation pour un e-mail (s'il correspond à un compte)
+ * et envoie le lien par e-mail. Retourne toujours true côté appelant : on ne révèle
+ * jamais si l'e-mail existe (anti-énumération).
+ */
+function request_password_reset(string $email): void
+{
+    $email = trim(mb_strtolower($email));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { return; }
+    ensure_password_resets_table();
+    $st = db()->prepare('SELECT id, username, display_name FROM users WHERE email = ? LIMIT 1');
+    $st->execute([$email]);
+    $u = $st->fetch();
+    if (!$u) { return; } // e-mail inconnu : on ne fait rien (mais l'appelant affiche le même message)
+
+    // Un seul jeton actif par e-mail.
+    db()->prepare('DELETE FROM password_resets WHERE email = ?')->execute([$email]);
+    $raw = bin2hex(random_bytes(32));
+    db()->prepare('INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))')
+        ->execute([$email, hash('sha256', $raw)]);
+
+    $link = site_base_url() . '/pages/reinitialiser.php?e=' . rawurlencode($email) . '&token=' . $raw;
+    $name = (string) ($u['display_name'] ?: $u['username']);
+    send_mail($email, 'Réinitialisation de ton mot de passe — ' . APP_NAME, email_layout(
+        'Réinitialise ton mot de passe',
+        '<p>Bonjour ' . e($name) . ',</p>'
+        . '<p>Tu as demandé à réinitialiser ton mot de passe sur <strong>ViceHub X</strong>. Clique sur le bouton ci-dessous (lien valable <strong>1 heure</strong>) :</p>'
+        . '<p style="font-size:12px;color:#8a86a0">Si tu n\'es pas à l\'origine de cette demande, ignore cet e-mail : ton mot de passe reste inchangé.</p>',
+        'Réinitialiser mon mot de passe', $link
+    ));
+}
+
+/** Vérifie un jeton de réinitialisation. Retourne l'id utilisateur ou null. */
+function verify_password_reset(string $email, string $rawToken): ?int
+{
+    $email = trim(mb_strtolower($email));
+    if ($email === '' || $rawToken === '') { return null; }
+    ensure_password_resets_table();
+    $st = db()->prepare('SELECT token_hash FROM password_resets WHERE email = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1');
+    $st->execute([$email]);
+    $hash = (string) $st->fetchColumn();
+    if ($hash === '' || !hash_equals($hash, hash('sha256', $rawToken))) { return null; }
+    $u = db()->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+    $u->execute([$email]);
+    $id = (int) $u->fetchColumn();
+    return $id ?: null;
+}
+
+/** Applique un nouveau mot de passe après jeton valide, puis invalide le jeton. */
+function complete_password_reset(string $email, string $rawToken, string $newPassword): bool
+{
+    $uid = verify_password_reset($email, $rawToken);
+    if (!$uid || strlen($newPassword) < 8) { return false; }
+    db()->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+        ->execute([password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]), $uid]);
+    db()->prepare('DELETE FROM password_resets WHERE email = ?')->execute([mb_strtolower(trim($email))]);
+    return true;
 }
 
 /** Authentifie par identifiant OU e-mail. Retourne l'utilisateur ou null. */
