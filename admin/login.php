@@ -13,6 +13,8 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf()) {
         $error = 'Session expirée, réessayez.';
+    } elseif (!throttle_ok('admin_login')) {
+        $error = 'Trop de tentatives. Réessaie dans quelques minutes.';
     } else {
         $username = trim((string) ($_POST['username'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
@@ -20,10 +22,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$username]);
         $user = $stmt->fetch();
         if ($user && password_verify($password, $user['password_hash'])) {
+            throttle_clear('admin_login');
             session_regenerate_id(true);
             $_SESSION['user_id'] = (int) $user['id'];
             redirect(url('admin/dashboard.php'));
         }
+        throttle_hit('admin_login');
         $error = t('admin_bad_login');
     }
 }

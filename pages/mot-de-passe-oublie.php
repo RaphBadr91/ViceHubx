@@ -8,9 +8,12 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf()) {
         $error = 'Session expirée, réessayez.';
+    } elseif (!throttle_ok('pwreset', 5, 15)) {
+        $error = lang() === 'fr' ? 'Trop de demandes. Réessaie dans quelques minutes.' : 'Too many requests. Try again in a few minutes.';
     } else {
         try {
             request_password_reset((string) ($_POST['email'] ?? ''));
+            throttle_hit('pwreset');
         } catch (Throwable $e) { /* on n'expose rien */ }
         $sent = true; // message identique que l'e-mail existe ou non (anti-énumération)
     }

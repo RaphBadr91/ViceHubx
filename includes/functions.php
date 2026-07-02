@@ -70,6 +70,62 @@ function setup_guard(bool $allowAdmin = true): void
     exit;
 }
 
+/* ------------------------------------------------------------------ */
+/*  Anti-force-brute (connexions & réinitialisation) — par IP          */
+/* ------------------------------------------------------------------ */
+function client_ip(): string
+{
+    $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    return substr((string) $ip, 0, 64);
+}
+/** Table des tentatives (auto-installée). */
+function auth_attempts_table(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS auth_attempts (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            ip VARCHAR(64) NOT NULL,
+            action VARCHAR(32) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_ip (ip, action, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+    $done = true;
+}
+/** true si l'action est encore autorisée pour cette IP (sous le seuil). */
+function throttle_ok(string $action, int $max = 8, int $minutes = 15): bool
+{
+    try {
+        auth_attempts_table();
+        $st = db()->prepare('SELECT COUNT(*) FROM auth_attempts WHERE ip = ? AND action = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)');
+        $st->execute([client_ip(), $action, $minutes]);
+        return (int) $st->fetchColumn() < $max;
+    } catch (Throwable $e) {
+        return true; // en cas de souci base : on ne bloque jamais l'utilisateur légitime
+    }
+}
+/** Enregistre une tentative échouée (+ purge légère de l'historique ancien). */
+function throttle_hit(string $action): void
+{
+    try {
+        auth_attempts_table();
+        db()->prepare('INSERT INTO auth_attempts (ip, action) VALUES (?, ?)')->execute([client_ip(), $action]);
+        if (random_int(1, 12) === 1) {
+            db()->exec('DELETE FROM auth_attempts WHERE created_at < DATE_SUB(NOW(), INTERVAL 1 DAY)');
+        }
+    } catch (Throwable $e) { /* silencieux */ }
+}
+/** Remet le compteur à zéro (après un succès). */
+function throttle_clear(string $action): void
+{
+    try {
+        auth_attempts_table();
+        db()->prepare('DELETE FROM auth_attempts WHERE ip = ? AND action = ?')->execute([client_ip(), $action]);
+    } catch (Throwable $e) { /* silencieux */ }
+}
+
 /* ================================================================== */
 /*  Internationalisation                                              */
 /* ================================================================== */

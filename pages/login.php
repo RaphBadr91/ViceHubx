@@ -7,13 +7,17 @@ $error = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf()) {
         $error = 'Session expirée, réessayez.';
+    } elseif (!throttle_ok('member_login')) {
+        $error = lang() === 'fr' ? 'Trop de tentatives. Réessaie dans quelques minutes.' : 'Too many attempts. Try again in a few minutes.';
     } else {
         $user = login_attempt((string) ($_POST['login'] ?? ''), (string) ($_POST['password'] ?? ''));
         if ($user) {
+            throttle_clear('member_login');
             session_regenerate_id(true);
             $_SESSION['user_id'] = (int) $user['id'];
             redirect(with_lang(url(in_array($user['role'], ['admin', 'editor'], true) ? 'admin/dashboard.php' : 'pages/account.php')));
         }
+        throttle_hit('member_login');
         $error = lang() === 'fr' ? 'Identifiants invalides.' : 'Invalid credentials.';
     }
 }
