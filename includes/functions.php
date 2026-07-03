@@ -126,6 +126,75 @@ function throttle_clear(string $action): void
     } catch (Throwable $e) { /* silencieux */ }
 }
 
+/* ------------------------------------------------------------------ */
+/*  « Rester connecté » — jeton persistant sécurisé (selector:validator) */
+/* ------------------------------------------------------------------ */
+function remember_tokens_table(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS remember_tokens (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            selector VARCHAR(32) NOT NULL,
+            validator_hash CHAR(64) NOT NULL,
+            expires_at DATETIME NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_selector (selector),
+            INDEX idx_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+    );
+    $done = true;
+}
+/** Émet un cookie « Rester connecté » (30 j par défaut) lié à l'utilisateur. */
+function set_remember_cookie(int $userId, int $days = 30): void
+{
+    if ($userId <= 0) { return; }
+    try {
+        remember_tokens_table();
+        $selector  = bin2hex(random_bytes(9));
+        $validator = bin2hex(random_bytes(32));
+        $expires   = time() + $days * 86400;
+        db()->prepare('INSERT INTO remember_tokens (user_id, selector, validator_hash, expires_at) VALUES (?, ?, ?, FROM_UNIXTIME(?))')
+            ->execute([$userId, $selector, hash('sha256', $validator), $expires]);
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+        setcookie('vhx_remember', $selector . ':' . $validator, [
+            'expires' => $expires, 'path' => '/', 'secure' => $https, 'httponly' => true, 'samesite' => 'Lax',
+        ]);
+    } catch (Throwable $e) { /* silencieux */ }
+}
+/** Connexion automatique via le cookie « Rester connecté » (appelée dans config). */
+function try_remember_login(): void
+{
+    if (!empty($_SESSION['user_id'])) { return; }
+    $raw = (string) ($_COOKIE['vhx_remember'] ?? '');
+    if (strpos($raw, ':') === false) { return; }
+    [$selector, $validator] = explode(':', $raw, 2);
+    try {
+        remember_tokens_table();
+        $st = db()->prepare('SELECT user_id, validator_hash FROM remember_tokens WHERE selector = ? AND expires_at > NOW() LIMIT 1');
+        $st->execute([$selector]);
+        $row = $st->fetch();
+        if ($row && hash_equals((string) $row['validator_hash'], hash('sha256', $validator))) {
+            $chk = db()->prepare('SELECT 1 FROM users WHERE id = ? LIMIT 1');
+            $chk->execute([(int) $row['user_id']]);
+            if ($chk->fetchColumn()) { $_SESSION['user_id'] = (int) $row['user_id']; }
+        }
+    } catch (Throwable $e) { /* silencieux */ }
+}
+/** Supprime le jeton « Rester connecté » (à la déconnexion). */
+function clear_remember_cookie(): void
+{
+    $raw = (string) ($_COOKIE['vhx_remember'] ?? '');
+    if (strpos($raw, ':') !== false) {
+        [$selector] = explode(':', $raw, 2);
+        try { remember_tokens_table(); db()->prepare('DELETE FROM remember_tokens WHERE selector = ?')->execute([$selector]); } catch (Throwable $e) {}
+    }
+    setcookie('vhx_remember', '', ['expires' => time() - 3600, 'path' => '/']);
+    unset($_COOKIE['vhx_remember']);
+}
+
 /* ================================================================== */
 /*  Internationalisation                                              */
 /* ================================================================== */

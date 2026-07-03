@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throttle_clear('admin_login');
             session_regenerate_id(true);
             $_SESSION['user_id'] = (int) $user['id'];
+            if (!empty($_POST['remember'])) { set_remember_cookie((int) $user['id']); }
             redirect(url('admin/dashboard.php'));
         }
         throttle_hit('admin_login');
@@ -61,6 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label><?= e(t('admin_pass')) ?></label>
                 <input type="password" name="password" required autocomplete="current-password">
             </div>
+            <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--muted);cursor:pointer">
+                <input type="checkbox" name="remember" value="1" checked style="width:auto"> Rester connecté (30 jours)
+            </label>
             <button class="btn btn--primary" type="submit" style="justify-content:center"><?= e(t('admin_signin')) ?></button>
         </form>
     </div>

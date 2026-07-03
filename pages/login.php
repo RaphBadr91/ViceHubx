@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throttle_clear('member_login');
             session_regenerate_id(true);
             $_SESSION['user_id'] = (int) $user['id'];
+            if (!empty($_POST['remember'])) { set_remember_cookie((int) $user['id']); }
             redirect(with_lang(url(in_array($user['role'], ['admin', 'editor'], true) ? 'admin/dashboard.php' : 'pages/account.php')));
         }
         throttle_hit('member_login');
@@ -35,6 +36,9 @@ require ROOT_PATH . '/includes/header.php';
             <input type="text" name="login" required autofocus autocomplete="username"></div>
         <div><label><?= lang() === 'fr' ? 'Mot de passe' : 'Password' ?></label>
             <input type="password" name="password" required autocomplete="current-password"></div>
+        <label style="display:flex;align-items:center;gap:.5rem;font-size:.9rem;color:var(--muted);cursor:pointer">
+            <input type="checkbox" name="remember" value="1" checked style="width:auto"> <?= lang() === 'fr' ? 'Rester connecté (30 jours)' : 'Stay logged in (30 days)' ?>
+        </label>
         <button class="btn btn--primary" type="submit" style="justify-content:center"><?= lang() === 'fr' ? 'Se connecter' : 'Sign in' ?></button>
     </form>
     <p class="muted" style="text-align:center;margin-top:.8rem">

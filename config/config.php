@@ -97,6 +97,12 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/includes/functions.php';
 
+// Connexion automatique « Rester connecté » (uniquement si le cookie est présent
+// et qu'aucune session n'est active) — jeton vérifié en base.
+if (empty($_SESSION['user_id']) && !empty($_COOKIE['vhx_remember'])) {
+    try_remember_login();
+}
+
 /* ------------------------------------------------------------------ */
 /*  Langue active + chargement des traductions                         */
 /* ------------------------------------------------------------------ */
