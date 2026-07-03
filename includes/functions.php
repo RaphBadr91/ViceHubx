@@ -489,7 +489,8 @@ function request_password_reset(string $email): void
     db()->prepare('INSERT INTO password_resets (email, token_hash, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))')
         ->execute([$email, hash('sha256', $raw)]);
 
-    $link = site_base_url() . '/pages/reinitialiser.php?e=' . rawurlencode($email) . '&token=' . $raw;
+    // Un SEUL paramètre opaque (pas de '&' dans l'URL) → robuste avec tous les clients mail.
+    $link = site_base_url() . '/pages/reinitialiser.php?t=' . $raw;
     $name = (string) ($u['display_name'] ?: $u['username']);
     send_mail($email, 'Réinitialisation de ton mot de passe — ' . APP_NAME, email_layout(
         'Réinitialise ton mot de passe',
@@ -500,16 +501,22 @@ function request_password_reset(string $email): void
     ));
 }
 
-/** Vérifie un jeton de réinitialisation. Retourne l'id utilisateur ou null. */
-function verify_password_reset(string $email, string $rawToken): ?int
+/** Nettoie un jeton reçu (retire espaces/retours à la ligne éventuels des e-mails). */
+function clean_reset_token(string $rawToken): string
 {
-    $email = trim(mb_strtolower($email));
-    if ($email === '' || $rawToken === '') { return null; }
+    return (string) preg_replace('/[^a-f0-9]/i', '', trim($rawToken));
+}
+
+/** Vérifie un jeton de réinitialisation (recherché par son hash). Retourne l'id utilisateur ou null. */
+function verify_password_reset(string $rawToken): ?int
+{
+    $rawToken = clean_reset_token($rawToken);
+    if ($rawToken === '') { return null; }
     ensure_password_resets_table();
-    $st = db()->prepare('SELECT token_hash FROM password_resets WHERE email = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1');
-    $st->execute([$email]);
-    $hash = (string) $st->fetchColumn();
-    if ($hash === '' || !hash_equals($hash, hash('sha256', $rawToken))) { return null; }
+    $st = db()->prepare('SELECT email FROM password_resets WHERE token_hash = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1');
+    $st->execute([hash('sha256', $rawToken)]);
+    $email = (string) $st->fetchColumn();
+    if ($email === '') { return null; }
     $u = db()->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
     $u->execute([$email]);
     $id = (int) $u->fetchColumn();
@@ -517,13 +524,14 @@ function verify_password_reset(string $email, string $rawToken): ?int
 }
 
 /** Applique un nouveau mot de passe après jeton valide, puis invalide le jeton. */
-function complete_password_reset(string $email, string $rawToken, string $newPassword): bool
+function complete_password_reset(string $rawToken, string $newPassword): bool
 {
-    $uid = verify_password_reset($email, $rawToken);
+    $uid = verify_password_reset($rawToken);
     if (!$uid || strlen($newPassword) < 8) { return false; }
     db()->prepare('UPDATE users SET password_hash = ? WHERE id = ?')
         ->execute([password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]), $uid]);
-    db()->prepare('DELETE FROM password_resets WHERE email = ?')->execute([mb_strtolower(trim($email))]);
+    db()->prepare('DELETE FROM password_resets WHERE token_hash = ?')
+        ->execute([hash('sha256', clean_reset_token($rawToken))]);
     return true;
 }
 

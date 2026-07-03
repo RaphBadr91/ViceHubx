@@ -4,9 +4,9 @@ if (is_logged_in()) {
     redirect(with_lang(url('pages/account.php')));
 }
 
-$email = (string) ($_GET['e'] ?? ($_POST['e'] ?? ''));
-$token = (string) ($_GET['token'] ?? ($_POST['token'] ?? ''));
-$valid = verify_password_reset($email, $token) !== null;
+// Jeton opaque unique (compat : accepte aussi l'ancien paramètre ?token=).
+$token = (string) ($_GET['t'] ?? ($_POST['t'] ?? ($_GET['token'] ?? ($_POST['token'] ?? ''))));
+$valid = verify_password_reset($token) !== null;
 $done  = false;
 $error = null;
 
@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = lang() === 'fr' ? 'Lien invalide ou expiré. Refais une demande.' : 'Invalid or expired link. Please request a new one.';
     } elseif (strlen((string) ($_POST['password'] ?? '')) < 8) {
         $error = lang() === 'fr' ? 'Le mot de passe doit faire au moins 8 caractères.' : 'Password must be at least 8 characters.';
-    } elseif (complete_password_reset($email, $token, (string) $_POST['password'])) {
+    } elseif (complete_password_reset($token, (string) $_POST['password'])) {
         $done = true;
     } else {
         $error = lang() === 'fr' ? 'Impossible de réinitialiser. Le lien a peut-être expiré.' : 'Could not reset. The link may have expired.';
@@ -47,8 +47,7 @@ require ROOT_PATH . '/includes/header.php';
         <?php if ($error): ?><div class="alert alert--err"><?= e($error) ?></div><?php endif; ?>
         <form method="post" class="form glass" style="padding:1.6rem;border-radius:18px;max-width:none">
             <?= csrf_field() ?>
-            <input type="hidden" name="e" value="<?= e($email) ?>">
-            <input type="hidden" name="token" value="<?= e($token) ?>">
+            <input type="hidden" name="t" value="<?= e($token) ?>">
             <div><label><?= lang() === 'fr' ? 'Nouveau mot de passe (8 caractères min.)' : 'New password (min. 8 chars)' ?></label>
                 <input type="password" name="password" required minlength="8" autofocus autocomplete="new-password"></div>
             <button class="btn btn--primary" type="submit" style="justify-content:center"><?= lang() === 'fr' ? 'Enregistrer' : 'Save' ?></button>
