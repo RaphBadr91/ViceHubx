@@ -9,6 +9,15 @@ AddDefaultCharset UTF-8
 # (PHP continue de les inclure côté serveur ; seul l'accès direct est interdit.)
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # --- Forcer le HTTPS (tout le trafic passe en https://) ---
+    # ⚠️ N'active vraiment cette redirection qu'APRÈS avoir activé AutoSSL en cPanel
+    #    (certificat en place). Sinon le site redirigerait vers un HTTPS non prêt.
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTP:X-Forwarded-SSL}   !on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
     # Déploiement Git : on interdit l'accès web au dossier .git et fichiers Git
     RewriteRule (^|/)\.git - [F,L]
     RewriteRule ^(config|database|includes|scripts|scripts-python|agents|seo|lang)/ - [F,L]
