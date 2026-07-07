@@ -15,6 +15,40 @@ AddDefaultCharset UTF-8
     # robots.txt & sitemap.xml dynamiques (Sitemap en URL absolue pour Google)
     RewriteRule ^robots\.txt$ robots.php [L]
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+    # ======================================================================
+    #  URL PROPRES (sans /pages/ ni .php)
+    # ======================================================================
+    # 1) Redirections 301 des anciennes URL vers les URL propres (SEO).
+    #    a) Contenus dynamiques (on garde le slug/id) — AVANT la règle générique.
+    RewriteCond %{THE_REQUEST} \s/+pages/article\.php\?slug=([a-z0-9-]+) [NC]
+    RewriteRule ^ /article/%1? [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+pages/product\.php\?slug=([a-z0-9-]+) [NC]
+    RewriteRule ^ /produit/%1? [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+pages/forum-thread\.php\?id=([0-9]+) [NC]
+    RewriteRule ^ /sujet/%1? [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+pages/forum-category\.php\?cat=([a-z0-9-]+) [NC]
+    RewriteRule ^ /categorie/%1? [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+pages/profil\.php\?u=([a-zA-Z0-9_.-]+) [NC]
+    RewriteRule ^ /membre/%1? [R=301,L]
+    #    b) Accueil + pages simples.
+    RewriteCond %{THE_REQUEST} \s/+index\.php[\s?] [NC]
+    RewriteRule ^ / [R=301,L]
+    RewriteCond %{THE_REQUEST} \s/+pages/([a-z0-9-]+)\.php([\s?]) [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # 2) URL « parlantes » pour les contenus dynamiques.
+    RewriteRule ^article/([a-z0-9-]+)/?$   pages/article.php?slug=$1        [QSA,L]
+    RewriteRule ^produit/([a-z0-9-]+)/?$   pages/product.php?slug=$1        [QSA,L]
+    RewriteRule ^sujet/([0-9]+)/?$         pages/forum-thread.php?id=$1     [QSA,L]
+    RewriteRule ^categorie/([a-z0-9-]+)/?$ pages/forum-category.php?cat=$1  [QSA,L]
+    RewriteRule ^membre/([a-zA-Z0-9_.-]+)/?$ pages/profil.php?u=$1          [QSA,L]
+
+    # 3) Page simple : /news → pages/news.php (uniquement si la page existe).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{DOCUMENT_ROOT}/pages/$1.php -f
+    RewriteRule ^([a-z0-9-]+)/?$ pages/$1.php [QSA,L]
 </IfModule>
 
 # --- Sécurité : fichiers sensibles inaccessibles depuis le web ---

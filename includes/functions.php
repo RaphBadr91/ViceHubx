@@ -265,9 +265,46 @@ function asset(string $path): string
     return $url;
 }
 
+/**
+ * Génère une URL PROPRE (sans « /pages/ » ni « .php ») :
+ *   index.php               → /
+ *   pages/news.php          → /news
+ *   pages/article.php?slug= → /article/<slug>
+ *   pages/product.php?slug= → /produit/<slug>
+ *   pages/forum-thread.php?id= → /sujet/<id>
+ *   pages/forum-category.php?cat= → /categorie/<cat>
+ *   pages/profil.php?u=     → /membre/<u>
+ * Les URL admin et les endpoints racine (like.php…) restent inchangés.
+ * Le routage réel est assuré par .htaccess.
+ */
 function url(string $path): string
 {
-    return BASE_URL . '/' . ltrim($path, '/');
+    $path = ltrim($path, '/');
+    $query = '';
+    if (($qpos = strpos($path, '?')) !== false) {
+        $query = substr($path, $qpos + 1);
+        $path  = substr($path, 0, $qpos);
+    }
+    parse_str($query, $params);
+    $pretty = static function (string $prefix, string $value, string $key) use ($params): string {
+        unset($params[$key]);
+        $rest = $params ? '?' . http_build_query($params) : '';
+        return BASE_URL . '/' . $prefix . '/' . rawurlencode($value) . $rest;
+    };
+
+    if ($path === '' || $path === 'index.php') {
+        $rest = $params ? '?' . http_build_query($params) : '';
+        return BASE_URL . '/' . $rest;
+    }
+    if ($path === 'pages/article.php' && isset($params['slug']))        { return $pretty('article', (string) $params['slug'], 'slug'); }
+    if ($path === 'pages/product.php' && isset($params['slug']))        { return $pretty('produit', (string) $params['slug'], 'slug'); }
+    if ($path === 'pages/forum-thread.php' && isset($params['id']))     { return $pretty('sujet', (string) $params['id'], 'id'); }
+    if ($path === 'pages/forum-category.php' && isset($params['cat']))  { return $pretty('categorie', (string) $params['cat'], 'cat'); }
+    if ($path === 'pages/profil.php' && isset($params['u']))            { return $pretty('membre', (string) $params['u'], 'u'); }
+    if (preg_match('#^pages/([a-z0-9-]+)\.php$#', $path, $m)) {
+        return BASE_URL . '/' . $m[1] . ($query !== '' ? '?' . $query : '');
+    }
+    return BASE_URL . '/' . $path . ($query !== '' ? '?' . $query : '');
 }
 
 /** Slug SEO à partir d'un titre. */

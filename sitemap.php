@@ -67,15 +67,21 @@ header('Content-Type: application/xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
+// URL propres (sans /pages/ ni .php) — cohérent avec .htaccess et url().
+$clean = static function (string $p): string {
+    if ($p === 'index.php') { return ''; }
+    return (string) preg_replace('#^pages/([a-z0-9-]+)\.php$#', '$1', $p);
+};
+
 foreach ($urls as [$path, $freq, $prio]) {
-    echo '  <url><loc>' . e($abs($path)) . '</loc><changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
+    echo '  <url><loc>' . e($abs($clean($path))) . '</loc><changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
 }
 foreach ($arts as $a) {
     $lastmod = !empty($a['published_at']) ? '<lastmod>' . substr($a['published_at'], 0, 10) . '</lastmod>' : '';
-    echo '  <url><loc>' . e($abs('pages/article.php?slug=' . urlencode($a['slug']))) . '</loc>' . $lastmod . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
+    echo '  <url><loc>' . e($abs('article/' . rawurlencode($a['slug']))) . '</loc>' . $lastmod . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
 }
 foreach ($prods as $p) {
-    echo '  <url><loc>' . e($abs('pages/product.php?slug=' . urlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
+    echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
 }
 // Profils publics des membres actifs
 try {
@@ -84,13 +90,13 @@ try {
     $members = [];
 }
 foreach ($members as $mu) {
-    echo '  <url><loc>' . e($abs('pages/profil.php?u=' . urlencode($mu))) . "</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>\n";
+    echo '  <url><loc>' . e($abs('membre/' . rawurlencode($mu))) . "</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>\n";
 }
 foreach ($fcats as $slug) {
-    echo '  <url><loc>' . e($abs('pages/forum-category.php?cat=' . urlencode($slug))) . "</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n";
+    echo '  <url><loc>' . e($abs('categorie/' . rawurlencode($slug))) . "</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n";
 }
 foreach ($fthreads as $tid) {
-    echo '  <url><loc>' . e($abs('pages/forum-thread.php?id=' . (int) $tid)) . "</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>\n";
+    echo '  <url><loc>' . e($abs('sujet/' . (int) $tid)) . "</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>\n";
 }
 
 echo '</urlset>' . "\n";
