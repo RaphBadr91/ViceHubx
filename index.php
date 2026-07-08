@@ -72,6 +72,13 @@ $modules = [
 ];
 
 $BODY_CLASS = 'is-home';
+// Titre + description SEO de l'accueil (mots-clés GTA 6 / GTA VI / Vice City).
+$SEO_TITLE = lang() === 'fr'
+    ? 'ViceHub X — GTA 6 : date de sortie, news, leaks & guides Vice City'
+    : 'ViceHub X — GTA 6: release date, news, leaks & Vice City guides';
+$SEO_DESC = lang() === 'fr'
+    ? 'Toute l\'actu de GTA VI : date de sortie (19 novembre 2026), trailers, carte de Leonida, Jason & Lucia, leaks vérifiés, guides et boutique. Le média fan n°1 sur Vice City.'
+    : 'All the GTA VI news: release date (Nov 19, 2026), trailers, Leonida map, Jason & Lucia, verified leaks, guides and shop. The #1 fan media about Vice City.';
 $JSONLD = [
     '@context' => 'https://schema.org',
     '@type'    => 'WebSite',

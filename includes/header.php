@@ -12,7 +12,12 @@ $SEO_TITLE    = $SEO_TITLE    ?? (APP_NAME . ' — ' . (lang() === 'fr' ? APP_SL
 $SEO_DESC     = $SEO_DESC     ?? (lang() === 'fr'
     ? 'ViceHub X : news, guides, leaks et analyses de trailers GTA VI dans une interface immersive Vice City OS.'
     : 'ViceHub X: GTA VI news, guides, leaks and trailer analysis in an immersive Vice City OS interface.');
-$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (cdn_url('brand-cover.png') ?: cdn_url('aerial.png') ?: asset('img/og-default.svg'));
+// Image de partage social (WhatsApp/Facebook/X) : la carte 1200×630 dédiée en priorité.
+$SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (
+    is_file(ROOT_PATH . '/public/assets/img/brand/og-share.jpg')
+        ? asset('img/brand/og-share.jpg')
+        : (cdn_url('brand-cover.png') ?: cdn_url('aerial.png') ?: asset('img/og-default.svg'))
+);
 $BODY_CLASS   = $BODY_CLASS   ?? '';
 
 // Base absolue du site (pour canonical, og:url, hreflang, JSON-LD)
@@ -101,9 +106,16 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta property="og:title" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:description" content="<?= e($SEO_DESC) ?>">
     <meta property="og:image" content="<?= e($og_image_abs) ?>">
+    <meta property="og:image:secure_url" content="<?= e($og_image_abs) ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="<?= e(APP_NAME) ?> — GTA VI / Vice City">
     <meta property="og:url" content="<?= e($canonical) ?>">
     <meta property="og:locale" content="<?= lang() === 'fr' ? 'fr_FR' : 'en_US' ?>">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= e($SEO_TITLE) ?>">
+    <meta name="twitter:description" content="<?= e($SEO_DESC) ?>">
+    <meta name="twitter:image" content="<?= e($og_image_abs) ?>">
 
     <?php if ($gsv = trim((string) get_setting('google_site_verification', ''))): ?>
     <meta name="google-site-verification" content="<?= e($gsv) ?>">
