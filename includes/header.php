@@ -12,7 +12,9 @@ $SEO_TITLE    = $SEO_TITLE    ?? (APP_NAME . ' — ' . (lang() === 'fr' ? APP_SL
 $SEO_DESC     = $SEO_DESC     ?? (lang() === 'fr'
     ? 'ViceHub X : news, guides, leaks et analyses de trailers GTA VI dans une interface immersive Vice City OS.'
     : 'ViceHub X: GTA VI news, guides, leaks and trailer analysis in an immersive Vice City OS interface.');
-// Image de partage social (WhatsApp/Facebook/X) : la carte 1200×630 dédiée en priorité.
+// Image de partage social (WhatsApp/Facebook/X). Chaque page peut définir la sienne
+// (photo de l'article, du produit…) ; sinon on utilise la carte 1200×630 dédiée.
+$OG_IMG_SIZED = !isset($SEO_OG_IMAGE); // dimensions connues (1200×630) seulement pour la carte par défaut
 $SEO_OG_IMAGE = $SEO_OG_IMAGE ?? (
     is_file(ROOT_PATH . '/public/assets/img/brand/og-share.jpg')
         ? asset('img/brand/og-share.jpg')
@@ -107,9 +109,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta property="og:description" content="<?= e($SEO_DESC) ?>">
     <meta property="og:image" content="<?= e($og_image_abs) ?>">
     <meta property="og:image:secure_url" content="<?= e($og_image_abs) ?>">
+    <?php if ($OG_IMG_SIZED): ?>
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:image:alt" content="<?= e(APP_NAME) ?> — GTA VI / Vice City">
+    <?php endif; ?>
+    <meta property="og:image:alt" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:url" content="<?= e($canonical) ?>">
     <meta property="og:locale" content="<?= lang() === 'fr' ? 'fr_FR' : 'en_US' ?>">
     <meta name="twitter:card" content="summary_large_image">

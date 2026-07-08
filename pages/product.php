@@ -25,8 +25,9 @@ $related = array_values(array_filter(
 $related = array_slice($related, 0, 3);
 
 $SEO_TITLE    = $product['name'] . ' — ' . t('page_shop_title') . ' ' . APP_NAME;
-$SEO_DESC     = $product['description'] ?: $product['name'];
-$SEO_OG_IMAGE = !empty($product['image']) ? url(ltrim($product['image'], '/')) : asset('img/og-default.svg');
+$SEO_DESC     = mb_substr(trim(strip_tags((string) ($product['description'] ?: $product['name']))), 0, 200);
+// Photo du produit (résolution locale WebP / CDN), comme pour les articles.
+$SEO_OG_IMAGE = !empty($product['image']) ? img_src($product['image']) : asset('img/og-default.svg');
 
 $JSONLD = [
     '@context'    => 'https://schema.org',
@@ -37,7 +38,9 @@ $JSONLD = [
     'brand'       => ['@type' => 'Brand', 'name' => APP_NAME],
 ];
 if (!empty($product['image'])) {
-    $JSONLD['image'] = $SEO_OG_IMAGE;
+    $JSONLD['image'] = preg_match('#^https?://#', $SEO_OG_IMAGE)
+        ? $SEO_OG_IMAGE
+        : site_base_url() . '/' . ltrim($SEO_OG_IMAGE, '/');
 }
 if ($product['price'] !== null && $product['price'] !== '') {
     $JSONLD['offers'] = [
