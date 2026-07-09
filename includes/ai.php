@@ -144,46 +144,65 @@ function ai_cat_id(string $slug): int
     return $map[strtolower($slug)] ?? 5;
 }
 
-/**
- * Génère UN article via l'IA. Retourne un tableau structuré ou lève une exception.
- * @return array{title:string,excerpt:string,body:string,image:string,image_prompt:string,category:string}
- */
-function ai_generate_article(?string $topic = null): array
+/** Tons rédactionnels (pour toucher un maximum de lecteurs). */
+function ai_tones(): array
 {
-    $topics = ai_topics();
-    $topic  = $topic ?: $topics[array_rand($topics)];
+    return [
+        'journalistique' => 'TON JOURNALISTIQUE : factuel, structuré et crédible, façon grand média gaming (IGN, JVC). Mets les faits en perspective, cite des chiffres, reste neutre et pro.',
+        'joueur'         => 'TON JOUEUR : direct, enthousiaste, « à hauteur de manette ». Parle d\'expérience de jeu, de fun, de hype, avec quelques expressions gaming naturelles.',
+        'connaisseur'    => 'TON CONNAISSEUR : expert de la saga GTA. Références précises aux opus précédents, analyse fine, vocabulaire maîtrisé, mise en contexte historique.',
+        'passionne'      => 'TON PASSIONNÉ : vibrant et nostalgique de Vice City, chargé d\'émotion, qui transmet l\'amour de la licence et fait monter l\'attente.',
+        'geek'           => 'TON GEEK : pointu sur la technique (moteur RAGE, 60 fps, physique, IA des PNJ, ray tracing), les easter eggs, les théories et les détails cachés des trailers.',
+    ];
+}
 
-    $system = 'Tu es rédacteur SEO senior pour ViceHub X, un média de fans INDÉPENDANT et NON OFFICIEL '
-        . 'dédié à GTA VI et Vice City. Tu écris en français, ton professionnel, factuel et passionné. '
-        . 'Tu N’INVENTES JAMAIS d’information officielle (dates, prix, contenus non confirmés). '
-        . 'Tu connais les faits : sortie le 19 novembre 2026 (PS5/Xbox Series), éditions Standard (79,99$) et '
-        . 'Ultimate (99,99$), duo Jason Duval & Lucia Caminos, État de Leonida, Vice City, V-Rock.';
+/**
+ * Génère UN article COMPLET (~2000 mots) via l'IA, avec un TON donné (ou aléatoire).
+ * @return array{title:string,excerpt:string,body:string,image:string,image_prompt:string,category:string,tone:string}
+ */
+function ai_generate_article(?string $topic = null, ?string $toneKey = null): array
+{
+    $topics  = ai_topics();
+    $topic   = $topic ?: $topics[array_rand($topics)];
+    $tones   = ai_tones();
+    $toneKey = ($toneKey !== null && isset($tones[$toneKey])) ? $toneKey : (string) array_rand($tones);
 
-    $user = "Rédige un article original et professionnel sur le thème : « {$topic} ».\n"
-        . "Réponds STRICTEMENT en JSON valide (aucun texte autour), avec EXACTEMENT ces clés :\n"
-        . '{"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur et unique (<=90 caractères)",'
-        . '"extrait":"résumé d\'une phrase (<=180 caractères)",'
-        . '"corps_html":"3 à 5 paragraphes en HTML, balises autorisées <p> <h2> <ul> <li> <strong> <em> uniquement, '
-        . 'AUCUN lien <a>, AUCUN markdown",'
-        . '"prompt_image":"un prompt en ANGLAIS pour générer une illustration photoréaliste sur Higgsfield, '
-        . 'ambiance GTA VI / Vice City néon, cinématographique, 16:9, no text, no logo",'
-        . '"theme_image":"un seul mot parmi : night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp"}';
+    $system = 'Tu es rédacteur SEO SENIOR pour ViceHub X, média de fans INDÉPENDANT et NON OFFICIEL sur GTA VI '
+        . 'et Vice City. Tu écris un français impeccable, riche et fluide. Tu N\'INVENTES JAMAIS d\'information '
+        . 'officielle non confirmée. Faits connus : sortie 19 novembre 2026 (PS5 / Xbox Series X|S), éditions '
+        . 'Standard (79,99$) et Ultimate (99,99$), duo Jason Duval & Lucia Caminos, État de Leonida, Vice City, '
+        . 'moteur RAGE, V-Rock. Objectif : un article de RÉFÉRENCE qui mérite la 1re place Google et une AI Overview. '
+        . $tones[$toneKey];
 
-    $raw = anthropic_complete($system, $user, 1400);
-    // Extrait le bloc JSON même si l'IA ajoute du texte autour.
-    $start = strpos($raw, '{');
-    $end   = strrpos($raw, '}');
-    if ($start === false || $end === false || $end <= $start) {
-        throw new RuntimeException('Réponse IA non exploitable.');
+    $user = "Rédige un ARTICLE COMPLET et ORIGINAL d'environ 2000 mots sur : « {$topic} ».\n\n"
+        . "Règles :\n"
+        . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
+        . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
+        . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
+        . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n\n"
+        . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
+        . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+        . "LIGNE 2 = exactement : ===CORPS===\n"
+        . "PUIS = le corps de l'article en HTML (~2000 mots).";
+
+    $raw = anthropic_complete($system, $user, 5200);
+
+    // Sépare l'en-tête JSON du corps HTML (robuste pour les longs contenus).
+    $bpos = strpos($raw, '===CORPS===');
+    if ($bpos === false) {
+        throw new RuntimeException('Réponse IA sans séparateur ===CORPS===.');
     }
-    $json = json_decode(substr($raw, $start, $end - $start + 1), true);
-    if (!is_array($json) || empty($json['titre']) || empty($json['corps_html'])) {
-        throw new RuntimeException('JSON IA incomplet.');
+    $head     = substr($raw, 0, $bpos);
+    $bodyHtml = trim(substr($raw, $bpos + strlen('===CORPS===')));
+    $js = strpos($head, '{'); $je = strrpos($head, '}');
+    $json = ($js !== false && $je !== false && $je > $js) ? json_decode(substr($head, $js, $je - $js + 1), true) : null;
+    if (!is_array($json) || empty($json['titre']) || $bodyHtml === '') {
+        throw new RuntimeException('En-tête/corps IA incomplet.');
     }
 
     $title   = trim((string) $json['titre']);
     $excerpt = mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200);
-    $body    = strip_tags((string) $json['corps_html'], '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>');
+    $body    = strip_tags($bodyHtml, '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>');
     $iprompt = trim((string) ($json['prompt_image'] ?? ''));
     $theme   = (string) ($json['theme_image'] ?? '');
     $cat     = (string) ($json['categorie'] ?? 'blog');
@@ -192,11 +211,10 @@ function ai_generate_article(?string $topic = null): array
         'title'        => $title,
         'excerpt'      => $excerpt !== '' ? $excerpt : mb_substr(strip_tags($body), 0, 160),
         'body'         => $body,
-        // Chemin LOCAL complet → l'illustration est servie depuis l'hébergement
-        // (et non depuis le CDN) dès que le fichier est présent en local.
         'image'        => '/public/assets/img/scenes/' . ai_pick_image($theme, $title),
         'image_prompt' => $iprompt,
         'category'     => $cat,
+        'tone'         => $toneKey,
     ];
 }
 
@@ -226,4 +244,56 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
         $data['image'], $data['image_prompt'], $authorId, $status, $pub,
     ]);
     return (int) db()->lastInsertId();
+}
+
+/**
+ * PUBLICATION AUTOMATIQUE. Appelée par ai-tick.php (cron). Génère les articles « dus »
+ * selon les réglages admin, dans une enveloppe de temps donnée (anti-timeout).
+ * Réglages : ai_auto_enabled, ai_auto_interval (h), ai_auto_batch, ai_auto_status,
+ *            ai_auto_last (ts), ai_auto_pending (reste du lot en cours).
+ * @return array{generated:int,pending:int,message:string}
+ */
+function ai_auto_run(int $budgetSeconds = 100): array
+{
+    if (!ai_enabled()) {
+        return ['generated' => 0, 'pending' => 0, 'message' => '⛔ Clé API Anthropic manquante (Réglages).'];
+    }
+    if ((int) get_setting('ai_auto_enabled', '0') !== 1) {
+        return ['generated' => 0, 'pending' => 0, 'message' => '⏸️ Auto-publication désactivée.'];
+    }
+    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));      // en heures
+    $batch    = max(1, (int) get_setting('ai_auto_batch', '10'));
+    $status   = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
+    $last     = (int) get_setting('ai_auto_last', '0');
+    $pending  = (int) get_setting('ai_auto_pending', '0');
+    $now      = time();
+
+    // Démarre un nouveau lot si l'intervalle est écoulé et qu'aucun lot n'est en cours.
+    if ($pending <= 0 && ($now - $last) >= $interval * 3600) {
+        $pending = $batch;
+        set_setting('ai_auto_last', (string) $now);
+        set_setting('ai_auto_pending', (string) $pending);
+    }
+    if ($pending <= 0) {
+        $nextIn = max(0, $interval * 3600 - ($now - $last));
+        return ['generated' => 0, 'pending' => 0, 'message' => '✓ À jour. Prochain lot dans ~' . ceil($nextIn / 3600) . ' h.'];
+    }
+
+    $authorId = (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0) ?: null;
+    $tones    = array_keys(ai_tones());
+    $deadline = $now + max(20, $budgetSeconds);
+    $gen = 0;
+    while ($pending > 0 && time() < $deadline) {
+        try {
+            $art = ai_generate_article(null, $tones[array_rand($tones)]);
+            if (ai_save_article($art, $status, $authorId)) { $gen++; }
+            $pending--; // on avance même en cas de doublon de slug (évite les boucles)
+        } catch (Throwable $e) {
+            set_setting('ai_auto_pending', (string) max(0, $pending));
+            return ['generated' => $gen, 'pending' => max(0, $pending), 'message' => "⚠️ {$gen} publié(s), arrêt (erreur API) : " . $e->getMessage()];
+        }
+    }
+    set_setting('ai_auto_pending', (string) max(0, $pending));
+    $msg = "✅ {$gen} article(s) " . ($status === 'published' ? 'publié(s)' : 'en brouillon') . ". " . ($pending > 0 ? "{$pending} en attente (repris au prochain passage)." : "Lot terminé.");
+    return ['generated' => $gen, 'pending' => max(0, $pending), 'message' => $msg];
 }
