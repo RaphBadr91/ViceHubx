@@ -247,53 +247,48 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
 }
 
 /**
- * PUBLICATION AUTOMATIQUE. Appelée par ai-tick.php (cron). Génère les articles « dus »
- * selon les réglages admin, dans une enveloppe de temps donnée (anti-timeout).
- * Réglages : ai_auto_enabled, ai_auto_interval (h), ai_auto_batch, ai_auto_status,
- *            ai_auto_last (ts), ai_auto_pending (reste du lot en cours).
- * @return array{generated:int,pending:int,message:string}
+ * PUBLICATION AUTOMATIQUE — publie UN article à chaque intervalle (3/5/7/10/12 h).
+ * Appelée par ai-tick.php (cron, ex. toutes les 30 min) : elle ne fait rien tant que
+ * l'intervalle n'est pas écoulé, puis génère et publie 1 article complet (~2000 mots).
+ * Réglages : ai_auto_enabled, ai_auto_interval (h), ai_auto_status, ai_auto_last (ts).
+ * @return array{generated:int,message:string}
  */
-function ai_auto_run(int $budgetSeconds = 100): array
+function ai_auto_run(int $budgetSeconds = 130): array
 {
     if (!ai_enabled()) {
-        return ['generated' => 0, 'pending' => 0, 'message' => '⛔ Clé API Anthropic manquante (Réglages).'];
+        return ['generated' => 0, 'message' => '⛔ Clé API Anthropic manquante (Réglages).'];
     }
     if ((int) get_setting('ai_auto_enabled', '0') !== 1) {
-        return ['generated' => 0, 'pending' => 0, 'message' => '⏸️ Auto-publication désactivée.'];
+        return ['generated' => 0, 'message' => '⏸️ Auto-publication désactivée.'];
     }
-    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));      // en heures
-    $batch    = max(1, (int) get_setting('ai_auto_batch', '10'));
+    $interval = max(1, (int) get_setting('ai_auto_interval', '6')); // heures entre chaque article
     $status   = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
     $last     = (int) get_setting('ai_auto_last', '0');
-    $pending  = (int) get_setting('ai_auto_pending', '0');
     $now      = time();
 
-    // Démarre un nouveau lot si l'intervalle est écoulé et qu'aucun lot n'est en cours.
-    if ($pending <= 0 && ($now - $last) >= $interval * 3600) {
-        $pending = $batch;
-        set_setting('ai_auto_last', (string) $now);
-        set_setting('ai_auto_pending', (string) $pending);
-    }
-    if ($pending <= 0) {
-        $nextIn = max(0, $interval * 3600 - ($now - $last));
-        return ['generated' => 0, 'pending' => 0, 'message' => '✓ À jour. Prochain lot dans ~' . ceil($nextIn / 3600) . ' h.'];
+    // Pas encore l'heure : on attend.
+    if ($last > 0 && ($now - $last) < $interval * 3600) {
+        $nextIn = $interval * 3600 - ($now - $last);
+        return ['generated' => 0, 'message' => '✓ À jour. Prochain article dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.'];
     }
 
+    // Génère 1 article (avec quelques essais pour éviter un doublon de titre).
     $authorId = (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0) ?: null;
     $tones    = array_keys(ai_tones());
     $deadline = $now + max(20, $budgetSeconds);
-    $gen = 0;
-    while ($pending > 0 && time() < $deadline) {
-        try {
+    $id = null; $tries = 0;
+    try {
+        while (!$id && $tries < 3 && time() < $deadline) {
             $art = ai_generate_article(null, $tones[array_rand($tones)]);
-            if (ai_save_article($art, $status, $authorId)) { $gen++; }
-            $pending--; // on avance même en cas de doublon de slug (évite les boucles)
-        } catch (Throwable $e) {
-            set_setting('ai_auto_pending', (string) max(0, $pending));
-            return ['generated' => $gen, 'pending' => max(0, $pending), 'message' => "⚠️ {$gen} publié(s), arrêt (erreur API) : " . $e->getMessage()];
+            $id  = ai_save_article($art, $status, $authorId);
+            $tries++;
         }
+    } catch (Throwable $e) {
+        return ['generated' => 0, 'message' => '⚠️ Erreur API : ' . $e->getMessage()];
     }
-    set_setting('ai_auto_pending', (string) max(0, $pending));
-    $msg = "✅ {$gen} article(s) " . ($status === 'published' ? 'publié(s)' : 'en brouillon') . ". " . ($pending > 0 ? "{$pending} en attente (repris au prochain passage)." : "Lot terminé.");
-    return ['generated' => $gen, 'pending' => max(0, $pending), 'message' => $msg];
+    if ($id) {
+        set_setting('ai_auto_last', (string) $now); // on ne recale l'intervalle qu'après un vrai article
+        return ['generated' => 1, 'message' => '✅ 1 article ' . ($status === 'published' ? 'publié' : 'ajouté en brouillon') . '. Prochain dans ~' . $interval . ' h.'];
+    }
+    return ['generated' => 0, 'message' => '↻ Aucun article unique généré ce coup-ci (doublons). Nouvel essai au prochain passage.'];
 }

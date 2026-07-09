@@ -144,7 +144,7 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
     <!-- PUBLICATION AUTOMATIQUE -->
     <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(255,46,136,.25)">
         <h2 style="margin-top:0">🔁 Publication AUTOMATIQUE (pour grimper sur Google)</h2>
-        <p class="muted">Le site écrit et publie tout seul des articles complets (~2000 mots, 5 tons : journaliste, joueur, connaisseur, passionné, geek) à intervalle régulier — avec FAQ intégrée pour l'AI Overview de Google.</p>
+        <p class="muted">Le site écrit et publie tout seul <strong>1 article complet</strong> (~2000 mots, 5 tons : journaliste, joueur, connaisseur, passionné, geek) <strong>à chaque intervalle</strong> — avec FAQ intégrée pour l'AI Overview de Google. Un rythme régulier que Google adore.</p>
 
         <form method="post" style="display:flex;gap:1.2rem;flex-wrap:wrap;align-items:flex-end;margin-top:.6rem">
             <?= csrf_field() ?>
@@ -152,14 +152,9 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
             <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
                 <input type="checkbox" name="ai_auto_enabled" value="1" style="width:auto" <?= $autoEnabled ? 'checked' : '' ?>> <strong>Activer</strong>
             </label>
-            <label>Fréquence
+            <label>1 article
                 <select name="ai_auto_interval" style="display:block;margin-top:.3rem">
                     <?php foreach ([3, 5, 7, 10, 12] as $h): ?><option value="<?= $h ?>" <?= $autoInterval === $h ? 'selected' : '' ?>>toutes les <?= $h ?> h</option><?php endforeach; ?>
-                </select>
-            </label>
-            <label>Articles par lot
-                <select name="ai_auto_batch" style="display:block;margin-top:.3rem">
-                    <?php foreach ([5, 10, 15, 20] as $n): ?><option value="<?= $n ?>" <?= $autoBatch === $n ? 'selected' : '' ?>><?= $n ?> articles</option><?php endforeach; ?>
                 </select>
             </label>
             <label>Statut
@@ -174,9 +169,8 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
         <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd)">
             <p style="margin:0 0 .4rem"><strong>État :</strong>
                 <?= $autoEnabled ? '🟢 Activée' : '⚪ Désactivée' ?> ·
-                <?= $autoEnabled ? ("~" . ($autoBatch) . " articles toutes les {$autoInterval} h") : 'en pause' ?>
-                <?php if ($autoLast): ?> · dernier lot : <?= e(date('d/m/Y H:i', $autoLast)) ?><?php endif; ?>
-                <?php if ($autoPending > 0): ?> · <strong><?= $autoPending ?></strong> en attente<?php endif; ?>
+                <?= $autoEnabled ? "1 article toutes les {$autoInterval} h (soit ~" . round(24 / $autoInterval, 1) . "/jour)" : 'en pause' ?>
+                <?php if ($autoLast): ?> · dernier article : <?= e(date('d/m/Y H:i', $autoLast)) ?><?php endif; ?>
             </p>
             <p class="muted" style="font-size:.86rem;margin:.6rem 0 .3rem">Pour que ça tourne 24h/24, branche ce lien sur un cron (toutes les 30 min) — <a href="https://cron-job.org" target="_blank" rel="noopener">cron-job.org</a> (gratuit) ou cPanel → Cron Jobs :</p>
             <input type="text" readonly value="<?= e($tickUrl) ?>" onclick="this.select()" style="width:100%;font-size:.8rem;font-family:monospace;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.05);color:#cfc9dd;border:1px solid var(--glass-brd)">
