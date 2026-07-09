@@ -312,6 +312,49 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0.02em; line-
 
 /* ---------- Admin ---------- */
 .admin-shell { max-width: 1100px; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2rem); }
+
+/* Contrôles de formulaire admin — thème sombre néon (selects, inputs, checkbox) */
+.admin-shell select,
+.admin-shell input[type="text"],
+.admin-shell input[type="password"],
+.admin-shell input[type="email"],
+.admin-shell input[type="url"],
+.admin-shell input[type="number"],
+.admin-shell input[type="search"],
+.admin-shell input[type="date"],
+.admin-shell input[type="datetime-local"],
+.admin-shell textarea {
+    background: rgba(255, 255, 255, .05);
+    color: #ece9f5;
+    border: 1px solid var(--glass-brd);
+    border-radius: 10px;
+    padding: .55rem .75rem;
+    font: inherit; font-size: .92rem;
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    -webkit-appearance: none; appearance: none;
+}
+.admin-shell select {
+    padding-right: 2.1rem; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23b8b2cc' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .8rem center;
+}
+.admin-shell select option { background: #171528; color: #ece9f5; }
+.admin-shell select:hover,
+.admin-shell input:hover { border-color: rgba(255, 46, 136, .4); }
+.admin-shell select:focus,
+.admin-shell input:focus,
+.admin-shell textarea:focus {
+    border-color: var(--pink);
+    box-shadow: 0 0 0 3px rgba(255, 46, 136, .18);
+    background: rgba(255, 255, 255, .07);
+}
+.admin-shell label { font-size: .82rem; color: #b9b3cc; font-weight: 600; letter-spacing: .01em; }
+.admin-shell label strong { color: #fff; font-weight: 700; }
+.admin-shell input[type="checkbox"] {
+    width: 20px; height: 20px; border-radius: 6px;
+    accent-color: #ff2e88; cursor: pointer; vertical-align: middle;
+}
 .admin-login-wrap { min-height: 80vh; display: grid; place-items: center; }
 .admin-card { border-radius: 22px; padding: clamp(1.6rem, 4vw, 2.6rem); width: min(420px, 92vw); }
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
