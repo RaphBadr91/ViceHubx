@@ -31,6 +31,9 @@ if ($act === 'save_image') {
     if ($hk !== '') { set_setting('higgsfield_key', $hk); } // vide = on conserve l'existante
     $ep = trim((string) ($_POST['ai_image_endpoint'] ?? ''));
     set_setting('ai_image_endpoint', $ep);
+    if (isset($_POST['ai_image_resolution'])) {
+        set_setting('ai_image_resolution', trim((string) $_POST['ai_image_resolution']));
+    }
     set_setting('ai_image_enabled', !empty($_POST['ai_image_enabled']) ? '1' : '0');
     $flash = ['ok', '🎨 Réglages illustrations IA enregistrés.'];
 }
@@ -129,6 +132,7 @@ $imgEnabled  = ai_img_enabled();
 $imgOn       = (int) get_setting('ai_image_enabled', '0') === 1;
 $hasImgKey   = ai_img_key() !== '';
 $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
+$imgRes      = (string) get_setting('ai_image_resolution', '');
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
@@ -242,6 +246,7 @@ $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
     <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(122,92,255,.28)">
         <h2 style="margin-top:0">🎨 Illustrations IA sur-mesure (Higgsfield)</h2>
         <p class="muted">Quand c'est activé, <strong>chaque article généré reçoit sa propre illustration</strong> créée par Higgsfield à partir de son prompt image — directement à la création. Sans clé, les articles utilisent la banque d'images (repli automatique, aucun blocage).</p>
+        <p class="muted" style="font-size:.85rem">🪶 <strong>Toutes les images sont automatiquement compressées en 720p WebP</strong> (~80–140 Ko) avant d'être enregistrées → le site reste ultra-rapide, aucun risque de ralentissement.</p>
 
         <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.4rem 0 1rem">
             <span style="font-size:1.3rem"><?= $imgEnabled ? '🟢' : ($imgOn ? '🟡' : '⚪') ?></span>
@@ -270,7 +275,11 @@ $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
                     <input type="text" name="ai_image_endpoint" value="<?= e($imgEndpoint) ?>" placeholder="https://platform.higgsfield.ai/v1/flux-pro/kontext/max/text-to-image" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
                     <small class="muted">Laisse vide pour l'endpoint par défaut. À changer seulement si l'API Higgsfield évolue.</small>
                 </label>
-                <button class="btn btn--ghost" type="submit">Enregistrer l'endpoint</button>
+                <label style="min-width:150px">Résolution de génération
+                    <input type="text" name="ai_image_resolution" value="<?= e($imgRes) ?>" placeholder="720p" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
+                    <small class="muted">Facultatif (ex. <code>720p</code>, <code>1K</code>). Moins cher en crédits. Vide = standard. L'image est de toute façon ramenée en 720p WebP.</small>
+                </label>
+                <button class="btn btn--ghost" type="submit">Enregistrer</button>
             </form>
         </details>
     </div>

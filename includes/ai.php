@@ -175,15 +175,18 @@ function ai_generate_image(string $prompt, string $slug): ?string
     $prompt = trim($prompt);
     if ($prompt === '' || !ai_img_enabled()) { return null; }
     try {
-        $payload = json_encode([
-            'input' => [
-                'prompt'           => $prompt,
-                'aspect_ratio'     => '16:9',
-                'safety_tolerance' => 2,
-            ],
-            // withPolling:true → l'API attend la fin et renvoie le rendu en une seule réponse.
-            'withPolling' => true,
-        ]);
+        $input = [
+            'prompt'           => $prompt,
+            'aspect_ratio'     => '16:9',
+            'safety_tolerance' => 2,
+        ];
+        // Résolution de génération (facultatif, selon le modèle : 720p, 1K, 2K…).
+        // Vide par défaut = requête standard fiable. De toute façon, le rendu est
+        // re-compressé en 720p WebP côté serveur → le site reste léger.
+        $res = trim((string) get_setting('ai_image_resolution', ''));
+        if ($res !== '') { $input['resolution'] = $res; }
+        // withPolling:true → l'API attend la fin et renvoie le rendu en une seule réponse.
+        $payload = json_encode(['input' => $input, 'withPolling' => true]);
         $ch = curl_init(ai_img_endpoint());
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -240,18 +243,23 @@ function ai_download_as_webp(string $url, string $slug): ?string
 
     $im = @imagecreatefromstring($bytes);
     if (!$im) { return null; }
+    // Ramène l'image dans un cadre 720p MAX (1280×720) → fichier léger, site fluide,
+    // quelle que soit la résolution renvoyée par Higgsfield.
     $w = imagesx($im); $h = imagesy($im);
-    $maxW = 1280;
-    if ($w > $maxW) {
-        $nh = (int) round($h * $maxW / $w);
-        $dst = imagecreatetruecolor($maxW, $nh);
-        imagecopyresampled($dst, $im, 0, 0, 0, 0, $maxW, $nh, $w, $h);
+    $maxW = 1280; $maxH = 720;
+    $ratio = min(1.0, $maxW / max(1, $w), $maxH / max(1, $h));
+    if ($ratio < 1.0) {
+        $nw  = max(1, (int) round($w * $ratio));
+        $nh  = max(1, (int) round($h * $ratio));
+        $dst = imagecreatetruecolor($nw, $nh);
+        imagecopyresampled($dst, $im, 0, 0, 0, 0, $nw, $nh, $w, $h);
         imagedestroy($im);
         $im = $dst;
     }
     $slug = preg_replace('/[^a-z0-9\-]/', '', strtolower($slug)) ?: 'ai-' . substr(md5($url), 0, 8);
     $rel  = 'public/assets/img/ai/' . $slug . '.webp';
-    $ok   = imagewebp($im, ROOT_PATH . '/' . $rel, 82);
+    // Qualité 80 : ~80–140 Ko en 720p, indistinguable à l'œil, ultra-rapide à charger.
+    $ok   = imagewebp($im, ROOT_PATH . '/' . $rel, 80);
     imagedestroy($im);
     return $ok ? '/' . $rel : null;
 }
