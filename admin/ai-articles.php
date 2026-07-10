@@ -42,29 +42,20 @@ if ($act === 'run_auto') {
     $flash = [$r['generated'] > 0 ? 'ok' : 'err', $r['message']];
 }
 
-// --- Génération en lot ---
+// --- Génération en lot (EN ARRIÈRE-PLAN : n'immobilise jamais le site) ---
 if ($act === 'generate') {
     $count  = (int) ($_POST['count'] ?? 0);
     $count  = in_array($count, [5, 10, 15, 20], true) ? $count : 5;
-    $status = in_array($_POST['status'] ?? '', ['draft', 'published'], true) ? $_POST['status'] : 'draft';
+    $status = in_array($_POST['status'] ?? '', ['draft', 'pending', 'published'], true) ? $_POST['status'] : 'draft';
     if (!ai_enabled()) {
         $flash = ['err', 'Connecte d’abord ta clé API Anthropic ci-dessous.'];
     } else {
-        @set_time_limit(0);
-        @ignore_user_abort(true);
-        $ok = 0; $dup = 0; $fail = 0;
-        for ($i = 0; $i < $count; $i++) {
-            try {
-                $art = ai_generate_article();
-                $id  = ai_save_article($art, $status, (int) ($admin_user['id'] ?? 0) ?: null);
-                if ($id) { $results[] = ['id' => $id] + $art; $ok++; }
-                else { $dup++; }
-            } catch (Throwable $e) {
-                $fail++;
-                $results[] = ['error' => $e->getMessage()];
-            }
-        }
-        $flash = ['ok', "Génération terminée : {$ok} article(s) créé(s)" . ($dup ? ", {$dup} doublon(s) ignoré(s)" : '') . ($fail ? ", {$fail} échec(s)" : '') . '.'];
+        ai_queue_add($count, $status);          // met en file
+        $spawned = ai_spawn_worker();           // lance le worker détaché (arrière-plan)
+        $lbl = ['draft' => 'en brouillon', 'pending' => 'programmé(s) (CRON)', 'published' => 'à publier'][$status] ?? '';
+        $flash = ['ok', "🚀 {$count} article(s) {$lbl} en génération EN ARRIÈRE-PLAN. "
+            . "Le site reste fluide — ils apparaissent au fil de l'eau (recharge cette page dans quelques minutes)."
+            . ($spawned ? '' : ' ⚠️ Lancement direct indisponible : c\'est le CRON qui les générera.')];
     }
 }
 
@@ -125,8 +116,9 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
             <input type="hidden" name="action" value="generate">
             <label>Statut
                 <select name="status" style="display:block;margin-top:.3rem">
-                    <option value="draft">Brouillon (à relire)</option>
-                    <option value="published">Publier directement</option>
+                    <option value="draft">📝 Brouillon (à relire)</option>
+                    <option value="pending">⏱️ Programmée CRON (publiée 1 par 1)</option>
+                    <option value="published">🚀 Publiée (tout de suite)</option>
                 </select>
             </label>
             <div>
@@ -138,7 +130,12 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
                 </div>
             </div>
         </form>
-        <p class="muted" style="font-size:.82rem;margin:.8rem 0 0">💡 Articles longs (~2000 mots, tons variés). En manuel, reste sur <strong>5</strong> à la fois (10-20 peuvent dépasser le délai). Pour du volume, utilise la <strong>publication automatique</strong> ci-dessous (sans limite, reprise automatique).</p>
+        <?php $queue = (int) get_setting('ai_gen_queue', '0'); ?>
+        <?php if ($queue > 0): ?>
+            <div class="alert alert--ok" style="margin:.9rem 0 0">⏳ <strong><?= $queue ?></strong> article(s) en cours de génération en arrière-plan… (recharge la page pour suivre)</div>
+        <?php endif; ?>
+        <p class="muted" style="font-size:.82rem;margin:.8rem 0 0">💡 Articles longs (~2000 mots, tons variés). La génération tourne <strong>en arrière-plan</strong> : le site reste fluide, tu peux fermer la page. Statuts :
+            <strong>Brouillon</strong> = à relire · <strong>Programmée CRON</strong> = stockés puis publiés <strong>1 par 1</strong> selon l'intervalle réglé plus bas · <strong>Publiée</strong> = mise en ligne immédiate.</p>
     </div>
 
     <!-- PUBLICATION AUTOMATIQUE -->

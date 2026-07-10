@@ -246,11 +246,75 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
     return (int) db()->lastInsertId();
 }
 
+/** ID de l'auteur admin (pour attribuer les articles générés). */
+function ai_admin_author_id(): ?int
+{
+    return (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0) ?: null;
+}
+
+/** Ajoute N articles à la FILE de génération en arrière-plan, avec un statut cible. */
+function ai_queue_add(int $n, string $status): void
+{
+    $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
+    set_setting('ai_gen_status', $status);
+    set_setting('ai_gen_queue', (string) max(0, (int) get_setting('ai_gen_queue', '0') + max(0, $n)));
+}
+
 /**
- * PUBLICATION AUTOMATIQUE — publie UN article à chaque intervalle (3/5/7/10/12 h).
- * Appelée par ai-tick.php (cron, ex. toutes les 30 min) : elle ne fait rien tant que
- * l'intervalle n'est pas écoulé, puis génère et publie 1 article complet (~2000 mots).
- * Réglages : ai_auto_enabled, ai_auto_interval (h), ai_auto_status, ai_auto_last (ts).
+ * VIDE la file de génération (worker en arrière-plan). Un verrou évite que deux
+ * process génèrent en double. $budgetSeconds = 0 → aucune limite (draine tout).
+ * @return int nombre d'articles générés
+ */
+function ai_drain_queue(int $budgetSeconds = 0): int
+{
+    if (!ai_enabled()) { return 0; }
+    // Verrou anti-double-exécution (expire au bout de 5 min sans rafraîchissement).
+    $lock = (int) get_setting('ai_worker_lock', '0');
+    if (time() - $lock < 300) { return 0; }
+    set_setting('ai_worker_lock', (string) time());
+
+    $status   = get_setting('ai_gen_status', 'draft');
+    $status   = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
+    $authorId = ai_admin_author_id();
+    $tones    = array_keys(ai_tones());
+    $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
+    $done = 0;
+    while ((int) get_setting('ai_gen_queue', '0') > 0 && time() < $deadline) {
+        try {
+            $art = ai_generate_article(null, $tones[array_rand($tones)]);
+            ai_save_article($art, $status, $authorId);
+            $done++;
+        } catch (Throwable $e) {
+            break; // erreur API : on s'arrête, on reprendra plus tard
+        }
+        set_setting('ai_gen_queue', (string) max(0, (int) get_setting('ai_gen_queue', '0') - 1));
+        set_setting('ai_worker_lock', (string) time()); // rafraîchit le verrou
+    }
+    set_setting('ai_worker_lock', '0'); // libère
+    return $done;
+}
+
+/** Lance le worker de génération en ARRIÈRE-PLAN (best-effort, sans bloquer la page). */
+function ai_spawn_worker(): bool
+{
+    $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
+    if (!function_exists('shell_exec') || in_array('shell_exec', $disabled, true)) { return false; }
+    $php = null;
+    foreach (['/usr/local/bin/php', '/usr/bin/php', '/opt/cpanel/ea-php81/root/usr/bin/php', 'php'] as $c) {
+        if ($c === 'php' || @is_file($c)) { $php = $c; break; }
+    }
+    if ($php === null) { return false; }
+    // nohup + & → le worker survit à la fin de la requête web (arrière-plan réel).
+    $cmd = escapeshellarg($php) . ' ' . escapeshellarg(ROOT_PATH . '/ai-worker.php') . ' >/dev/null 2>&1';
+    @shell_exec('nohup ' . $cmd . ' & echo ok');
+    return true;
+}
+
+/**
+ * Appelée par le CRON (ai-tick.php). Fait deux choses, sans jamais bloquer :
+ *  1) vide un peu la file de génération manuelle (arrière-plan) ;
+ *  2) DRIP : publie 1 article « programmé » (pending IA) à chaque intervalle,
+ *     et si aucun n'est en attente et l'auto est activée, en génère 1 frais.
  * @return array{generated:int,message:string}
  */
 function ai_auto_run(int $budgetSeconds = 130): array
@@ -258,37 +322,40 @@ function ai_auto_run(int $budgetSeconds = 130): array
     if (!ai_enabled()) {
         return ['generated' => 0, 'message' => '⛔ Clé API Anthropic manquante (Réglages).'];
     }
-    if ((int) get_setting('ai_auto_enabled', '0') !== 1) {
-        return ['generated' => 0, 'message' => '⏸️ Auto-publication désactivée.'];
-    }
-    $interval = max(1, (int) get_setting('ai_auto_interval', '6')); // heures entre chaque article
-    $status   = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
-    $last     = (int) get_setting('ai_auto_last', '0');
-    $now      = time();
+    $msgs = [];
 
-    // Pas encore l'heure : on attend.
-    if ($last > 0 && ($now - $last) < $interval * 3600) {
-        $nextIn = $interval * 3600 - ($now - $last);
-        return ['generated' => 0, 'message' => '✓ À jour. Prochain article dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.'];
-    }
+    // 1) File de génération manuelle (on lui laisse la moitié du budget).
+    $drained = ai_drain_queue((int) ($budgetSeconds / 2));
+    if ($drained > 0) { $msgs[] = "{$drained} article(s) généré(s) (file)"; }
 
-    // Génère 1 article (avec quelques essais pour éviter un doublon de titre).
-    $authorId = (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0) ?: null;
-    $tones    = array_keys(ai_tones());
-    $deadline = $now + max(20, $budgetSeconds);
-    $id = null; $tries = 0;
-    try {
-        while (!$id && $tries < 3 && time() < $deadline) {
-            $art = ai_generate_article(null, $tones[array_rand($tones)]);
-            $id  = ai_save_article($art, $status, $authorId);
-            $tries++;
+    // 2) DRIP de publication.
+    $interval  = max(1, (int) get_setting('ai_auto_interval', '6'));
+    $autoOn    = (int) get_setting('ai_auto_enabled', '0') === 1;
+    $last      = (int) get_setting('ai_auto_last', '0');
+    $now       = time();
+    $hasPending = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''")->fetchColumn();
+
+    if (($autoOn || $hasPending > 0) && ($last === 0 || ($now - $last) >= $interval * 3600)) {
+        if ($hasPending > 0) {
+            // Publie le plus ancien article programmé (Programmée CRON).
+            $pid = (int) db()->query("SELECT id FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' ORDER BY id ASC LIMIT 1")->fetchColumn();
+            db()->prepare("UPDATE articles SET status='published', published_at=COALESCE(published_at, NOW()) WHERE id=?")->execute([$pid]);
+            set_setting('ai_auto_last', (string) $now);
+            $msgs[] = "1 article programmé publié";
+        } elseif ($autoOn) {
+            $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
+            $tones = array_keys(ai_tones());
+            try {
+                $id = null; $t = 0;
+                while (!$id && $t < 3) { $id = ai_save_article(ai_generate_article(null, $tones[array_rand($tones)]), $st, ai_admin_author_id()); $t++; }
+                if ($id) { set_setting('ai_auto_last', (string) $now); $msgs[] = '1 article ' . ($st === 'published' ? 'publié' : 'en brouillon'); }
+            } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
         }
-    } catch (Throwable $e) {
-        return ['generated' => 0, 'message' => '⚠️ Erreur API : ' . $e->getMessage()];
     }
-    if ($id) {
-        set_setting('ai_auto_last', (string) $now); // on ne recale l'intervalle qu'après un vrai article
-        return ['generated' => 1, 'message' => '✅ 1 article ' . ($status === 'published' ? 'publié' : 'ajouté en brouillon') . '. Prochain dans ~' . $interval . ' h.'];
+
+    if (!$msgs) {
+        $nextIn = ($last > 0) ? max(0, $interval * 3600 - ($now - $last)) : 0;
+        return ['generated' => 0, 'message' => '✓ À jour.' . ($autoOn || $hasPending ? ' Prochain dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.' : '')];
     }
-    return ['generated' => 0, 'message' => '↻ Aucun article unique généré ce coup-ci (doublons). Nouvel essai au prochain passage.'];
+    return ['generated' => $drained + 1, 'message' => '✅ ' . implode(' · ', $msgs) . '.'];
 }
