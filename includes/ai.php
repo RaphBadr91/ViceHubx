@@ -136,10 +136,10 @@ function ai_img_enabled(): bool
         && function_exists('imagewebp');
 }
 
-/** Endpoint text-to-image Higgsfield (réglable si l'API évolue). */
+/** Endpoint text-to-image Higgsfield (réglable si l'API évolue). Seedream 4 par défaut. */
 function ai_img_endpoint(): string
 {
-    return get_setting('ai_image_endpoint', '') ?: 'https://platform.higgsfield.ai/v1/flux-pro/kontext/max/text-to-image';
+    return get_setting('ai_image_endpoint', '') ?: 'https://platform.higgsfield.ai/v1/bytedance/seedream/v4/text-to-image';
 }
 
 /** Cherche récursivement la 1re URL d'image dans une réponse JSON (schéma tolérant). */
@@ -184,11 +184,12 @@ function ai_generate_image(string $prompt, string $slug): ?string
     $endpoint = ai_img_endpoint();
     $auth     = 'Authorization: Key ' . ai_img_key();
     try {
-        $input = ['prompt' => $prompt, 'aspect_ratio' => '16:9', 'safety_tolerance' => 2];
-        $res = trim((string) get_setting('ai_image_resolution', ''));
-        if ($res !== '') { $input['resolution'] = $res; }
-        // withPolling:true → l'API attend la fin et renvoie (idéalement) le rendu directement.
-        $payload = json_encode(['input' => $input, 'withPolling' => true]);
+        // Corps À PLAT (format de l'API/SDK officiel Higgsfield), sans enveloppe "input".
+        $body = ['prompt' => $prompt, 'aspect_ratio' => '16:9'];
+        $res = strtoupper(trim((string) get_setting('ai_image_resolution', '')));
+        if (!in_array($res, ['1K', '2K', '4K'], true)) { $res = '2K'; } // Seedream : 1K/2K/4K
+        $body['resolution'] = $res;
+        $payload = json_encode($body);
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,

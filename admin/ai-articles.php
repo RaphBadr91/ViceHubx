@@ -35,8 +35,9 @@ if ($act === 'save_image') {
     } elseif ($hk !== '') {
         set_setting('higgsfield_key', $hk);                    // clé déjà collée au format KEY:SECRET
     } // les deux vides = on conserve l'existante
-    $ep = trim((string) ($_POST['ai_image_endpoint'] ?? ''));
-    set_setting('ai_image_endpoint', $ep);
+    if (isset($_POST['ai_image_endpoint'])) {          // seulement depuis le formulaire avancé
+        set_setting('ai_image_endpoint', trim((string) $_POST['ai_image_endpoint']));
+    }
     if (isset($_POST['ai_image_resolution'])) {
         set_setting('ai_image_resolution', trim((string) $_POST['ai_image_resolution']));
     }
@@ -376,12 +377,12 @@ $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
                 <input type="hidden" name="action" value="save_image">
                 <input type="hidden" name="ai_image_enabled" value="<?= $imgOn ? '1' : '0' ?>">
                 <label style="flex:1;min-width:320px">URL de l'endpoint text-to-image
-                    <input type="text" name="ai_image_endpoint" value="<?= e($imgEndpoint) ?>" placeholder="https://platform.higgsfield.ai/v1/flux-pro/kontext/max/text-to-image" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
-                    <small class="muted">Laisse vide pour l'endpoint par défaut. À changer seulement si l'API Higgsfield évolue.</small>
+                    <input type="text" name="ai_image_endpoint" value="<?= e($imgEndpoint) ?>" placeholder="https://platform.higgsfield.ai/v1/bytedance/seedream/v4/text-to-image" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
+                    <small class="muted">Vide = modèle par défaut <strong>Seedream 4</strong>. Si « Model not found », essaie un autre modèle, ex. <code>…/v1/bytedance/seedream/v4/text-to-image</code>.</small>
                 </label>
-                <label style="min-width:150px">Résolution de génération
-                    <input type="text" name="ai_image_resolution" value="<?= e($imgRes) ?>" placeholder="720p" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
-                    <small class="muted">Facultatif (ex. <code>720p</code>, <code>1K</code>). Moins cher en crédits. Vide = standard. L'image est de toute façon ramenée en 720p WebP.</small>
+                <label style="min-width:150px">Résolution
+                    <input type="text" name="ai_image_resolution" value="<?= e($imgRes) ?>" placeholder="2K" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
+                    <small class="muted">Seedream : <code>1K</code>, <code>2K</code> ou <code>4K</code> (défaut 2K, moins cher en <code>1K</code>). L'image est ramenée en 720p WebP côté serveur.</small>
                 </label>
                 <button class="btn btn--ghost" type="submit">Enregistrer</button>
             </form>
