@@ -1141,6 +1141,23 @@ function inject_after_paragraph(string $html, int $after, string $insert): strin
     return $out;
 }
 
+/**
+ * Retire tout marqueur technique laissé par l'IA (===FIN===, ===CORPS===, ===DEBUT===…),
+ * seul ou enveloppé dans un <p>. Les lecteurs ne doivent JAMAIS voir ces balises :
+ * un article doit se lire comme s'il était écrit par un humain.
+ */
+function clean_ai_markers(string $text): string
+{
+    if ($text === '' || strpos($text, '==') === false) {
+        return $text;
+    }
+    // <p>=== FIN ===</p>  →  supprimé
+    $text = preg_replace('#<p>\s*={2,}\s*[A-Za-zÀ-ÿ_\- ]{1,24}\s*={2,}\s*</p>#u', '', $text) ?? $text;
+    // === FIN ===  (nu, n'importe où)  →  supprimé
+    $text = preg_replace('#={2,}\s*[A-Za-zÀ-ÿ_\- ]{1,24}\s*={2,}#u', '', $text) ?? $text;
+    return trim($text);
+}
+
 /** Mots-clés significatifs d'un texte (pour lier pubs internes au sujet de l'article). */
 function article_keywords(string $text, int $min = 4, int $max = 6): array
 {
@@ -1186,17 +1203,67 @@ function article_forum_cta(array $article): string
             )->fetch() ?: null;
         }
         if (!$thread) { return ''; }
+        static $vi = 0;
         $shown[] = (int) $thread['id'];
         $url = with_lang(url('pages/forum-thread.php?id=' . (int) $thread['id']));
         $rep = (int) $thread['replies'];
-        $msg = $fr
-            ? 'La discussion <strong>« ' . e($thread['title']) . ' »</strong> anime la communauté' . ($rep > 0 ? ' (' . $rep . ' réponses)' : '') . '. Viens donner ton avis&nbsp;!'
-            : 'The thread <strong>“' . e($thread['title']) . '”</strong> is buzzing' . ($rep > 0 ? ' (' . $rep . ' replies)' : '') . '. Jump in&nbsp;!';
-        return '<aside class="art-cta art-cta--inline">'
+        $ttl = e($thread['title']);
+
+        // Copywriting persuasif (accroche + bénéfice + bouton), en rotation pour varier.
+        if ($fr) {
+            $variants = $rep >= 3 ? [
+                ['🔥 Tout le monde en parle en ce moment',
+                 '<strong>' . $rep . ' fans</strong> ont déjà lâché leur théorie sur <strong>« ' . $ttl . ' »</strong>. Il ne manque plus que <strong>la tienne</strong>.',
+                 'Je donne mon avis'],
+                ['💬 Ne reste pas spectateur',
+                 'Pendant que tu lis, <strong>' . $rep . ' passionnés</strong> refont GTA&nbsp;VI en direct sur <strong>« ' . $ttl . ' »</strong>. Rejoins-les avant que ça se calme.',
+                 'Rejoindre le débat'],
+                ['👀 Tu vas vouloir réagir',
+                 '<strong>« ' . $ttl . ' »</strong> — ' . $rep . ' réponses, des théories qui fusent, des infos que tu ne verras nulle part ailleurs.',
+                 'Voir ce qui se dit'],
+                ['⭐ Les vrais fans sont déjà là',
+                 'Débats, leaks, prédictions&nbsp;: <strong>« ' . $ttl . ' »</strong> réunit <strong>' . $rep . ' membres</strong>. Ta place t’attend, gratuitement.',
+                 'Je rejoins la communauté'],
+            ] : [
+                ['🚀 Sois le premier à réagir',
+                 'Le sujet <strong>« ' . $ttl . ' »</strong> vient d’ouvrir. Pose <strong>ta</strong> théorie avant tout le monde et lance le débat.',
+                 'Ouvrir la discussion'],
+                ['💬 Ton avis peut tout lancer',
+                 'Personne n’a encore le dernier mot sur <strong>« ' . $ttl . ' »</strong>. Donne le ton sur le forum ViceHub X.',
+                 'Je participe'],
+            ];
+        } else {
+            $variants = $rep >= 3 ? [
+                ['🔥 Everyone’s talking about this',
+                 '<strong>' . $rep . ' fans</strong> already dropped their theory on <strong>“' . $ttl . '”</strong>. Yours is the one that’s missing.',
+                 'Share my take'],
+                ['💬 Don’t just watch',
+                 'Right now <strong>' . $rep . ' fans</strong> are reshaping GTA&nbsp;VI over <strong>“' . $ttl . '”</strong>. Jump in before it cools down.',
+                 'Join the debate'],
+            ] : [
+                ['🚀 Be the first to react',
+                 'The thread <strong>“' . $ttl . '”</strong> just opened. Drop your theory before anyone else.',
+                 'Start the discussion'],
+            ];
+        }
+        $scenes = ['nightlife.png', 'pool-party.png', 'street-market.png', 'downtown.png', 'artdeco.png'];
+        $v   = $variants[$vi % count($variants)];
+        $img = '/public/assets/img/scenes/' . $scenes[$vi % count($scenes)];
+        $vi++;
+        $badge = $rep > 0 ? '💬 ' . $rep : '💬';
+
+        return '<aside class="art-cta">'
+            . '<a class="art-cta__media" href="' . e($url) . '" aria-label="' . ($fr ? 'Forum ViceHub X' : 'ViceHub X Forum') . '">'
+            . picture_html($img, $fr ? 'Forum ViceHub X — la communauté GTA VI' : 'ViceHub X Forum', '', 'loading="lazy" decoding="async" onerror="(this.closest(\'picture\')||this).style.display=\'none\'"')
+            . '<span class="art-cta__badge">' . $badge . '</span></a>'
+            . '<div class="art-cta__body">'
             . '<span class="art-cta__tag">💬 ' . ($fr ? 'Forum ViceHub X' : 'ViceHub X Forum') . '</span>'
-            . '<p>' . $msg . '</p>'
-            . '<a class="btn btn--primary" href="' . e($url) . '">' . ($fr ? 'Rejoindre la discussion' : 'Join the discussion') . ' →</a>'
-            . '</aside>';
+            . '<h3>' . $v[0] . '</h3>'
+            . '<p>' . $v[1] . '</p>'
+            . '<div class="art-cta__btns">'
+            . '<a class="btn btn--primary" href="' . e($url) . '">' . $v[2] . ' →</a>'
+            . '<a class="btn btn--ghost" href="' . e(with_lang(url('pages/forum.php'))) . '">' . ($fr ? 'Tout le forum' : 'The forum') . '</a>'
+            . '</div></div></aside>';
     } catch (Throwable $e) {
         return '';
     }
@@ -1219,14 +1286,26 @@ function article_blog_cta(array $article): string
             }
         }
         if (!$pick) { return ''; }
+        static $hi = 0;
         $shown[] = (int) $pick['id'];
-        $url = with_lang(url('pages/article.php?slug=' . urlencode((string) $pick['slug'])));
-        $tease = mb_substr(strip_tags((string) ($pick['excerpt'] ?? '')), 0, 120);
-        return '<aside class="art-cta art-cta--inline">'
+        $url   = with_lang(url('pages/article.php?slug=' . urlencode((string) $pick['slug'])));
+        $tease = mb_substr(strip_tags((string) ($pick['excerpt'] ?? '')), 0, 110);
+        $img   = !empty($pick['image']) ? (string) $pick['image'] : '/public/assets/img/scenes/downtown.png';
+        $hooks = $fr
+            ? ['🔥 À dévorer juste après', '📰 Ça va te plaire', '👉 Pour aller plus loin', '⭐ L’article que les fans adorent']
+            : ['🔥 Read this next', '📰 You’ll love this', '👉 Go deeper', '⭐ Fan favourite'];
+        $hook  = $hooks[$hi % count($hooks)]; $hi++;
+        return '<aside class="art-cta">'
+            . '<a class="art-cta__media" href="' . e($url) . '" aria-label="' . e((string) $pick['title']) . '">'
+            . picture_html($img, (string) $pick['title'], '', 'loading="lazy" decoding="async" onerror="(this.closest(\'picture\')||this).style.display=\'none\'"')
+            . '<span class="art-cta__badge">📖</span></a>'
+            . '<div class="art-cta__body">'
             . '<span class="art-cta__tag">📰 ' . ($fr ? 'À lire aussi' : 'Read next') . '</span>'
+            . '<h3>' . e($hook) . '</h3>'
             . '<p><strong>« ' . e($pick['title']) . ' »</strong>' . ($tease !== '' ? ' — ' . e($tease) . '…' : '') . '</p>'
+            . '<div class="art-cta__btns">'
             . '<a class="btn btn--primary" href="' . e($url) . '">' . ($fr ? 'Lire l’article' : 'Read the article') . ' →</a>'
-            . '</aside>';
+            . '</div></div></aside>';
     } catch (Throwable $e) {
         return '';
     }
@@ -1250,9 +1329,9 @@ function inject_internal_ads(string $html, array $article): string
     $blocks = [];
     for ($i = 0; $i < $n; $i++) {
         $type = ['shop', 'forum', 'blog'][$i % 3];
-        $b = $type === 'shop' ? article_shop_cta($i === 0 ? 'full' : 'inline')
+        $b = $type === 'shop' ? article_shop_cta('full')
             : ($type === 'forum' ? article_forum_cta($article) : article_blog_cta($article));
-        if ($b === '') { $b = article_shop_cta('inline'); } // repli si forum/blog vide
+        if ($b === '') { $b = article_shop_cta('full'); } // repli si forum/blog vide (garde une image)
         if ($b !== '') { $blocks[] = $b; }
     }
     if (!$blocks) { return $html; }

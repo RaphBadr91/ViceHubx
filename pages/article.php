@@ -31,6 +31,9 @@ $safe_body = strip_tags(
     (string) $article['body'],
     '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br>'
 );
+// Sécurité : retire tout marqueur IA résiduel (===FIN===…) — invisible pour le lecteur.
+$safe_body = clean_ai_markers($safe_body);
+$article['excerpt'] = clean_ai_markers((string) ($article['excerpt'] ?? ''));
 // Maillage interne automatique (liens vers pages piliers) — sûr, après strip_tags
 $safe_body = internal_autolink($safe_body);
 // PUBS INTERNES (3 à 6) réparties dans l'article : Boutique / Forum / Blog,

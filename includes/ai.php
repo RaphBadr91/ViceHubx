@@ -344,7 +344,8 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null): ar
         . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
         . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
         . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
-        . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n\n"
+        . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
+        . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n\n"
         . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
         . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
         . "LIGNE 2 = exactement : ===CORPS===\n"
@@ -366,8 +367,9 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null): ar
     }
 
     $title   = trim((string) $json['titre']);
-    $excerpt = mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200);
-    $body    = strip_tags($bodyHtml, '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>');
+    $excerpt = clean_ai_markers(mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200));
+    // Nettoie tout marqueur IA résiduel (===FIN===…) : le lecteur ne doit jamais le voir.
+    $body    = clean_ai_markers(strip_tags($bodyHtml, '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>'));
     $iprompt = trim((string) ($json['prompt_image'] ?? ''));
     $theme   = (string) ($json['theme_image'] ?? '');
     $cat     = (string) ($json['categorie'] ?? 'blog');
