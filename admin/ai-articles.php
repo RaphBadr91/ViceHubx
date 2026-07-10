@@ -38,6 +38,13 @@ if ($act === 'save_image') {
     $flash = ['ok', '🎨 Réglages illustrations IA enregistrés.'];
 }
 
+// --- Test SYNCHRONE d'une génération d'image (diagnostic, sans worker) ---
+if ($act === 'test_image') {
+    @set_time_limit(0);
+    $r = ai_image_test();
+    $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']];
+}
+
 // --- Générer TOUTES les images manquantes (arrière-plan) ---
 if ($act === 'gen_all_images') {
     if (!ai_img_enabled()) {
@@ -156,6 +163,8 @@ $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
 $imgRes      = (string) get_setting('ai_image_resolution', '');
 $imgMissing  = ai_missing_image_count();
 $imgProg     = ai_img_progress();
+$imgLastErr  = (string) get_setting('ai_img_last_error', '');
+$imgLastOk   = (string) get_setting('ai_img_last_ok', '');
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
@@ -313,11 +322,23 @@ $imgProg     = ai_img_progress();
                     <strong>🖼️ Illustrations manquantes : <?= (int) $imgMissing ?></strong>
                     <p class="muted" style="font-size:.82rem;margin:.25rem 0 0">Articles sans image sur-mesure (vides ou image de la banque). Génère une vraie illustration Higgsfield pour chacun (~0,09 $/image).</p>
                 </div>
-                <form method="post" style="margin:0">
-                    <?= csrf_field() ?><input type="hidden" name="action" value="gen_all_images">
-                    <button class="btn btn--primary" type="submit" <?= ($imgEnabled && $imgMissing > 0) ? '' : 'disabled' ?>>🎨 Générer toutes les images manquantes<?= $imgMissing > 0 ? ' (' . (int) $imgMissing . ')' : '' ?></button>
-                </form>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                    <form method="post" style="margin:0">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="test_image">
+                        <button class="btn btn--ghost" type="submit" <?= $imgEnabled ? '' : 'disabled' ?>>🔍 Tester (1 image)</button>
+                    </form>
+                    <form method="post" style="margin:0">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="gen_all_images">
+                        <button class="btn btn--primary" type="submit" <?= ($imgEnabled && $imgMissing > 0) ? '' : 'disabled' ?>>🎨 Générer toutes les images manquantes<?= $imgMissing > 0 ? ' (' . (int) $imgMissing . ')' : '' ?></button>
+                    </form>
+                </div>
             </div>
+            <?php if ($imgLastErr !== ''): ?>
+                <div class="alert alert--err" style="margin:.7rem 0 0;font-size:.82rem;word-break:break-word">🐞 Dernière erreur image : <code><?= e($imgLastErr) ?></code></div>
+            <?php elseif ($imgLastOk !== ''): ?>
+                <div class="alert alert--ok" style="margin:.7rem 0 0;font-size:.82rem">✅ Dernière image générée avec succès le <?= e($imgLastOk) ?>.</div>
+            <?php endif; ?>
+            <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">💡 Clique d'abord <strong>🔍 Tester (1 image)</strong> : ça génère UNE image tout de suite (sans arrière-plan) et affiche l'erreur exacte si ça bloque. Si le test réussit, lance la génération complète.</p>
             <?php if (!$imgEnabled): ?>
                 <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">⚠️ Active les illustrations IA + colle ta clé Higgsfield pour utiliser ce bouton.</p>
             <?php endif; ?>

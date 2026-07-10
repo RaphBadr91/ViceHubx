@@ -173,50 +173,116 @@ function ai_find_image_url($node): ?string
 function ai_generate_image(string $prompt, string $slug): ?string
 {
     $prompt = trim($prompt);
-    if ($prompt === '' || !ai_img_enabled()) { return null; }
+    if ($prompt === '') { return null; }
+    if (!ai_img_enabled()) {
+        set_setting('ai_img_last_error', 'Illustrations IA désactivées, ou clé Higgsfield absente, ou GD/WebP indisponible sur le serveur.');
+        return null;
+    }
+    $endpoint = ai_img_endpoint();
+    $auth     = 'Authorization: Key ' . ai_img_key();
     try {
-        $input = [
-            'prompt'           => $prompt,
-            'aspect_ratio'     => '16:9',
-            'safety_tolerance' => 2,
-        ];
-        // Résolution de génération (facultatif, selon le modèle : 720p, 1K, 2K…).
-        // Vide par défaut = requête standard fiable. De toute façon, le rendu est
-        // re-compressé en 720p WebP côté serveur → le site reste léger.
+        $input = ['prompt' => $prompt, 'aspect_ratio' => '16:9', 'safety_tolerance' => 2];
         $res = trim((string) get_setting('ai_image_resolution', ''));
         if ($res !== '') { $input['resolution'] = $res; }
-        // withPolling:true → l'API attend la fin et renvoie le rendu en une seule réponse.
+        // withPolling:true → l'API attend la fin et renvoie (idéalement) le rendu directement.
         $payload = json_encode(['input' => $input, 'withPolling' => true]);
-        $ch = curl_init(ai_img_endpoint());
+        $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => [
-                'content-type: application/json',
-                'accept: application/json',
-                'Authorization: Key ' . ai_img_key(),
-            ],
+            CURLOPT_HTTPHEADER     => ['content-type: application/json', 'accept: application/json', $auth],
             CURLOPT_POSTFIELDS     => $payload,
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_TIMEOUT        => 180,
         ]);
         $raw  = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $cerr = curl_error($ch);
         curl_close($ch);
-        if ($raw === false || $code >= 400) { return null; }
 
-        $data = json_decode((string) $raw, true);
+        if ($raw === false)  { set_setting('ai_img_last_error', "Connexion à {$endpoint} échouée : {$cerr}"); return null; }
+        if ($code >= 400)    { set_setting('ai_img_last_error', "HTTP {$code} sur {$endpoint} — " . substr((string) $raw, 0, 500)); return null; }
+
+        $data   = json_decode((string) $raw, true);
         $imgUrl = is_array($data) ? ai_find_image_url($data) : null;
-        // Repli : l'URL apparaît parfois brute dans la réponse.
-        if (!$imgUrl && preg_match('#https?://[^\s"\']+\.(?:png|jpe?g|webp)#i', (string) $raw, $m)) {
-            $imgUrl = $m[0];
-        }
-        if (!$imgUrl) { return null; }
+        if (!$imgUrl && preg_match('#https?://[^\s"\']+\.(?:png|jpe?g|webp)#i', (string) $raw, $m)) { $imgUrl = $m[0]; }
+        // API asynchrone : pas d'image mais un id/status_url → on interroge jusqu'au rendu.
+        if (!$imgUrl && is_array($data)) { $imgUrl = ai_poll_image($data, $endpoint, $auth); }
+        if (!$imgUrl) { set_setting('ai_img_last_error', "Réponse HTTP {$code} sans URL d'image — " . substr((string) $raw, 0, 500)); return null; }
 
-        return ai_download_as_webp($imgUrl, $slug);
+        $local = ai_download_as_webp($imgUrl, $slug);
+        if (!$local) { set_setting('ai_img_last_error', "Image reçue mais téléchargement/conversion WebP échoué : {$imgUrl}"); return null; }
+
+        set_setting('ai_img_last_error', '');
+        set_setting('ai_img_last_ok', date('Y-m-d H:i:s'));
+        return $local;
     } catch (Throwable $e) {
+        set_setting('ai_img_last_error', 'Exception : ' . $e->getMessage());
         return null;
     }
+}
+
+/** Recherche récursive de la 1re valeur scalaire pour l'un des noms de clés donnés. */
+function ai_find_key($node, array $keys): ?string
+{
+    if (is_array($node)) {
+        foreach ($keys as $k) {
+            if (isset($node[$k]) && is_scalar($node[$k])) { return (string) $node[$k]; }
+        }
+        foreach ($node as $v) {
+            $r = ai_find_key($v, $keys);
+            if ($r !== null) { return $r; }
+        }
+    }
+    return null;
+}
+
+/** Cas API asynchrone : interroge le status jusqu'à obtenir l'URL de l'image (≤150 s). */
+function ai_poll_image(array $data, string $endpoint, string $auth): ?string
+{
+    $statusUrl = ai_find_key($data, ['status_url', 'statusUrl']);
+    $id        = ai_find_key($data, ['request_id', 'requestId', 'generation_id', 'generationId', 'job_id', 'id']);
+    $host      = preg_match('#^(https?://[^/]+)#i', $endpoint, $m) ? $m[1] : '';
+    $u         = $statusUrl ?: (($id && $host) ? $host . '/v1/requests/' . rawurlencode($id) . '/status' : null);
+    if (!$u) { return null; }
+    $deadline = time() + 150;
+    while (time() < $deadline) {
+        sleep(3);
+        $ch = curl_init($u);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['accept: application/json', $auth], CURLOPT_TIMEOUT => 30]);
+        $raw  = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($raw === false || $code >= 400) { set_setting('ai_img_last_error', "Polling {$u} → HTTP {$code}"); return null; }
+        $d   = json_decode((string) $raw, true);
+        $url = is_array($d) ? ai_find_image_url($d) : null;
+        if ($url) { return $url; }
+        $st = is_array($d) ? strtolower((string) (ai_find_key($d, ['status']) ?? '')) : '';
+        if (in_array($st, ['failed', 'error', 'canceled', 'cancelled'], true)) {
+            set_setting('ai_img_last_error', "Génération {$st} — " . substr((string) $raw, 0, 300));
+            return null;
+        }
+    }
+    return null;
+}
+
+/** Test synchrone : génère UNE image et renvoie un diagnostic lisible pour l'admin. */
+function ai_image_test(): array
+{
+    if (ai_img_key() === '') {
+        return ['ok' => false, 'msg' => '❌ Aucune clé Higgsfield enregistrée.'];
+    }
+    if (!function_exists('imagewebp')) {
+        return ['ok' => false, 'msg' => '❌ La librairie GD/WebP est absente sur le serveur (imagewebp introuvable).'];
+    }
+    if ((int) get_setting('ai_image_enabled', '0') !== 1) {
+        return ['ok' => false, 'msg' => '❌ Coche « Activer » et enregistre avant de tester.'];
+    }
+    $path = ai_generate_image('Grand Theft Auto VI Vice City, neon sunset skyline, palm trees, cinematic, photorealistic, 16:9, no text, no watermark', 'diagnostic-test');
+    if ($path) {
+        return ['ok' => true, 'msg' => '✅ Génération réussie ! Image : ' . $path . ' — Endpoint : ' . ai_img_endpoint()];
+    }
+    return ['ok' => false, 'msg' => '❌ Échec — ' . (get_setting('ai_img_last_error', '(aucun détail)')) . ' | Endpoint : ' . ai_img_endpoint()];
 }
 
 /**
