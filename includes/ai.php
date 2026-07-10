@@ -146,8 +146,10 @@ function ai_img_endpoint(): string
 function ai_find_image_url($node): ?string
 {
     if (is_string($node)) {
+        // Une VRAIE image : extension image, ou hébergée sur le CDN cloudfront.
+        // (On ne matche PAS les URLs d'API higgsfield type /requests/{id}/status.)
         if (preg_match('#^https?://[^\s"\']+#i', $node)
-            && (preg_match('#\.(png|jpe?g|webp)(\?|$)#i', $node) || stripos($node, 'cloudfront') !== false || stripos($node, 'higgsfield') !== false)) {
+            && (preg_match('#\.(png|jpe?g|webp)(\?|$)#i', $node) || stripos($node, 'cloudfront') !== false)) {
             return $node;
         }
         return null;
