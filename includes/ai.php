@@ -259,7 +259,8 @@ function ai_poll_image(array $data, string $endpoint, string $auth): ?string
     $responseUrl = ai_find_key($data, ['response_url', 'responseUrl', 'result_url', 'resultUrl']);
     $id          = ai_find_key($data, ['request_id', 'requestId', 'generation_id', 'generationId', 'job_id', 'id']);
     $host        = preg_match('#^(https?://[^/]+)#i', $endpoint, $m) ? $m[1] : '';
-    $poll        = $statusUrl ?: (($id && $host) ? $host . '/v1/requests/' . rawurlencode($id) . '/status' : null);
+    // Status officiel : GET /requests/{id}/status (SANS /v1/).
+    $poll        = $statusUrl ?: (($id && $host) ? $host . '/requests/' . rawurlencode($id) . '/status' : null);
     if (!$poll && !$responseUrl) { return null; }
 
     $deadline = time() + 150;
@@ -327,28 +328,24 @@ function ai_image_probe(): string
 {
     if (ai_img_key() === '') { return 'Aucune clé Higgsfield enregistrée.'; }
     $auth = 'Authorization: Key ' . ai_img_key();
-    $host = 'https://platform.higgsfield.ai';
-    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 240);
+    $host = 'https://platform.higgsfield.ai'; // SANS /v1/ (confirmé par l'API Reference).
+    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 150);
+    $body = json_encode(['prompt' => 'a red sports car at sunset, neon city', 'aspect_ratio' => '16:9']);
     $out  = [];
 
-    // 1) Quelle MÉTHODE veulent ces routes ? (l'en-tête Allow des 405 nous le dit)
-    foreach (['/v1/models', '/v1/model', '/v1/applications', '/v1/generate', '/v1/generations', '/v1/jobs', '/v1/image', '/v1/images'] as $p) {
-        [$c, $r, $a] = ai_probe_req('GET', $host . $p, $auth);
-        $out[] = "GET {$p} → {$c}" . ($a ? " [Allow: {$a}]" : '') . ' : ' . $clip($r);
+    // Chemins text-to-image probables (structure /{famille}/{version}/{variante}, SANS /v1/).
+    $paths = [
+        '/soul-cinema', '/soul/cinema', '/soul_cinema', '/soul-cinema/v1',
+        '/soul-character', '/soul/character', '/popcorn/auto', '/popcorn-auto', '/popcorn',
+        '/soul', '/text-to-image', '/image/text-to-image',
+        '/bytedance/seedream/v4/text-to-image', '/flux-pro/kontext/max/text-to-image',
+    ];
+    foreach ($paths as $p) {
+        [$c, $r, $a] = ai_probe_req('POST', $host . $p, $auth, $body);
+        $mark = (!in_array($c, [404, 0], true)) ? '   <<< ✅ RÉPOND' : '';
+        $out[] = str_pad($p, 40) . " → {$c}" . ($a ? " [Allow: {$a}]" : '') . ' : ' . $clip($r) . $mark;
     }
-    // 2) POST pour LISTER les modèles (GET était 405 → POST liste peut-être).
-    foreach (['/v1/models', '/v1/applications'] as $p) {
-        [$c, $r] = ai_probe_req('POST', $host . $p, $auth, '{}');
-        $out[] = "POST {$p} {} → {$c} : " . $clip($r);
-    }
-    // 3) Génération avec le MODÈLE DANS LE CORPS (au lieu de l'URL).
-    $body = json_encode(['model' => 'seedream_v4_5', 'prompt' => 'a red sports car at sunset', 'aspect_ratio' => '16:9']);
-    foreach (['/v1/text2image', '/v1/generate', '/v1/generations', '/v1/image', '/v1/images'] as $p) {
-        [$c, $r] = ai_probe_req('POST', $host . $p, $auth, $body);
-        $mark = (!in_array($c, [404, 405, 0], true)) ? '   <<< ✅' : '';
-        $out[] = "POST {$p} (model dans le corps) → {$c} : " . $clip($r) . $mark;
-    }
-    return implode("\n", $out);
+    return "POST {$host}{chemin} (sans /v1/) :\n" . implode("\n", $out);
 }
 
 /** Test synchrone : génère UNE image et renvoie un diagnostic lisible pour l'admin. */
