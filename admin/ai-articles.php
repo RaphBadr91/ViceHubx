@@ -46,6 +46,8 @@ if ($act === 'save_auto') {
     $bt = (int) ($_POST['ai_auto_batch'] ?? 10);
     set_setting('ai_auto_batch', (string) (in_array($bt, [5, 10, 15, 20], true) ? $bt : 10));
     set_setting('ai_auto_status', ($_POST['ai_auto_status'] ?? 'published') === 'draft' ? 'draft' : 'published');
+    $atone = (string) ($_POST['ai_auto_tone'] ?? 'multi');
+    set_setting('ai_auto_tone', ($atone === 'multi' || in_array($atone, array_keys(ai_tones()), true)) ? $atone : 'multi');
     $flash = ['ok', '✅ Publication automatique enregistrée.'];
 }
 // --- Test manuel du déclencheur auto (génère le lot dû maintenant) ---
@@ -60,10 +62,11 @@ if ($act === 'generate') {
     $count  = (int) ($_POST['count'] ?? 0);
     $count  = in_array($count, [5, 10, 15, 20], true) ? $count : 5;
     $status = in_array($_POST['status'] ?? '', ['draft', 'pending', 'published'], true) ? $_POST['status'] : 'draft';
+    $tone   = (string) ($_POST['tone'] ?? 'multi');
     if (!ai_enabled()) {
         $flash = ['err', 'Connecte d’abord ta clé API Anthropic ci-dessous.'];
     } else {
-        ai_queue_add($count, $status);          // met en file
+        ai_queue_add($count, $status, $tone);   // met en file (statut + personnalité)
         $spawned = ai_spawn_worker();           // lance le worker détaché (arrière-plan)
         $lbl = ['draft' => 'en brouillon', 'pending' => 'programmé(s) (CRON)', 'published' => 'à publier'][$status] ?? '';
         $flash = ['ok', "🚀 {$count} article(s) {$lbl} en génération EN ARRIÈRE-PLAN. "
@@ -165,6 +168,14 @@ $imgRes      = (string) get_setting('ai_image_resolution', '');
                     <option value="published">🚀 Publiée (tout de suite)</option>
                 </select>
             </label>
+            <label>Personnalité (ton)
+                <select name="tone" style="display:block;margin-top:.3rem">
+                    <option value="multi">🎲 Multi — change à chaque article</option>
+                    <?php foreach (ai_tone_labels() as $tk => $tl): ?>
+                        <option value="<?= e($tk) ?>"><?= e($tl) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
             <div>
                 <span class="muted" style="display:block;margin-bottom:.3rem">Nombre d’articles</span>
                 <div style="display:flex;gap:.5rem">
@@ -178,8 +189,9 @@ $imgRes      = (string) get_setting('ai_image_resolution', '');
         <?php if ($queue > 0): ?>
             <div class="alert alert--ok" style="margin:.9rem 0 0">⏳ <strong><?= $queue ?></strong> article(s) en cours de génération en arrière-plan… (recharge la page pour suivre)</div>
         <?php endif; ?>
-        <p class="muted" style="font-size:.82rem;margin:.8rem 0 0">💡 Articles longs (~2000 mots, tons variés). La génération tourne <strong>en arrière-plan</strong> : le site reste fluide, tu peux fermer la page. Statuts :
-            <strong>Brouillon</strong> = à relire · <strong>Programmée CRON</strong> = stockés puis publiés <strong>1 par 1</strong> selon l'intervalle réglé plus bas · <strong>Publiée</strong> = mise en ligne immédiate.</p>
+        <p class="muted" style="font-size:.82rem;margin:.8rem 0 0">💡 Articles longs (~2000 mots), <strong>vérifiés</strong> (faits confirmés vs rumeurs clairement distingués). La génération tourne <strong>en arrière-plan</strong> : le site reste fluide, tu peux fermer la page.<br>
+            🎭 <strong>Personnalité</strong> : choisis l'une des 5 (📰 Journaliste, 🎮 Joueur, 🎓 Connaisseur, ❤️ Passionné, 🤓 Geek) pour tout le lot, ou <strong>🎲 Multi</strong> = chaque article prend une personnalité différente (rotation), pour toucher un max de fans.<br>
+            Statuts : <strong>Brouillon</strong> = à relire · <strong>Programmée CRON</strong> = publiés <strong>1 par 1</strong> selon l'intervalle · <strong>Publiée</strong> = en ligne tout de suite.</p>
     </div>
 
     <!-- PUBLICATION AUTOMATIQUE -->
@@ -202,6 +214,15 @@ $imgRes      = (string) get_setting('ai_image_resolution', '');
                 <select name="ai_auto_status" style="display:block;margin-top:.3rem">
                     <option value="published" <?= $autoStatus === 'published' ? 'selected' : '' ?>>Publier directement</option>
                     <option value="draft" <?= $autoStatus === 'draft' ? 'selected' : '' ?>>Brouillon (à relire)</option>
+                </select>
+            </label>
+            <?php $autoTone = (string) get_setting('ai_auto_tone', 'multi'); ?>
+            <label>Personnalité
+                <select name="ai_auto_tone" style="display:block;margin-top:.3rem">
+                    <option value="multi" <?= $autoTone === 'multi' ? 'selected' : '' ?>>🎲 Multi (rotation)</option>
+                    <?php foreach (ai_tone_labels() as $tk => $tl): ?>
+                        <option value="<?= e($tk) ?>" <?= $autoTone === $tk ? 'selected' : '' ?>><?= e($tl) ?></option>
+                    <?php endforeach; ?>
                 </select>
             </label>
             <button class="btn btn--primary" type="submit">Enregistrer</button>
