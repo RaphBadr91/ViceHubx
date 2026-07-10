@@ -38,6 +38,24 @@ if ($act === 'save_image') {
     $flash = ['ok', '🎨 Réglages illustrations IA enregistrés.'];
 }
 
+// --- Générer TOUTES les images manquantes (arrière-plan) ---
+if ($act === 'gen_all_images') {
+    if (!ai_img_enabled()) {
+        $flash = ['err', 'Active d’abord les illustrations IA (clé Higgsfield) ci-dessous.'];
+    } else {
+        $miss = ai_missing_image_count();
+        if ($miss === 0) {
+            $flash = ['ok', '✅ Tous les articles ont déjà une illustration sur-mesure.'];
+        } else {
+            set_setting('ai_img_total', (string) $miss);      // repère pour la barre de %
+            $spawned = ai_spawn_worker('ai-image-worker.php'); // worker détaché
+            $flash = ['ok', "🎨 Génération de {$miss} image(s) manquante(s) lancée EN ARRIÈRE-PLAN. "
+                . 'Le site reste fluide — recharge cette page pour suivre la progression.'
+                . ($spawned ? '' : ' (worker auto indisponible : branche ai-image-worker.php sur un cron.)')];
+        }
+    }
+}
+
 // --- Publication automatique (réglages) ---
 if ($act === 'save_auto') {
     set_setting('ai_auto_enabled', !empty($_POST['ai_auto_enabled']) ? '1' : '0');
@@ -136,6 +154,8 @@ $imgOn       = (int) get_setting('ai_image_enabled', '0') === 1;
 $hasImgKey   = ai_img_key() !== '';
 $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
 $imgRes      = (string) get_setting('ai_image_resolution', '');
+$imgMissing  = ai_missing_image_count();
+$imgProg     = ai_img_progress();
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
@@ -286,6 +306,35 @@ $imgRes      = (string) get_setting('ai_image_resolution', '');
             </label>
             <button class="btn btn--primary" type="submit">Enregistrer</button>
         </form>
+        <!-- Générer toutes les images manquantes des articles -->
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd)">
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between">
+                <div>
+                    <strong>🖼️ Illustrations manquantes : <?= (int) $imgMissing ?></strong>
+                    <p class="muted" style="font-size:.82rem;margin:.25rem 0 0">Articles sans image sur-mesure (vides ou image de la banque). Génère une vraie illustration Higgsfield pour chacun (~0,09 $/image).</p>
+                </div>
+                <form method="post" style="margin:0">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="gen_all_images">
+                    <button class="btn btn--primary" type="submit" <?= ($imgEnabled && $imgMissing > 0) ? '' : 'disabled' ?>>🎨 Générer toutes les images manquantes<?= $imgMissing > 0 ? ' (' . (int) $imgMissing . ')' : '' ?></button>
+                </form>
+            </div>
+            <?php if (!$imgEnabled): ?>
+                <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">⚠️ Active les illustrations IA + colle ta clé Higgsfield pour utiliser ce bouton.</p>
+            <?php endif; ?>
+            <?php if ($imgProg['total'] > 0): ?>
+                <div style="margin-top:.8rem">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">
+                        <strong style="font-size:.88rem">Génération des images en cours…</strong>
+                        <span class="muted" style="font-size:.85rem"><?= (int) $imgProg['done'] ?>/<?= (int) $imgProg['total'] ?> · <strong style="color:#7a5cff"><?= (int) $imgProg['percent'] ?>%</strong></span>
+                    </div>
+                    <div style="height:14px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--glass-brd)">
+                        <div style="height:100%;width:<?= (int) $imgProg['percent'] ?>%;border-radius:99px;background:linear-gradient(90deg,#7a5cff,#2bd6ff);transition:width .4s ease"></div>
+                    </div>
+                    <p class="muted" style="font-size:.8rem;margin:.4rem 0 0">Il reste <strong><?= (int) $imgProg['remaining'] ?></strong> image(s) à générer. Recharge la page pour suivre.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+
         <details style="margin-top:.8rem">
             <summary style="cursor:pointer;font-size:.85rem" class="muted">⚙️ Endpoint avancé (facultatif)</summary>
             <form method="post" style="margin-top:.6rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">

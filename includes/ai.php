@@ -264,6 +264,78 @@ function ai_download_as_webp(string $url, string $slug): ?string
     return $ok ? '/' . $rel : null;
 }
 
+/** Compte les articles SANS illustration sur-mesure (vide, ou image de la banque). */
+function ai_missing_image_count(): int
+{
+    return (int) db()->query(
+        "SELECT COUNT(*) FROM articles WHERE image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%'"
+    )->fetchColumn();
+}
+
+/**
+ * Génère (Higgsfield) les illustrations MANQUANTES des articles, en arrière-plan.
+ * Un verrou évite les doublons. $budget=0 → traite tout (CLI). Les échecs isolés
+ * sont sautés (on passe à l'article suivant) ; on stoppe si trop d'échecs (clé/quota).
+ * @return int nombre d'images générées
+ */
+function ai_generate_missing_images(int $budgetSeconds = 0): int
+{
+    if (!ai_img_enabled()) { return 0; }
+    $lock = (int) get_setting('ai_img_worker_lock', '0');
+    if (time() - $lock < 600) { return 0; }          // verrou 10 min (génération lente)
+    set_setting('ai_img_worker_lock', (string) time());
+
+    $deadline  = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
+    $done = 0; $fail = 0; $failedIds = [];
+    try {
+        while (time() < $deadline && $fail < 5) {
+            $excl = $failedIds ? (' AND id NOT IN (' . implode(',', array_map('intval', $failedIds)) . ')') : '';
+            $art  = db()->query(
+                "SELECT id, slug, title, image_prompt FROM articles
+                 WHERE (image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%')$excl
+                 ORDER BY (status='published') DESC, id DESC LIMIT 1"
+            )->fetch();
+            if (!$art) { break; }
+            $prompt = trim((string) $art['image_prompt']);
+            if ($prompt === '') {
+                $prompt = 'Grand Theft Auto VI, Vice City, ' . mb_substr((string) $art['title'], 0, 120)
+                    . ', 1980s Miami neon, cinematic, photorealistic, 16:9, no text, no watermark';
+            }
+            $slug = (string) ($art['slug'] ?: ('article-' . (int) $art['id']));
+            $path = ai_generate_image($prompt, $slug);
+            if ($path) {
+                db()->prepare('UPDATE articles SET image=? WHERE id=?')->execute([$path, (int) $art['id']]);
+                $done++;
+                set_setting('ai_img_worker_lock', (string) time()); // rafraîchit le verrou
+            } else {
+                $fail++; $failedIds[] = (int) $art['id'];            // saute cet article
+            }
+        }
+    } finally {
+        set_setting('ai_img_worker_lock', '0');                     // libère
+    }
+    return $done;
+}
+
+/**
+ * Progression du remplissage des illustrations manquantes (barre de %).
+ * Repère haut (ai_img_total) posé au lancement, remis à zéro une fois terminé.
+ * @return array{total:int,remaining:int,done:int,percent:int}
+ */
+function ai_img_progress(): array
+{
+    $remaining = ai_missing_image_count();
+    $total = (int) get_setting('ai_img_total', '0');
+    if ($remaining <= 0) {
+        if ($total !== 0) { set_setting('ai_img_total', '0'); }
+        return ['total' => 0, 'remaining' => 0, 'done' => 0, 'percent' => 100];
+    }
+    if ($remaining > $total) { $total = $remaining; set_setting('ai_img_total', (string) $total); }
+    $doneN   = max(0, $total - $remaining);
+    $percent = $total > 0 ? (int) round($doneN / $total * 100) : 0;
+    return ['total' => $total, 'remaining' => $remaining, 'done' => $doneN, 'percent' => $percent];
+}
+
 /** Pool de sujets de la niche (rotation pour varier les angles). */
 function ai_topics(): array
 {
@@ -557,9 +629,10 @@ function ai_drain_queue(int $budgetSeconds = 0): int
     return $done;
 }
 
-/** Lance le worker de génération en ARRIÈRE-PLAN (best-effort, sans bloquer la page). */
-function ai_spawn_worker(): bool
+/** Lance un worker en ARRIÈRE-PLAN (best-effort, sans bloquer la page). */
+function ai_spawn_worker(string $script = 'ai-worker.php'): bool
 {
+    $script = basename($script); // sécurité : pas de traversée de chemin
     $disabled = array_map('trim', explode(',', (string) ini_get('disable_functions')));
     if (!function_exists('shell_exec') || in_array('shell_exec', $disabled, true)) { return false; }
     $php = null;
@@ -568,7 +641,7 @@ function ai_spawn_worker(): bool
     }
     if ($php === null) { return false; }
     // nohup + & → le worker survit à la fin de la requête web (arrière-plan réel).
-    $cmd = escapeshellarg($php) . ' ' . escapeshellarg(ROOT_PATH . '/ai-worker.php') . ' >/dev/null 2>&1';
+    $cmd = escapeshellarg($php) . ' ' . escapeshellarg(ROOT_PATH . '/' . $script) . ' >/dev/null 2>&1';
     @shell_exec('nohup ' . $cmd . ' & echo ok');
     return true;
 }
