@@ -331,12 +331,17 @@ function ai_image_probe(): string
     $body = json_encode(['prompt' => 'a red sports car at sunset, neon city', 'aspect_ratio' => '16:9']);
     $out  = [];
 
-    // Chemins text-to-image probables (structure /{famille}/{version}/{variante}, SANS /v1/).
+    // Modèles text-to-image ÉCONOMIQUES à tester (le moins cher qui répond 200 gagne).
     $paths = [
-        '/soul-cinema', '/soul/cinema', '/soul_cinema', '/soul-cinema/v1',
-        '/soul-character', '/soul/character', '/popcorn/auto', '/popcorn-auto', '/popcorn',
-        '/soul', '/text-to-image', '/image/text-to-image',
-        '/bytedance/seedream/v4/text-to-image', '/flux-pro/kontext/max/text-to-image',
+        '/flux/schnell/text-to-image',            // Flux Schnell — le moins cher
+        '/flux-1/schnell/text-to-image',
+        '/flux/dev/text-to-image',                // Flux Dev — bon marché
+        '/higgsfield-ai/popcorn/auto',            // Popcorn Auto (natif Higgsfield)
+        '/higgsfield-ai/popcorn',
+        '/flux-pro/kontext/text-to-image',        // Kontext Pro (moins cher que Max)
+        '/flux-pro/v1.1/text-to-image',
+        '/higgsfield-ai/soul/cinema',             // Soul Cinema (cinématique)
+        '/flux-pro/kontext/max/text-to-image',    // référence qui marche déjà (200)
     ];
     foreach ($paths as $p) {
         [$c, $r, $a] = ai_probe_req('POST', $host . $p, $auth, $body);
