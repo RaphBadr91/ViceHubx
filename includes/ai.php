@@ -136,10 +136,10 @@ function ai_img_enabled(): bool
         && function_exists('imagewebp');
 }
 
-/** Endpoint text-to-image Higgsfield (réglable si l'API évolue). Seedream 4 par défaut. */
+/** Endpoint text-to-image Higgsfield (réglable). Soul Cinema par défaut (stills cinéma). */
 function ai_img_endpoint(): string
 {
-    return get_setting('ai_image_endpoint', '') ?: 'https://platform.higgsfield.ai/v1/bytedance/seedream/v4/text-to-image';
+    return get_setting('ai_image_endpoint', '') ?: 'https://platform.higgsfield.ai/higgsfield-ai/soul/cinema';
 }
 
 /** Cherche récursivement la 1re URL d'image dans une réponse JSON (schéma tolérant). */
@@ -185,10 +185,10 @@ function ai_generate_image(string $prompt, string $slug): ?string
     $auth     = 'Authorization: Key ' . ai_img_key();
     try {
         // Corps À PLAT (format de l'API/SDK officiel Higgsfield), sans enveloppe "input".
+        // Soul Cinema : prompt + aspect_ratio (quality optionnel, défaut 2k côté API).
         $body = ['prompt' => $prompt, 'aspect_ratio' => '16:9'];
-        $res = strtoupper(trim((string) get_setting('ai_image_resolution', '')));
-        if (!in_array($res, ['1K', '2K', '4K'], true)) { $res = '2K'; } // Seedream : 1K/2K/4K
-        $body['resolution'] = $res;
+        $q = strtolower(trim((string) get_setting('ai_image_resolution', '')));
+        if (in_array($q, ['1.5k', '2k'], true)) { $body['quality'] = $q; } // Soul Cinema : 1.5k/2k
         $payload = json_encode($body);
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
