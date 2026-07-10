@@ -300,33 +300,55 @@ function ai_poll_image(array $data, string $endpoint, string $auth): ?string
  * SONDE l'API Higgsfield : teste plusieurs structures d'URL/modèles et renvoie un
  * rapport (code HTTP + début de réponse) pour trouver le bon endpoint en un coup.
  */
+/** Une requête de sondage : renvoie [code, body, allowHeader]. */
+function ai_probe_req(string $method, string $url, string $auth, ?string $body = null): array
+{
+    $allow = '';
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST  => $method,
+        CURLOPT_HTTPHEADER     => ['content-type: application/json', 'accept: application/json', $auth],
+        CURLOPT_TIMEOUT        => 15,
+        CURLOPT_CONNECTTIMEOUT => 8,
+        CURLOPT_HEADERFUNCTION => function ($ch, $h) use (&$allow) {
+            if (stripos($h, 'allow:') === 0) { $allow = trim(substr($h, 6)); }
+            return strlen($h);
+        },
+    ]);
+    if ($body !== null) { curl_setopt($ch, CURLOPT_POSTFIELDS, $body); }
+    $r = curl_exec($ch);
+    $c = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return [$c, (string) $r, $allow];
+}
+
 function ai_image_probe(): string
 {
     if (ai_img_key() === '') { return 'Aucune clé Higgsfield enregistrée.'; }
     $auth = 'Authorization: Key ' . ai_img_key();
-    $mini = json_encode(['prompt' => 'a red sports car at sunset', 'aspect_ratio' => '16:9']);
-    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 110);
-    $base = 'https://platform.higgsfield.ai/v1/';
-    // Identifiants de modèles issus du catalogue Higgsfield à tester en POST /v1/{id}.
-    $models = [
-        'nano_banana_2', 'nano_banana_pro', 'nano_banana', 'soul_2', 'soul_v2',
-        'seedream_v4_5', 'seedream_v5_pro', 'seedream_v5_lite', 'gpt_image_2',
-        'cinematic_studio_2_5', 'flux_2', 'flux_kontext', 'kling_omni_image',
-        'grok_image', 'z_image', 'recraft_v4_1', 'image_auto', 'soul_cinematic',
-    ];
-    $out = [];
-    foreach ($models as $id) {
-        $ch = curl_init($base . rawurlencode($id));
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['content-type: application/json', 'accept: application/json', $auth],
-            CURLOPT_POSTFIELDS => $mini, CURLOPT_TIMEOUT => 15, CURLOPT_CONNECTTIMEOUT => 8,
-        ]);
-        $r = curl_exec($ch); $c = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
-        $mark = ($c !== 404 && $c !== 0) ? '   <<< ✅ CE MODÈLE RÉPOND' : '';
-        $out[] = str_pad($id, 22) . " → {$c} : " . $clip($r) . $mark;
+    $host = 'https://platform.higgsfield.ai';
+    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 240);
+    $out  = [];
+
+    // 1) Quelle MÉTHODE veulent ces routes ? (l'en-tête Allow des 405 nous le dit)
+    foreach (['/v1/models', '/v1/model', '/v1/applications', '/v1/generate', '/v1/generations', '/v1/jobs', '/v1/image', '/v1/images'] as $p) {
+        [$c, $r, $a] = ai_probe_req('GET', $host . $p, $auth);
+        $out[] = "GET {$p} → {$c}" . ($a ? " [Allow: {$a}]" : '') . ' : ' . $clip($r);
     }
-    return "POST " . $base . "{modele} :\n" . implode("\n", $out);
+    // 2) POST pour LISTER les modèles (GET était 405 → POST liste peut-être).
+    foreach (['/v1/models', '/v1/applications'] as $p) {
+        [$c, $r] = ai_probe_req('POST', $host . $p, $auth, '{}');
+        $out[] = "POST {$p} {} → {$c} : " . $clip($r);
+    }
+    // 3) Génération avec le MODÈLE DANS LE CORPS (au lieu de l'URL).
+    $body = json_encode(['model' => 'seedream_v4_5', 'prompt' => 'a red sports car at sunset', 'aspect_ratio' => '16:9']);
+    foreach (['/v1/text2image', '/v1/generate', '/v1/generations', '/v1/image', '/v1/images'] as $p) {
+        [$c, $r] = ai_probe_req('POST', $host . $p, $auth, $body);
+        $mark = (!in_array($c, [404, 405, 0], true)) ? '   <<< ✅' : '';
+        $out[] = "POST {$p} (model dans le corps) → {$c} : " . $clip($r) . $mark;
+    }
+    return implode("\n", $out);
 }
 
 /** Test synchrone : génère UNE image et renvoie un diagnostic lisible pour l'admin. */
