@@ -122,7 +122,10 @@ function ai_pick_image(string $theme, string $title = ''): string
 /** Clé API Higgsfield (env prioritaire, sinon réglage admin). Format KEY_ID:KEY_SECRET. */
 function ai_img_key(): string
 {
-    return getenv('HIGGSFIELD_KEY') ?: (string) get_setting('higgsfield_key', '');
+    $k = getenv('HIGGSFIELD_KEY') ?: (string) get_setting('higgsfield_key', '');
+    $k = trim($k, " \t\n\r\0\x0B\"'");                 // retire espaces/guillemets parasites
+    $k = preg_replace('/^(Key|Bearer)\s+/i', '', $k);   // au cas où l'en-tête complet est collé
+    return (string) $k;
 }
 
 /** La génération d'illustration IA est-elle active ? (activée + clé + GD WebP). */
@@ -237,23 +240,33 @@ function ai_find_key($node, array $keys): ?string
     return null;
 }
 
-/** Cas API asynchrone : interroge le status jusqu'à obtenir l'URL de l'image (≤150 s). */
+/** GET JSON authentifié : renvoie [raw|false, code]. */
+function ai_http_get(string $url, string $auth): array
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['accept: application/json', $auth], CURLOPT_TIMEOUT => 30]);
+    $raw  = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return [$raw, $code];
+}
+
+/** Cas API asynchrone : interroge status/response URL jusqu'à obtenir l'image (≤150 s). */
 function ai_poll_image(array $data, string $endpoint, string $auth): ?string
 {
-    $statusUrl = ai_find_key($data, ['status_url', 'statusUrl']);
-    $id        = ai_find_key($data, ['request_id', 'requestId', 'generation_id', 'generationId', 'job_id', 'id']);
-    $host      = preg_match('#^(https?://[^/]+)#i', $endpoint, $m) ? $m[1] : '';
-    $u         = $statusUrl ?: (($id && $host) ? $host . '/v1/requests/' . rawurlencode($id) . '/status' : null);
-    if (!$u) { return null; }
+    $statusUrl   = ai_find_key($data, ['status_url', 'statusUrl']);
+    $responseUrl = ai_find_key($data, ['response_url', 'responseUrl', 'result_url', 'resultUrl']);
+    $id          = ai_find_key($data, ['request_id', 'requestId', 'generation_id', 'generationId', 'job_id', 'id']);
+    $host        = preg_match('#^(https?://[^/]+)#i', $endpoint, $m) ? $m[1] : '';
+    $poll        = $statusUrl ?: (($id && $host) ? $host . '/v1/requests/' . rawurlencode($id) . '/status' : null);
+    if (!$poll && !$responseUrl) { return null; }
+
     $deadline = time() + 150;
     while (time() < $deadline) {
         sleep(3);
-        $ch = curl_init($u);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => ['accept: application/json', $auth], CURLOPT_TIMEOUT => 30]);
-        $raw  = curl_exec($ch);
-        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($raw === false || $code >= 400) { set_setting('ai_img_last_error', "Polling {$u} → HTTP {$code}"); return null; }
+        $target = $poll ?: $responseUrl;
+        [$raw, $code] = ai_http_get($target, $auth);
+        if ($raw === false || $code >= 400) { set_setting('ai_img_last_error', "Polling {$target} → HTTP {$code} — " . substr((string) $raw, 0, 200)); return null; }
         $d   = json_decode((string) $raw, true);
         $url = is_array($d) ? ai_find_image_url($d) : null;
         if ($url) { return $url; }
@@ -262,7 +275,23 @@ function ai_poll_image(array $data, string $endpoint, string $auth): ?string
             set_setting('ai_img_last_error', "Génération {$st} — " . substr((string) $raw, 0, 300));
             return null;
         }
+        if (in_array($st, ['completed', 'complete', 'succeeded', 'success', 'done'], true)) {
+            // Terminé : va chercher le résultat final si l'image n'est pas déjà là.
+            $ru = $responseUrl ?: ai_find_key($d, ['response_url', 'responseUrl', 'result_url', 'resultUrl']);
+            if ($ru) {
+                [$r2, $c2] = ai_http_get($ru, $auth);
+                if ($c2 < 400) {
+                    $d2 = json_decode((string) $r2, true);
+                    $u2 = is_array($d2) ? ai_find_image_url($d2) : null;
+                    if ($u2) { return $u2; }
+                    if (preg_match('#https?://[^\s"\']+\.(?:png|jpe?g|webp)#i', (string) $r2, $mm)) { return $mm[0]; }
+                }
+            }
+            set_setting('ai_img_last_error', "Génération terminée mais URL d'image introuvable — " . substr((string) $raw, 0, 300));
+            return null;
+        }
     }
+    set_setting('ai_img_last_error', 'Délai de génération dépassé (150 s) sans image.');
     return null;
 }
 

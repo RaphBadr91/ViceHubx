@@ -27,8 +27,14 @@ if ($act === 'save_key') {
 
 // --- Connexion de la clé Higgsfield (illustrations IA) ---
 if ($act === 'save_image') {
-    $hk = trim((string) ($_POST['higgsfield_key'] ?? ''));
-    if ($hk !== '') { set_setting('higgsfield_key', $hk); } // vide = on conserve l'existante
+    $strip = " \t\n\r\0\x0B\"'";
+    $hk = trim((string) ($_POST['higgsfield_key'] ?? ''), $strip);
+    $hs = trim((string) ($_POST['higgsfield_secret'] ?? ''), $strip);
+    if ($hk !== '' && $hs !== '') {
+        set_setting('higgsfield_key', $hk . ':' . $hs);       // Key ID + Secret → format attendu
+    } elseif ($hk !== '') {
+        set_setting('higgsfield_key', $hk);                    // clé déjà collée au format KEY:SECRET
+    } // les deux vides = on conserve l'existante
     $ep = trim((string) ($_POST['ai_image_endpoint'] ?? ''));
     set_setting('ai_image_endpoint', $ep);
     if (isset($_POST['ai_image_resolution'])) {
@@ -159,6 +165,7 @@ $prog = ai_sched_progress();
 $imgEnabled  = ai_img_enabled();
 $imgOn       = (int) get_setting('ai_image_enabled', '0') === 1;
 $hasImgKey   = ai_img_key() !== '';
+$imgKeyHasColon = $hasImgKey && strpos(ai_img_key(), ':') !== false;
 $imgEndpoint = (string) get_setting('ai_image_endpoint', '');
 $imgRes      = (string) get_setting('ai_image_resolution', '');
 $imgMissing  = ai_missing_image_count();
@@ -309,11 +316,17 @@ $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
             <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
                 <input type="checkbox" name="ai_image_enabled" value="1" style="width:auto" <?= $imgOn ? 'checked' : '' ?>> <strong>Activer</strong>
             </label>
-            <label style="flex:1;min-width:280px">Clé API Higgsfield <span class="muted">(format <code>KEY_ID:KEY_SECRET</code>)</span>
-                <input type="password" name="higgsfield_key" placeholder="<?= $hasImgKey ? '•••••••• (déjà enregistrée)' : 'xxxxxxxx:yyyyyyyy' ?>" autocomplete="off" style="display:block;width:100%;margin-top:.3rem">
-                <small class="muted">Laisse vide pour conserver la clé actuelle. Récupère la clé sur <a href="https://platform.higgsfield.ai" target="_blank" rel="noopener">platform.higgsfield.ai</a> (Settings → API keys). Ou variable d'env <code>HIGGSFIELD_KEY</code>.</small>
+            <label style="flex:1;min-width:220px">Clé API (Key ID)
+                <input type="text" name="higgsfield_key" placeholder="<?= $hasImgKey ? '•••••• (enregistrée)' : 'ex. hf_ab12cd34' ?>" autocomplete="off" style="display:block;width:100%;margin-top:.3rem">
+            </label>
+            <label style="flex:1;min-width:220px">Secret
+                <input type="password" name="higgsfield_secret" placeholder="<?= $hasImgKey ? '•••••• (si tu la ré-enregistres)' : 'ex. sk_9z8y7x6w' ?>" autocomplete="off" style="display:block;width:100%;margin-top:.3rem">
             </label>
             <button class="btn btn--primary" type="submit">Enregistrer</button>
+            <p class="muted" style="flex-basis:100%;margin:.2rem 0 0;font-size:.82rem">
+                Sur <a href="https://cloud.higgsfield.ai/api-keys" target="_blank" rel="noopener">cloud.higgsfield.ai/api-keys</a> → crée une clé : tu obtiens <strong>2 valeurs</strong> (une <em>Key</em> et un <em>Secret</em>). Colle-les dans les 2 champs ci-dessus. Laisse vide pour conserver l'actuelle.
+                <?php if ($hasImgKey && !$imgKeyHasColon): ?><br><span style="color:#ff6b6b">⚠️ La clé enregistrée n'a PAS de secret (pas de « : ») → c'est la cause du « Invalid credentials ». Ré-enregistre la Key <strong>et</strong> le Secret.</span><?php endif; ?>
+            </p>
         </form>
         <!-- Générer toutes les images manquantes des articles -->
         <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd)">
