@@ -298,6 +298,17 @@ function ai_cat_id(string $slug): int
     return $map[strtolower($slug)] ?? 5;
 }
 
+/** ID réel de la catégorie « Blog » (les articles IA y sont TOUS rangés). */
+function ai_blog_cat_id(): int
+{
+    static $id = null;
+    if ($id === null) {
+        $id = (int) (db()->query("SELECT id FROM categories WHERE slug='blog' LIMIT 1")->fetchColumn() ?: 0);
+        if ($id === 0) { $id = ai_cat_id('blog'); }
+    }
+    return $id;
+}
+
 /** Tons rédactionnels (pour toucher un maximum de lecteurs). */
 function ai_tones(): array
 {
@@ -388,7 +399,11 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
         return null;
     }
     $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
-    $pub = $status === 'published' ? date('Y-m-d H:i:s') : null;
+    // Publié → maintenant ; Programmé (pending) → prochain créneau CRON ; Brouillon → sans date.
+    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));
+    $pub = $status === 'published'
+        ? date('Y-m-d H:i:s')
+        : ($status === 'pending' ? ai_next_slot($interval) : null);
 
     // Illustration IA sur-mesure (Higgsfield) générée à la création, si activée.
     if (ai_img_enabled() && !empty($data['image_prompt'])) {
@@ -401,10 +416,41 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
          VALUES (?, \'fr\', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
     $st->execute([
-        ai_cat_id($data['category']), $data['title'], $slug, $data['excerpt'], $data['body'],
+        ai_blog_cat_id(), $data['title'], $slug, $data['excerpt'], $data['body'],
         $data['image'], $data['image_prompt'], $authorId, $status, $pub,
     ]);
     return (int) db()->lastInsertId();
+}
+
+/**
+ * Prochain créneau de publication programmée : juste après le dernier créneau
+ * déjà planifié (ou maintenant), + l'intervalle CRON. Espace les articles.
+ */
+function ai_next_slot(int $interval): string
+{
+    $interval = max(1, $interval);
+    $maxPlanned = db()->query("SELECT MAX(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL")->fetchColumn();
+    $base = max(time(), $maxPlanned ? (int) strtotime((string) $maxPlanned) : 0);
+    return date('Y-m-d H:i:s', $base + $interval * 3600);
+}
+
+/**
+ * Auto-réparation : attribue une date de publication espacée aux articles
+ * « Programmée CRON » qui n'en ont pas encore (published_at NULL).
+ */
+function ai_schedule_pending(int $interval): void
+{
+    $interval = max(1, $interval);
+    $rows = db()->query(
+        "SELECT id FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at IS NULL ORDER BY id ASC"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    if (!$rows) { return; }
+    $maxPlanned = db()->query("SELECT MAX(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL")->fetchColumn();
+    $base = max(time(), $maxPlanned ? (int) strtotime((string) $maxPlanned) : 0);
+    $upd = db()->prepare("UPDATE articles SET published_at=? WHERE id=?");
+    foreach ($rows as $i => $id) {
+        $upd->execute([date('Y-m-d H:i:s', $base + ($i + 1) * $interval * 3600), (int) $id]);
+    }
 }
 
 /** ID de l'auteur admin (pour attribuer les articles générés). */
@@ -489,34 +535,51 @@ function ai_auto_run(int $budgetSeconds = 130): array
     $drained = ai_drain_queue((int) ($budgetSeconds / 2));
     if ($drained > 0) { $msgs[] = "{$drained} article(s) généré(s) (file)"; }
 
-    // 2) DRIP de publication.
-    $interval  = max(1, (int) get_setting('ai_auto_interval', '6'));
-    $autoOn    = (int) get_setting('ai_auto_enabled', '0') === 1;
-    $last      = (int) get_setting('ai_auto_last', '0');
-    $now       = time();
-    $hasPending = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''")->fetchColumn();
+    // 2) PUBLICATION PROGRAMMÉE — respecte la DATE de chaque article.
+    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));
+    $autoOn   = (int) get_setting('ai_auto_enabled', '0') === 1;
+    $now      = time();
 
-    if (($autoOn || $hasPending > 0) && ($last === 0 || ($now - $last) >= $interval * 3600)) {
-        if ($hasPending > 0) {
-            // Publie le plus ancien article programmé (Programmée CRON).
-            $pid = (int) db()->query("SELECT id FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' ORDER BY id ASC LIMIT 1")->fetchColumn();
-            db()->prepare("UPDATE articles SET status='published', published_at=COALESCE(published_at, NOW()) WHERE id=?")->execute([$pid]);
-            set_setting('ai_auto_last', (string) $now);
-            $msgs[] = "1 article programmé publié";
-        } elseif ($autoOn) {
-            $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
-            $tones = array_keys(ai_tones());
-            try {
-                $id = null; $t = 0;
-                while (!$id && $t < 3) { $id = ai_save_article(ai_generate_article(null, $tones[array_rand($tones)]), $st, ai_admin_author_id()); $t++; }
-                if ($id) { set_setting('ai_auto_last', (string) $now); $msgs[] = '1 article ' . ($st === 'published' ? 'publié' : 'en brouillon'); }
-            } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
-        }
+    // Auto-répare : donne une date espacée aux articles programmés sans date.
+    ai_schedule_pending($interval);
+
+    // Publie TOUS les articles programmés dont l'heure prévue est arrivée.
+    $due = db()->query(
+        "SELECT id FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at IS NOT NULL AND published_at <= NOW() ORDER BY published_at ASC"
+    )->fetchAll(PDO::FETCH_COLUMN);
+    if ($due) {
+        $in = implode(',', array_map('intval', $due));
+        db()->exec("UPDATE articles SET status='published' WHERE id IN ($in)");
+        set_setting('ai_auto_last', (string) $now);
+        $msgs[] = count($due) . ' article(s) programmé(s) publié(s)';
+    }
+
+    // Génération auto : si activée et plus AUCUN article programmé en attente,
+    // produit 1 article frais par intervalle.
+    $last       = (int) get_setting('ai_auto_last', '0');
+    $stillSched = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''")->fetchColumn();
+    if ($autoOn && $stillSched === 0 && ($last === 0 || ($now - $last) >= $interval * 3600)) {
+        $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
+        $tones = array_keys(ai_tones());
+        try {
+            $id = null; $t = 0;
+            while (!$id && $t < 3) { $id = ai_save_article(ai_generate_article(null, $tones[array_rand($tones)]), $st, ai_admin_author_id()); $t++; }
+            if ($id) { set_setting('ai_auto_last', (string) $now); $msgs[] = '1 article ' . ($st === 'published' ? 'publié' : 'en brouillon'); }
+        } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
     }
 
     if (!$msgs) {
-        $nextIn = ($last > 0) ? max(0, $interval * 3600 - ($now - $last)) : 0;
-        return ['generated' => 0, 'message' => '✓ À jour.' . ($autoOn || $hasPending ? ' Prochain dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.' : '')];
+        // Prochain article programmé (date la plus proche à venir).
+        $next = db()->query("SELECT MIN(published_at) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at > NOW()")->fetchColumn();
+        $tail = '';
+        if ($next) {
+            $mins = max(1, (int) ceil((strtotime((string) $next) - $now) / 60));
+            $tail = ' Prochain le ' . date('d/m à H:i', strtotime((string) $next)) . " (~{$mins} min).";
+        } elseif ($autoOn) {
+            $nextIn = ($last > 0) ? max(0, $interval * 3600 - ($now - $last)) : 0;
+            $tail = ' Prochain dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.';
+        }
+        return ['generated' => 0, 'message' => '✓ À jour.' . $tail];
     }
     return ['generated' => $drained + 1, 'message' => '✅ ' . implode(' · ', $msgs) . '.'];
 }

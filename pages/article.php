@@ -4,8 +4,16 @@ require_once dirname(__DIR__) . '/config/config.php';
 $slug = trim((string) ($_GET['slug'] ?? ''));
 $article = $slug !== '' ? get_article_by_slug($slug) : null;
 
-// Article introuvable ou non publié → 404 propre
-if (!$article || $article['status'] !== 'published') {
+// Aperçu admin : un administrateur connecté peut LIRE un article non publié
+// (brouillon / programmé) avant de le mettre en ligne.
+$is_preview = $article && $article['status'] !== 'published'
+    && function_exists('is_admin') && is_logged_in() && is_admin();
+if ($is_preview) {
+    $ROBOTS = 'noindex, nofollow';
+}
+
+// Article introuvable ou non publié → 404 propre (sauf aperçu admin)
+if (!$article || ($article['status'] !== 'published' && !$is_preview)) {
     http_response_code(404);
     $SEO_TITLE = '404 — ' . APP_NAME;
     $ROBOTS = 'noindex, follow';
@@ -25,8 +33,9 @@ $safe_body = strip_tags(
 );
 // Maillage interne automatique (liens vers pages piliers) — sûr, après strip_tags
 $safe_body = internal_autolink($safe_body);
-// Encart Boutique (CTA wallpaper) inséré au cœur de l'article pour inciter à l'achat
-$safe_body = inject_after_paragraph($safe_body, 2, article_shop_cta('full'));
+// PUBS INTERNES (3 à 6) réparties dans l'article : Boutique / Forum / Blog,
+// toujours en rapport avec le sujet pour rester cohérent et monétiser sans gêner.
+$safe_body = inject_internal_ads($safe_body, $article);
 
 // Tags
 $tstmt = db()->prepare(
@@ -85,6 +94,12 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section" style="max-width:820px">
+    <?php if (!empty($is_preview)): ?>
+        <div style="background:linear-gradient(90deg,#ff9f1c,#ff2e88);color:#0d0018;font-weight:800;padding:.6rem 1rem;border-radius:12px;margin-bottom:1rem;text-align:center">
+            👁️ APERÇU ADMIN — article « <?= e($article['status'] === 'pending' ? 'Programmé' : 'Brouillon') ?> », non visible par le public.
+            <a href="<?= e(url('admin/articles.php')) ?>" style="color:#0d0018;text-decoration:underline">Retour à la gestion</a>
+        </div>
+    <?php endif; ?>
     <a class="link-all" href="<?= e(with_lang(url('pages/' . ($article['category_slug'] ?? 'news') . '.php'))) ?>">← <?= e($article['category_name'] ?? t('nav_news')) ?></a>
 
     <div style="margin:.8rem 0 1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">

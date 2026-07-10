@@ -1141,6 +1141,136 @@ function inject_after_paragraph(string $html, int $after, string $insert): strin
     return $out;
 }
 
+/** Mots-clés significatifs d'un texte (pour lier pubs internes au sujet de l'article). */
+function article_keywords(string $text, int $min = 4, int $max = 6): array
+{
+    $text = mb_strtolower(strip_tags($text));
+    $text = preg_replace('/[^a-zà-ÿ0-9\s]/u', ' ', $text) ?? '';
+    $stop = ['avec', 'pour', 'dans', 'les', 'des', 'une', 'que', 'qui', 'sur', 'par', 'plus',
+        'vice', 'city', 'sont', 'cette', 'vos', 'leur', 'tout', 'tous', 'est', 'son', 'ses',
+        'aux', 'the', 'and', 'gta', 'nous', 'vous', 'être', 'faire', 'comme', 'entre', 'ainsi'];
+    $out = [];
+    foreach (preg_split('/\s+/', $text) ?: [] as $w) {
+        if (mb_strlen($w) >= $min && !in_array($w, $stop, true) && !ctype_digit($w)) {
+            $out[$w] = true;
+        }
+    }
+    return array_slice(array_keys($out), 0, $max);
+}
+
+/** Encart FORUM lié à l'article : un sujet pertinent, sinon le plus actif. */
+function article_forum_cta(array $article): string
+{
+    static $shown = [];
+    try {
+        $fr = lang() === 'fr';
+        $kw = article_keywords((string) ($article['title'] ?? '') . ' ' . (string) ($article['excerpt'] ?? ''));
+        $excl = $shown ? (' AND t.id NOT IN (' . implode(',', array_map('intval', $shown)) . ')') : '';
+        $thread = null;
+        if ($kw) {
+            $likes = []; $args = [];
+            foreach ($kw as $w) { $likes[] = 't.title LIKE ?'; $args[] = '%' . $w . '%'; }
+            $st = db()->prepare(
+                "SELECT t.id, t.title, (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id=t.id) AS replies
+                 FROM forum_threads t WHERE (" . implode(' OR ', $likes) . ")$excl
+                 ORDER BY replies DESC, t.last_post_at DESC LIMIT 1"
+            );
+            $st->execute($args);
+            $thread = $st->fetch() ?: null;
+        }
+        if (!$thread) {
+            $thread = db()->query(
+                "SELECT t.id, t.title, (SELECT COUNT(*) FROM forum_posts p WHERE p.thread_id=t.id) AS replies
+                 FROM forum_threads t WHERE 1=1" . ($shown ? ' AND t.id NOT IN (' . implode(',', array_map('intval', $shown)) . ')' : '') . "
+                 ORDER BY t.pinned DESC, replies DESC, t.last_post_at DESC LIMIT 1"
+            )->fetch() ?: null;
+        }
+        if (!$thread) { return ''; }
+        $shown[] = (int) $thread['id'];
+        $url = with_lang(url('pages/forum-thread.php?id=' . (int) $thread['id']));
+        $rep = (int) $thread['replies'];
+        $msg = $fr
+            ? 'La discussion <strong>« ' . e($thread['title']) . ' »</strong> anime la communauté' . ($rep > 0 ? ' (' . $rep . ' réponses)' : '') . '. Viens donner ton avis&nbsp;!'
+            : 'The thread <strong>“' . e($thread['title']) . '”</strong> is buzzing' . ($rep > 0 ? ' (' . $rep . ' replies)' : '') . '. Jump in&nbsp;!';
+        return '<aside class="art-cta art-cta--inline">'
+            . '<span class="art-cta__tag">💬 ' . ($fr ? 'Forum ViceHub X' : 'ViceHub X Forum') . '</span>'
+            . '<p>' . $msg . '</p>'
+            . '<a class="btn btn--primary" href="' . e($url) . '">' . ($fr ? 'Rejoindre la discussion' : 'Join the discussion') . ' →</a>'
+            . '</aside>';
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+/** Encart « À lire aussi » : un autre article (même catégorie, sinon Blog). */
+function article_blog_cta(array $article): string
+{
+    static $shown = [];
+    try {
+        $fr = lang() === 'fr';
+        $lang = (string) ($article['lang'] ?? lang());
+        $selfId = (int) ($article['id'] ?? 0);
+        $cats = array_values(array_unique(array_filter([(string) ($article['category_slug'] ?? ''), 'blog', ''])));
+        $pick = null;
+        foreach ($cats as $cat) {
+            $rows = get_articles($cat !== '' ? ['category' => $cat, 'lang' => $lang, 'limit' => 12] : ['lang' => $lang, 'limit' => 12]);
+            foreach ($rows as $r) {
+                if ((int) $r['id'] !== $selfId && !in_array((int) $r['id'], $shown, true)) { $pick = $r; break 2; }
+            }
+        }
+        if (!$pick) { return ''; }
+        $shown[] = (int) $pick['id'];
+        $url = with_lang(url('pages/article.php?slug=' . urlencode((string) $pick['slug'])));
+        $tease = mb_substr(strip_tags((string) ($pick['excerpt'] ?? '')), 0, 120);
+        return '<aside class="art-cta art-cta--inline">'
+            . '<span class="art-cta__tag">📰 ' . ($fr ? 'À lire aussi' : 'Read next') . '</span>'
+            . '<p><strong>« ' . e($pick['title']) . ' »</strong>' . ($tease !== '' ? ' — ' . e($tease) . '…' : '') . '</p>'
+            . '<a class="btn btn--primary" href="' . e($url) . '">' . ($fr ? 'Lire l’article' : 'Read the article') . ' →</a>'
+            . '</aside>';
+    } catch (Throwable $e) {
+        return '';
+    }
+}
+
+/**
+ * Insère 3 à 6 PUBS INTERNES variées (Boutique / Forum / Blog) réparties dans le
+ * corps de l'article (~2000 mots), en rapport avec le sujet pour rester cohérent.
+ */
+function inject_internal_ads(string $html, array $article): string
+{
+    $paraCount = substr_count($html, '</p>');
+    if ($paraCount < 4) {
+        return $html . article_shop_cta('full');
+    }
+    // ~1 pub toutes les 4 paragraphes, borné entre 3 et 6, sans dépasser l'espace dispo.
+    $n = max(3, min(6, (int) floor($paraCount / 4)));
+    $n = min($n, max(1, $paraCount - 1));
+
+    // Rotation Boutique → Forum → Blog (relève toujours quelque chose de pertinent).
+    $blocks = [];
+    for ($i = 0; $i < $n; $i++) {
+        $type = ['shop', 'forum', 'blog'][$i % 3];
+        $b = $type === 'shop' ? article_shop_cta($i === 0 ? 'full' : 'inline')
+            : ($type === 'forum' ? article_forum_cta($article) : article_blog_cta($article));
+        if ($b === '') { $b = article_shop_cta('inline'); } // repli si forum/blog vide
+        if ($b !== '') { $blocks[] = $b; }
+    }
+    if (!$blocks) { return $html; }
+
+    // Positions réparties régulièrement.
+    $step = max(2, (int) floor($paraCount / (count($blocks) + 1)));
+    $positions = [];
+    for ($i = 0; $i < count($blocks); $i++) {
+        $positions[$i] = min($paraCount - 1, $step * ($i + 1));
+    }
+    // Insertion de la position la PLUS GRANDE à la plus petite (les blocs contiennent
+    // des </p> ; injecter en descendant préserve les indices des positions plus petites).
+    for ($i = count($blocks) - 1; $i >= 0; $i--) {
+        $html = inject_after_paragraph($html, $positions[$i], $blocks[$i]);
+    }
+    return $html;
+}
+
 /** Thèmes de wallpapers (sous-catégories) avec libellés bilingues + emoji. */
 function wallpaper_themes(): array
 {
