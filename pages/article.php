@@ -138,13 +138,17 @@ require ROOT_PATH . '/includes/header.php';
 <section class="section">
     <div class="section-head"><h2><?= lang() === 'fr' ? 'À lire aussi' : 'Read next' ?></h2></div>
     <div class="cards">
-        <?php foreach ($related as $r): ?>
+        <?php $relScenes = ['downtown.png', 'night.png', 'beachlife.png', 'marina.png', 'artdeco.png', 'ocean-drive.png']; ?>
+        <?php foreach ($related as $ri => $r):
+            // Vraie image de l'article ; à défaut, une belle scène Vice City (jamais de simple emoji).
+            $rimg = !empty($r['image']) ? $r['image'] : '/public/assets/img/scenes/' . $relScenes[$ri % count($relScenes)];
+        ?>
             <a class="card glass reveal" href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($r['slug'])))) ?>">
-                <div class="card__media"><span aria-hidden="true">🌆</span></div>
+                <?= media_html($rimg, '🌆', (string) $r['title']) ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e($r['category_name'] ?? 'News') ?></span>
                     <h3 class="card__title"><?= e($r['title']) ?></h3>
-                    <p class="card__excerpt"><?= e($r['excerpt']) ?></p>
+                    <p class="card__excerpt"><?= e(clean_ai_markers((string) $r['excerpt'])) ?></p>
                 </div>
             </a>
         <?php endforeach; ?>
