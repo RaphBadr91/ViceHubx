@@ -296,6 +296,46 @@ function ai_poll_image(array $data, string $endpoint, string $auth): ?string
     return null;
 }
 
+/**
+ * SONDE l'API Higgsfield : teste plusieurs structures d'URL/modèles et renvoie un
+ * rapport (code HTTP + début de réponse) pour trouver le bon endpoint en un coup.
+ */
+function ai_image_probe(): string
+{
+    if (ai_img_key() === '') { return 'Aucune clé Higgsfield enregistrée.'; }
+    $auth = 'Authorization: Key ' . ai_img_key();
+    $mini = json_encode(['prompt' => 'a red car', 'aspect_ratio' => '16:9', 'resolution' => '1K']);
+    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 170);
+    $out  = [];
+
+    $posts = [
+        'https://platform.higgsfield.ai/v1/bytedance/seedream/v4/text-to-image',
+        'https://platform.higgsfield.ai/bytedance/seedream/v4/text-to-image',
+        'https://platform.higgsfield.ai/v1/text2image',
+        'https://platform.higgsfield.ai/text2image',
+        'https://platform.higgsfield.ai/v1/seedream/v4/text-to-image',
+    ];
+    foreach ($posts as $u) {
+        $ch = curl_init($u);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => ['content-type: application/json', 'accept: application/json', $auth],
+            CURLOPT_POSTFIELDS => $mini, CURLOPT_TIMEOUT => 25, CURLOPT_CONNECTTIMEOUT => 10,
+        ]);
+        $r = curl_exec($ch); $c = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        $out[] = "POST {$u}\n   → HTTP {$c} : " . $clip($r);
+    }
+    foreach ([
+        'https://platform.higgsfield.ai/v1/models',
+        'https://platform.higgsfield.ai/models',
+        'https://platform.higgsfield.ai/v1/applications',
+    ] as $u) {
+        [$r, $c] = ai_http_get($u, $auth);
+        $out[] = "GET {$u}\n   → HTTP {$c} : " . $clip($r);
+    }
+    return implode("\n", $out);
+}
+
 /** Test synchrone : génère UNE image et renvoie un diagnostic lisible pour l'admin. */
 function ai_image_test(): array
 {

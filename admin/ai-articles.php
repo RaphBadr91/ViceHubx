@@ -51,6 +51,12 @@ if ($act === 'test_image') {
     $r = ai_image_test();
     $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']];
 }
+// --- Sonde l'API pour trouver le bon endpoint/modèle ---
+if ($act === 'probe_image') {
+    @set_time_limit(0);
+    set_setting('ai_img_probe_result', ai_image_probe());
+    $flash = ['ok', '🔎 Sondage terminé — voir le rapport ci-dessous (copie-le à ton dev).'];
+}
 
 // --- Générer TOUTES les images manquantes (arrière-plan) ---
 if ($act === 'gen_all_images') {
@@ -173,6 +179,7 @@ $imgMissing  = ai_missing_image_count();
 $imgProg     = ai_img_progress();
 $imgLastErr  = (string) get_setting('ai_img_last_error', '');
 $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
+$imgProbe    = (string) get_setting('ai_img_probe_result', '');
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
@@ -342,6 +349,10 @@ $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
                         <button class="btn btn--ghost" type="submit" <?= $imgEnabled ? '' : 'disabled' ?>>🔍 Tester (1 image)</button>
                     </form>
                     <form method="post" style="margin:0">
+                        <?= csrf_field() ?><input type="hidden" name="action" value="probe_image">
+                        <button class="btn btn--ghost" type="submit" <?= $hasImgKey ? '' : 'disabled' ?>>🔎 Sonder l'API</button>
+                    </form>
+                    <form method="post" style="margin:0">
                         <?= csrf_field() ?><input type="hidden" name="action" value="gen_all_images">
                         <button class="btn btn--primary" type="submit" <?= ($imgEnabled && $imgMissing > 0) ? '' : 'disabled' ?>>🎨 Générer toutes les images manquantes<?= $imgMissing > 0 ? ' (' . (int) $imgMissing . ')' : '' ?></button>
                     </form>
@@ -352,7 +363,10 @@ $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
             <?php elseif ($imgLastOk !== ''): ?>
                 <div class="alert alert--ok" style="margin:.7rem 0 0;font-size:.82rem">✅ Dernière image générée avec succès le <?= e($imgLastOk) ?>.</div>
             <?php endif; ?>
-            <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">💡 Clique d'abord <strong>🔍 Tester (1 image)</strong> : ça génère UNE image tout de suite (sans arrière-plan) et affiche l'erreur exacte si ça bloque. Si le test réussit, lance la génération complète.</p>
+            <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">💡 Clique d'abord <strong>🔍 Tester (1 image)</strong> : ça génère UNE image tout de suite (sans arrière-plan) et affiche l'erreur exacte si ça bloque. Si le test réussit, lance la génération complète. En cas de « Model not found », clique <strong>🔎 Sonder l'API</strong> et copie-moi le rapport.</p>
+            <?php if ($imgProbe !== ''): ?>
+                <pre style="margin:.7rem 0 0;padding:.8rem;background:#0d0d14;border:1px solid var(--glass-brd);border-radius:10px;overflow:auto;font-size:.72rem;line-height:1.5;color:#cfe;white-space:pre-wrap;max-height:340px"><?= e($imgProbe) ?></pre>
+            <?php endif; ?>
             <?php if (!$imgEnabled): ?>
                 <p class="muted" style="font-size:.8rem;margin:.5rem 0 0">⚠️ Active les illustrations IA + colle ta clé Higgsfield pour utiliser ce bouton.</p>
             <?php endif; ?>
