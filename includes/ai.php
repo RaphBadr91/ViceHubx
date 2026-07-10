@@ -110,6 +110,152 @@ function ai_pick_image(string $theme, string $title = ''): string
     return $all[array_rand($all)];
 }
 
+/* ============================================================================
+ *  ILLUSTRATION IA SUR-MESURE (Higgsfield) — générée DIRECTEMENT à la création.
+ *  Le serveur appelle l'API REST Higgsfield (platform.higgsfield.ai) avec le
+ *  prompt image de l'article, télécharge le rendu, le compresse en WebP local
+ *  et l'utilise comme illustration. Si la clé est absente ou l'appel échoue,
+ *  on retombe proprement sur la banque d'images (aucune régression).
+ *  Clé : réglage 'higgsfield_key' (format KEY_ID:KEY_SECRET) ou env HIGGSFIELD_KEY.
+ * ========================================================================== */
+
+/** Clé API Higgsfield (env prioritaire, sinon réglage admin). Format KEY_ID:KEY_SECRET. */
+function ai_img_key(): string
+{
+    return getenv('HIGGSFIELD_KEY') ?: (string) get_setting('higgsfield_key', '');
+}
+
+/** La génération d'illustration IA est-elle active ? (activée + clé + GD WebP). */
+function ai_img_enabled(): bool
+{
+    return (int) get_setting('ai_image_enabled', '0') === 1
+        && ai_img_key() !== ''
+        && function_exists('imagewebp');
+}
+
+/** Endpoint text-to-image Higgsfield (réglable si l'API évolue). */
+function ai_img_endpoint(): string
+{
+    return get_setting('ai_image_endpoint', '') ?: 'https://platform.higgsfield.ai/v1/flux-pro/kontext/max/text-to-image';
+}
+
+/** Cherche récursivement la 1re URL d'image dans une réponse JSON (schéma tolérant). */
+function ai_find_image_url($node): ?string
+{
+    if (is_string($node)) {
+        if (preg_match('#^https?://[^\s"\']+#i', $node)
+            && (preg_match('#\.(png|jpe?g|webp)(\?|$)#i', $node) || stripos($node, 'cloudfront') !== false || stripos($node, 'higgsfield') !== false)) {
+            return $node;
+        }
+        return null;
+    }
+    if (is_array($node)) {
+        // Priorité aux clés « url » habituelles.
+        foreach (['url', 'image_url', 'output_url', 'raw'] as $k) {
+            if (isset($node[$k])) {
+                $u = ai_find_image_url($node[$k]);
+                if ($u) { return $u; }
+            }
+        }
+        foreach ($node as $v) {
+            $u = ai_find_image_url($v);
+            if ($u) { return $u; }
+        }
+    }
+    return null;
+}
+
+/**
+ * Génère une illustration IA (Higgsfield) à partir du prompt, la télécharge,
+ * la compresse en WebP local et renvoie son chemin web. Ne lève JAMAIS :
+ * renvoie null en cas d'échec (l'appelant garde alors l'image de la banque).
+ */
+function ai_generate_image(string $prompt, string $slug): ?string
+{
+    $prompt = trim($prompt);
+    if ($prompt === '' || !ai_img_enabled()) { return null; }
+    try {
+        $payload = json_encode([
+            'input' => [
+                'prompt'           => $prompt,
+                'aspect_ratio'     => '16:9',
+                'safety_tolerance' => 2,
+            ],
+            // withPolling:true → l'API attend la fin et renvoie le rendu en une seule réponse.
+            'withPolling' => true,
+        ]);
+        $ch = curl_init(ai_img_endpoint());
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_HTTPHEADER     => [
+                'content-type: application/json',
+                'accept: application/json',
+                'Authorization: Key ' . ai_img_key(),
+            ],
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT        => 180,
+        ]);
+        $raw  = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($raw === false || $code >= 400) { return null; }
+
+        $data = json_decode((string) $raw, true);
+        $imgUrl = is_array($data) ? ai_find_image_url($data) : null;
+        // Repli : l'URL apparaît parfois brute dans la réponse.
+        if (!$imgUrl && preg_match('#https?://[^\s"\']+\.(?:png|jpe?g|webp)#i', (string) $raw, $m)) {
+            $imgUrl = $m[0];
+        }
+        if (!$imgUrl) { return null; }
+
+        return ai_download_as_webp($imgUrl, $slug);
+    } catch (Throwable $e) {
+        return null;
+    }
+}
+
+/**
+ * Télécharge une image distante et l'enregistre en WebP local (max 1280px de large,
+ * léger et rapide). Renvoie le chemin web (/public/assets/img/ai/<slug>.webp) ou null.
+ */
+function ai_download_as_webp(string $url, string $slug): ?string
+{
+    if (!function_exists('imagewebp')) { return null; }
+    $dir = ROOT_PATH . '/public/assets/img/ai';
+    if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) { return null; }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 15,
+        CURLOPT_TIMEOUT        => 60,
+    ]);
+    $bytes = curl_exec($ch);
+    $code  = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($bytes === false || $code >= 400 || strlen((string) $bytes) < 1024) { return null; }
+
+    $im = @imagecreatefromstring($bytes);
+    if (!$im) { return null; }
+    $w = imagesx($im); $h = imagesy($im);
+    $maxW = 1280;
+    if ($w > $maxW) {
+        $nh = (int) round($h * $maxW / $w);
+        $dst = imagecreatetruecolor($maxW, $nh);
+        imagecopyresampled($dst, $im, 0, 0, 0, 0, $maxW, $nh, $w, $h);
+        imagedestroy($im);
+        $im = $dst;
+    }
+    $slug = preg_replace('/[^a-z0-9\-]/', '', strtolower($slug)) ?: 'ai-' . substr(md5($url), 0, 8);
+    $rel  = 'public/assets/img/ai/' . $slug . '.webp';
+    $ok   = imagewebp($im, ROOT_PATH . '/' . $rel, 82);
+    imagedestroy($im);
+    return $ok ? '/' . $rel : null;
+}
+
 /** Pool de sujets de la niche (rotation pour varier les angles). */
 function ai_topics(): array
 {
@@ -235,6 +381,13 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
     }
     $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
     $pub = $status === 'published' ? date('Y-m-d H:i:s') : null;
+
+    // Illustration IA sur-mesure (Higgsfield) générée à la création, si activée.
+    if (ai_img_enabled() && !empty($data['image_prompt'])) {
+        $gen = ai_generate_image((string) $data['image_prompt'], $slug);
+        if ($gen) { $data['image'] = $gen; }
+    }
+
     $st = db()->prepare(
         'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, author_id, status, published_at, created_at)
          VALUES (?, \'fr\', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
@@ -358,4 +511,30 @@ function ai_auto_run(int $budgetSeconds = 130): array
         return ['generated' => 0, 'message' => '✓ À jour.' . ($autoOn || $hasPending ? ' Prochain dans ~' . max(1, (int) ceil($nextIn / 60)) . ' min.' : '')];
     }
     return ['generated' => $drained + 1, 'message' => '✅ ' . implode(' · ', $msgs) . '.'];
+}
+
+/**
+ * Progression de publication des articles « Programmée CRON » (pending).
+ * Maintient un repère haut (high-water) remis à zéro dès que tout est publié,
+ * pour une barre de % « combien reste-t-il à publier ».
+ * @return array{total:int,pending:int,published:int,percent:int}
+ */
+function ai_sched_progress(): array
+{
+    $pending = (int) db()->query(
+        "SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''"
+    )->fetchColumn();
+
+    $total = (int) get_setting('ai_sched_total', '0');
+    if ($pending <= 0) {
+        if ($total !== 0) { set_setting('ai_sched_total', '0'); }
+        return ['total' => 0, 'pending' => 0, 'published' => 0, 'percent' => 100];
+    }
+    if ($pending > $total) {                       // nouveau lot programmé → nouveau repère
+        $total = $pending;
+        set_setting('ai_sched_total', (string) $total);
+    }
+    $published = max(0, $total - $pending);
+    $percent   = $total > 0 ? (int) round($published / $total * 100) : 0;
+    return ['total' => $total, 'pending' => $pending, 'published' => $published, 'percent' => $percent];
 }

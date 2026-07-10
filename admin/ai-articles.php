@@ -25,6 +25,16 @@ if ($act === 'save_key') {
     $flash = ['ok', 'Réglages IA enregistrés.'];
 }
 
+// --- Connexion de la clé Higgsfield (illustrations IA) ---
+if ($act === 'save_image') {
+    $hk = trim((string) ($_POST['higgsfield_key'] ?? ''));
+    if ($hk !== '') { set_setting('higgsfield_key', $hk); } // vide = on conserve l'existante
+    $ep = trim((string) ($_POST['ai_image_endpoint'] ?? ''));
+    set_setting('ai_image_endpoint', $ep);
+    set_setting('ai_image_enabled', !empty($_POST['ai_image_enabled']) ? '1' : '0');
+    $flash = ['ok', '🎨 Réglages illustrations IA enregistrés.'];
+}
+
 // --- Publication automatique (réglages) ---
 if ($act === 'save_auto') {
     set_setting('ai_auto_enabled', !empty($_POST['ai_auto_enabled']) ? '1' : '0');
@@ -69,6 +79,27 @@ if ($act === 'delete') {
     db()->prepare('DELETE FROM articles WHERE id=?')->execute([(int) ($_POST['id'] ?? 0)]);
     $flash = ['ok', 'Article supprimé.'];
 }
+// --- (Re)générer l'illustration IA (Higgsfield) d'un article ---
+if ($act === 'gen_image') {
+    @set_time_limit(0);
+    $id  = (int) ($_POST['id'] ?? 0);
+    $row = db()->prepare('SELECT slug, image_prompt FROM articles WHERE id=?');
+    $row->execute([$id]);
+    $art = $row->fetch();
+    if (!$art || trim((string) $art['image_prompt']) === '') {
+        $flash = ['err', 'Aucun prompt image pour cet article.'];
+    } elseif (!ai_img_enabled()) {
+        $flash = ['err', 'Active d’abord les illustrations IA (clé Higgsfield) ci-dessous.'];
+    } else {
+        $path = ai_generate_image((string) $art['image_prompt'], (string) $art['slug']);
+        if ($path) {
+            db()->prepare('UPDATE articles SET image=? WHERE id=?')->execute([$path, $id]);
+            $flash = ['ok', '🎨 Illustration générée via Higgsfield.'];
+        } else {
+            $flash = ['err', 'Échec de la génération d’image (clé/endpoint ou quota Higgsfield ?).'];
+        }
+    }
+}
 
 // Derniers articles générés par IA (ceux qui ont un prompt image stocké).
 $aiArticles = db()->query(
@@ -89,11 +120,20 @@ $autoStatus   = get_setting('ai_auto_status', 'published');
 $autoLast     = (int) get_setting('ai_auto_last', '0');
 $autoPending  = (int) get_setting('ai_auto_pending', '0');
 $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
+
+// Progression de publication des articles programmés (barre de %).
+$prog = ai_sched_progress();
+
+// Réglages illustrations IA (Higgsfield).
+$imgEnabled  = ai_img_enabled();
+$imgOn       = (int) get_setting('ai_image_enabled', '0') === 1;
+$hasImgKey   = ai_img_key() !== '';
+$imgEndpoint = (string) get_setting('ai_image_endpoint', '');
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
     <h1>Articles IA — Génération automatique</h1>
-    <p class="muted">Crée des articles professionnels dans la niche GTA VI / Vice City, illustrés depuis la banque d’images IA. Chaque article embarque un <strong>prompt image</strong> (en OFF) prêt pour Higgsfield.</p>
+    <p class="muted">Crée des articles professionnels dans la niche GTA VI / Vice City (~2000 mots, FAQ + JSON-LD). Chaque article reçoit une <strong>illustration IA sur-mesure générée par Higgsfield</strong> à la création (si activée ci-dessous), sinon une image de la banque.</p>
 
     <?php if ($flash): ?>
         <div class="alert alert--<?= e($flash[0]) ?>" style="margin:1rem 0"><?= e($flash[1]) ?></div>
@@ -169,6 +209,23 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
                 <?= $autoEnabled ? "1 article toutes les {$autoInterval} h (soit ~" . round(24 / $autoInterval, 1) . "/jour)" : 'en pause' ?>
                 <?php if ($autoLast): ?> · dernier article : <?= e(date('d/m/Y H:i', $autoLast)) ?><?php endif; ?>
             </p>
+
+            <!-- Barre de progression : publication des articles PROGRAMMÉS (CRON) -->
+            <?php if ($prog['total'] > 0): ?>
+                <div style="margin:.6rem 0 1rem">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">
+                        <strong style="font-size:.9rem">📢 Publication des articles programmés</strong>
+                        <span class="muted" style="font-size:.85rem"><?= (int) $prog['published'] ?>/<?= (int) $prog['total'] ?> publiés · <strong style="color:#ff2e88"><?= (int) $prog['percent'] ?>%</strong></span>
+                    </div>
+                    <div style="height:14px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--glass-brd)">
+                        <div style="height:100%;width:<?= (int) $prog['percent'] ?>%;border-radius:99px;background:linear-gradient(90deg,#ff2e88,#7a5cff);transition:width .4s ease"></div>
+                    </div>
+                    <p class="muted" style="font-size:.8rem;margin:.4rem 0 0">
+                        Il reste <strong><?= (int) $prog['pending'] ?></strong> article(s) à publier (1 toutes les <?= (int) $autoInterval ?> h).
+                        <?php if ($prog['pending'] > 0): ?>Tout sera en ligne dans ~<strong><?= e(($d = $prog['pending'] * $autoInterval) >= 24 ? round($d / 24, 1) . ' j' : $d . ' h') ?></strong>.<?php endif; ?>
+                    </p>
+                </div>
+            <?php endif; ?>
             <p class="muted" style="font-size:.86rem;margin:.6rem 0 .3rem">Pour que ça tourne 24h/24, branche ce lien sur un cron (toutes les 30 min) — <a href="https://cron-job.org" target="_blank" rel="noopener">cron-job.org</a> (gratuit) ou cPanel → Cron Jobs :</p>
             <input type="text" readonly value="<?= e($tickUrl) ?>" onclick="this.select()" style="width:100%;font-size:.8rem;font-family:monospace;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.05);color:#cfc9dd;border:1px solid var(--glass-brd)">
             <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap">
@@ -179,6 +236,43 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- ILLUSTRATIONS IA (Higgsfield) -->
+    <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(122,92,255,.28)">
+        <h2 style="margin-top:0">🎨 Illustrations IA sur-mesure (Higgsfield)</h2>
+        <p class="muted">Quand c'est activé, <strong>chaque article généré reçoit sa propre illustration</strong> créée par Higgsfield à partir de son prompt image — directement à la création. Sans clé, les articles utilisent la banque d'images (repli automatique, aucun blocage).</p>
+
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.4rem 0 1rem">
+            <span style="font-size:1.3rem"><?= $imgEnabled ? '🟢' : ($imgOn ? '🟡' : '⚪') ?></span>
+            <span><strong><?= $imgEnabled ? 'Illustrations IA actives' : ($imgOn && !$hasImgKey ? 'Activées mais clé manquante' : 'Illustrations IA désactivées (banque d\'images)') ?></strong></span>
+        </div>
+
+        <form method="post" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="save_image">
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                <input type="checkbox" name="ai_image_enabled" value="1" style="width:auto" <?= $imgOn ? 'checked' : '' ?>> <strong>Activer</strong>
+            </label>
+            <label style="flex:1;min-width:280px">Clé API Higgsfield <span class="muted">(format <code>KEY_ID:KEY_SECRET</code>)</span>
+                <input type="password" name="higgsfield_key" placeholder="<?= $hasImgKey ? '•••••••• (déjà enregistrée)' : 'xxxxxxxx:yyyyyyyy' ?>" autocomplete="off" style="display:block;width:100%;margin-top:.3rem">
+                <small class="muted">Laisse vide pour conserver la clé actuelle. Récupère la clé sur <a href="https://platform.higgsfield.ai" target="_blank" rel="noopener">platform.higgsfield.ai</a> (Settings → API keys). Ou variable d'env <code>HIGGSFIELD_KEY</code>.</small>
+            </label>
+            <button class="btn btn--primary" type="submit">Enregistrer</button>
+        </form>
+        <details style="margin-top:.8rem">
+            <summary style="cursor:pointer;font-size:.85rem" class="muted">⚙️ Endpoint avancé (facultatif)</summary>
+            <form method="post" style="margin-top:.6rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="save_image">
+                <input type="hidden" name="ai_image_enabled" value="<?= $imgOn ? '1' : '0' ?>">
+                <label style="flex:1;min-width:320px">URL de l'endpoint text-to-image
+                    <input type="text" name="ai_image_endpoint" value="<?= e($imgEndpoint) ?>" placeholder="https://platform.higgsfield.ai/v1/flux-pro/kontext/max/text-to-image" style="display:block;width:100%;margin-top:.3rem;font-family:monospace;font-size:.8rem">
+                    <small class="muted">Laisse vide pour l'endpoint par défaut. À changer seulement si l'API Higgsfield évolue.</small>
+                </label>
+                <button class="btn btn--ghost" type="submit">Enregistrer l'endpoint</button>
+            </form>
+        </details>
     </div>
 
     <!-- Connexion clé -->
@@ -215,8 +309,8 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
     <?php endif; ?>
 
     <!-- Banque : articles IA + prompts image (OFF) -->
-    <h2 style="margin-top:2rem">🖼️ Articles IA &amp; prompts image (OFF, pour Higgsfield)</h2>
-    <p class="muted">Le prompt ci-dessous n’est jamais affiché aux visiteurs. Copie-le dans Higgsfield pour générer une illustration sur-mesure, puis remplace l’image de l’article.</p>
+    <h2 style="margin-top:2rem">🖼️ Articles IA &amp; illustrations (Higgsfield)</h2>
+    <p class="muted">Si les illustrations IA sont activées, l'image est générée automatiquement à la création. Sinon, le prompt (jamais affiché aux visiteurs) reste dispo : clique <strong>🎨 Générer l'image</strong> pour créer l'illustration via Higgsfield à la demande, ou copie le prompt manuellement.</p>
 
     <?php if (!$aiArticles): ?>
         <p class="muted">Aucun article IA pour l’instant. Lance une génération ci-dessus.</p>
@@ -238,6 +332,10 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
                         <textarea readonly rows="2" style="width:100%;font-size:.82rem;background:rgba(255,255,255,.04);color:#cfc9dd;border-radius:8px;border:1px solid rgba(255,255,255,.1);padding:.5rem" onclick="this.select()"><?= e($a['image_prompt']) ?></textarea>
                         <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap">
                             <button class="btn btn--ghost" type="button" data-copy="<?= e($a['image_prompt']) ?>">📋 Copier le prompt</button>
+                            <form method="post" style="display:inline">
+                                <?= csrf_field() ?><input type="hidden" name="action" value="gen_image"><input type="hidden" name="id" value="<?= (int) $a['id'] ?>">
+                                <button class="btn btn--ghost" type="submit" <?= $imgEnabled ? '' : 'disabled title="Active les illustrations IA (clé Higgsfield) ci-dessus"' ?>>🎨 Générer l’image</button>
+                            </form>
                             <a class="btn btn--ghost" href="<?= e(url('admin/article-edit.php?id=' . (int) $a['id'])) ?>">✏️ Éditer</a>
                             <a class="btn btn--ghost" href="<?= e(with_lang(url('pages/article.php?slug=' . urlencode($a['slug'])))) ?>" target="_blank">👁️ Voir</a>
                             <?php if ($a['status'] !== 'published'): ?>
