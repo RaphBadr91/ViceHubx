@@ -13,7 +13,7 @@ require ROOT_PATH . '/includes/header.php';
     <div class="cards" style="margin-top:1.5rem">
         <?php foreach ($chars as $c): ?>
             <article class="card glass reveal">
-                <div class="card__media"><span aria-hidden="true">🕶️</span></div>
+                <?= media_html(character_image($c['name']), '🕶️', (string) $c['name']) ?>
                 <div class="card__body">
                     <span class="card__cat"><?= e(t('char_role')) ?> · <?= e($c['role']) ?></span>
                     <h3 class="card__title"><?= e($c['name']) ?></h3>

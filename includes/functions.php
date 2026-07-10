@@ -1842,6 +1842,31 @@ function picture_html(string $img, string $alt = '', string $class = '', string 
 }
 
 /** Bloc média d'une carte : image réelle si dispo, sinon emoji sur dégradé. */
+/**
+ * Portrait IA d'un personnage (généré via Higgsfield, style Vice City néon).
+ * Priorité au fichier LOCAL s'il a été rapatrié (fetch-character-images.php),
+ * sinon l'image servie par le CDN. '' si le personnage n'a pas de portrait.
+ */
+function character_image(string $name): string
+{
+    $key = mb_strtolower(trim($name));
+    $cdn = [
+        'lucia'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210417_41c8cad8-fec8-4617-8a6c-3a745685e205_min.webp',
+        'jason'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210420_216ce6c0-7dd9-4c3a-92c4-e2115461bb11_min.webp',
+        'le maire'   => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210421_0c3c9be9-cf79-491f-9dc9-efaf672aa214_min.webp',
+        'dj solaris' => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210423_d3a12ac6-212d-49bd-9692-a9859d2db0f7_min.webp',
+    ];
+    if (!isset($cdn[$key])) {
+        return '';
+    }
+    $slug  = ['lucia' => 'lucia', 'jason' => 'jason', 'le maire' => 'le-maire', 'dj solaris' => 'dj-solaris'][$key] ?? '';
+    $local = 'public/assets/img/characters/' . $slug . '.webp';
+    if ($slug !== '' && is_file(ROOT_PATH . '/' . $local)) {
+        return '/' . $local;
+    }
+    return $cdn[$key];
+}
+
 function media_html(?string $img, string $emoji, string $alt = ''): string
 {
     $src = img_src($img);
