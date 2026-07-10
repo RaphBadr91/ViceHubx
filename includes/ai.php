@@ -354,6 +354,23 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null): ar
     $tones   = ai_tones();
     $toneKey = ($toneKey !== null && isset($tones[$toneKey])) ? $toneKey : (string) array_rand($tones);
 
+    // Anti-doublon SEO : on liste les titres/metas déjà utilisés pour que l'IA en
+    // produise de 100% différents (chaque page cible d'autres requêtes Google).
+    $used = [];
+    try {
+        $used = db()->query("SELECT title, excerpt FROM articles ORDER BY id DESC LIMIT 60")->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) {
+        $used = [];
+    }
+    $avoid = '';
+    if ($used) {
+        $titles = array_filter(array_map(fn($r) => mb_substr((string) $r['title'], 0, 100), $used));
+        $metas  = array_filter(array_map(fn($r) => mb_substr((string) $r['excerpt'], 0, 120), $used));
+        $avoid  = "\n\n⛔ DÉJÀ UTILISÉS SUR LE SITE — INTERDIT de reprendre ou paraphraser (trouve un TITRE et une META 100% différents, ciblant d'AUTRES mots-clés) :\n"
+            . "Titres existants :\n- " . implode("\n- ", array_slice($titles, 0, 40)) . "\n"
+            . "Metas existantes :\n- " . implode("\n- ", array_slice($metas, 0, 20)) . "\n";
+    }
+
     $system = 'Tu es rédacteur SEO SENIOR pour ViceHub X, média de fans INDÉPENDANT et NON OFFICIEL sur GTA VI '
         . 'et Vice City. Tu écris un français impeccable, riche et fluide. '
         . "\n\nRÈGLE D'OR — FIABILITÉ : tu ne publies QUE des informations VÉRIFIÉES. Tu N'INVENTES JAMAIS de "
@@ -373,11 +390,13 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null): ar
     $user = "Rédige un ARTICLE COMPLET et ORIGINAL d'environ 2000 mots sur : « {$topic} ».\n\n"
         . "Règles :\n"
         . "- FIABILITÉ ABSOLUE : n'affirme que des faits VÉRIFIÉS. Toute info non officielle = présentée comme rumeur/fuite (« selon des rumeurs… », « non confirmé »). Jamais d'invention de date, prix, nom ou fonctionnalité.\n"
+        . "- TITRE et META DESCRIPTION 100% UNIQUES : jamais le même titre ni la même meta qu'un autre article du site. Chaque article vise des mots-clés/angle DIFFÉRENTS pour capter un maximum de recherches Google (longue traîne).\n"
         . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
         . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
         . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
         . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
-        . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n\n"
+        . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
+        . $avoid . "\n"
         . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
         . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
         . "LIGNE 2 = exactement : ===CORPS===\n"
