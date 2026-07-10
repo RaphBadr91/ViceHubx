@@ -304,36 +304,29 @@ function ai_image_probe(): string
 {
     if (ai_img_key() === '') { return 'Aucune clé Higgsfield enregistrée.'; }
     $auth = 'Authorization: Key ' . ai_img_key();
-    $mini = json_encode(['prompt' => 'a red car', 'aspect_ratio' => '16:9', 'resolution' => '1K']);
-    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 170);
-    $out  = [];
-
-    $posts = [
-        'https://platform.higgsfield.ai/v1/bytedance/seedream/v4/text-to-image',
-        'https://platform.higgsfield.ai/bytedance/seedream/v4/text-to-image',
-        'https://platform.higgsfield.ai/v1/text2image',
-        'https://platform.higgsfield.ai/text2image',
-        'https://platform.higgsfield.ai/v1/seedream/v4/text-to-image',
+    $mini = json_encode(['prompt' => 'a red sports car at sunset', 'aspect_ratio' => '16:9']);
+    $clip = fn($s) => substr(preg_replace('/\s+/', ' ', (string) $s) ?? '', 0, 110);
+    $base = 'https://platform.higgsfield.ai/v1/';
+    // Identifiants de modèles issus du catalogue Higgsfield à tester en POST /v1/{id}.
+    $models = [
+        'nano_banana_2', 'nano_banana_pro', 'nano_banana', 'soul_2', 'soul_v2',
+        'seedream_v4_5', 'seedream_v5_pro', 'seedream_v5_lite', 'gpt_image_2',
+        'cinematic_studio_2_5', 'flux_2', 'flux_kontext', 'kling_omni_image',
+        'grok_image', 'z_image', 'recraft_v4_1', 'image_auto', 'soul_cinematic',
     ];
-    foreach ($posts as $u) {
-        $ch = curl_init($u);
+    $out = [];
+    foreach ($models as $id) {
+        $ch = curl_init($base . rawurlencode($id));
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['content-type: application/json', 'accept: application/json', $auth],
-            CURLOPT_POSTFIELDS => $mini, CURLOPT_TIMEOUT => 25, CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_POSTFIELDS => $mini, CURLOPT_TIMEOUT => 15, CURLOPT_CONNECTTIMEOUT => 8,
         ]);
         $r = curl_exec($ch); $c = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
-        $out[] = "POST {$u}\n   → HTTP {$c} : " . $clip($r);
+        $mark = ($c !== 404 && $c !== 0) ? '   <<< ✅ CE MODÈLE RÉPOND' : '';
+        $out[] = str_pad($id, 22) . " → {$c} : " . $clip($r) . $mark;
     }
-    foreach ([
-        'https://platform.higgsfield.ai/v1/models',
-        'https://platform.higgsfield.ai/models',
-        'https://platform.higgsfield.ai/v1/applications',
-    ] as $u) {
-        [$r, $c] = ai_http_get($u, $auth);
-        $out[] = "GET {$u}\n   → HTTP {$c} : " . $clip($r);
-    }
-    return implode("\n", $out);
+    return "POST " . $base . "{modele} :\n" . implode("\n", $out);
 }
 
 /** Test synchrone : génère UNE image et renvoie un diagnostic lisible pour l'admin. */
