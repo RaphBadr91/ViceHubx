@@ -1851,8 +1851,8 @@ function character_image(string $name): string
 {
     $key = mb_strtolower(trim($name));
     $cdn = [
-        'lucia'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210417_41c8cad8-fec8-4617-8a6c-3a745685e205_min.webp',
-        'jason'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210420_216ce6c0-7dd9-4c3a-92c4-e2115461bb11_min.webp',
+        'lucia'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_211644_aff2f239-80b7-48cf-bdee-3faf6271dc8a_min.webp',
+        'jason'      => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_211647_99550546-15b5-42f2-abad-bce54c1be2a2_min.webp',
         'le maire'   => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210421_0c3c9be9-cf79-491f-9dc9-efaf672aa214_min.webp',
         'dj solaris' => 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260710_210423_d3a12ac6-212d-49bd-9692-a9859d2db0f7_min.webp',
     ];
