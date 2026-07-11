@@ -186,8 +186,11 @@ function ai_generate_image(string $prompt, string $slug): ?string
     $endpoint = ai_img_endpoint();
     $auth     = 'Authorization: Key ' . ai_img_key();
     try {
+        // Style maison appliqué à CHAQUE image (même rendu que nos visuels Vice City).
+        $style = trim((string) get_setting('ai_img_style', ai_img_default_style()));
+        $fullPrompt = $style !== '' ? ($prompt . ' — ' . $style) : $prompt;
         // Corps À PLAT confirmé (HTTP 200 « queued ») : prompt + aspect_ratio.
-        $payload = json_encode(['prompt' => $prompt, 'aspect_ratio' => '16:9']);
+        $payload = json_encode(['prompt' => $fullPrompt, 'aspect_ratio' => '16:9']);
         $ch = curl_init($endpoint);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
@@ -217,11 +220,33 @@ function ai_generate_image(string $prompt, string $slug): ?string
 
         set_setting('ai_img_last_error', '');
         set_setting('ai_img_last_ok', date('Y-m-d H:i:s'));
+        // Compteur de dépenses : +1 image générée avec succès.
+        set_setting('ai_img_generated_total', (string) ((int) get_setting('ai_img_generated_total', '0') + 1));
         return $local;
     } catch (Throwable $e) {
         set_setting('ai_img_last_error', 'Exception : ' . $e->getMessage());
         return null;
     }
+}
+
+/** Style « maison » par défaut appliqué à toutes les illustrations (rendu Vice City). */
+function ai_img_default_style(): string
+{
+    return 'GTA VI Vice City, 1980s Miami neon aesthetic, cinematic lighting, photorealistic, vibrant teal and pink, ultra detailed, no text, no watermark';
+}
+
+/**
+ * Récapitulatif des dépenses de génération d'images.
+ * @return array{count:int,cost:float,credits:float,usd:float,eur:float}
+ */
+function ai_img_spend(): array
+{
+    $count   = (int) get_setting('ai_img_generated_total', '0');
+    $cost    = (float) (get_setting('ai_img_cost', '3') ?: 3); // crédits par image (réglable)
+    $credits = $count * $cost;
+    $usd     = $credits / 16.0;   // Higgsfield : 1 $ = 16 crédits
+    $eur     = $usd * 0.92;       // conversion approximative $→€
+    return ['count' => $count, 'cost' => $cost, 'credits' => $credits, 'usd' => $usd, 'eur' => $eur];
 }
 
 /** Recherche récursive de la 1re valeur scalaire pour l'un des noms de clés donnés. */

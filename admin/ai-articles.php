@@ -57,6 +57,19 @@ if ($act === 'probe_image') {
     set_setting('ai_img_probe_result', ai_image_probe());
     $flash = ['ok', '🔎 Sondage terminé — voir le rapport ci-dessous (copie-le à ton dev).'];
 }
+// --- Coût par image + style + reset du compteur de dépenses ---
+if ($act === 'save_cost') {
+    $c = (float) str_replace(',', '.', (string) ($_POST['ai_img_cost'] ?? '3'));
+    set_setting('ai_img_cost', (string) max(0, $c));
+    if (isset($_POST['ai_img_style'])) {
+        set_setting('ai_img_style', trim((string) $_POST['ai_img_style']));
+    }
+    $flash = ['ok', '💾 Coût par image et style enregistrés.'];
+}
+if ($act === 'reset_spend') {
+    set_setting('ai_img_generated_total', '0');
+    $flash = ['ok', '🔄 Compteur de dépenses remis à zéro.'];
+}
 
 // --- Générer TOUTES les images manquantes (arrière-plan) ---
 if ($act === 'gen_all_images') {
@@ -180,6 +193,8 @@ $imgProg     = ai_img_progress();
 $imgLastErr  = (string) get_setting('ai_img_last_error', '');
 $imgLastOk   = (string) get_setting('ai_img_last_ok', '');
 $imgProbe    = (string) get_setting('ai_img_probe_result', '');
+$imgSpend    = ai_img_spend();
+$imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style());
 ?>
 <section class="section">
     <span class="eyebrow">🤖 Automatisation</span>
@@ -312,6 +327,37 @@ $imgProbe    = (string) get_setting('ai_img_probe_result', '');
         <h2 style="margin-top:0">🎨 Illustrations IA sur-mesure (Higgsfield)</h2>
         <p class="muted">Quand c'est activé, <strong>chaque article généré reçoit sa propre illustration</strong> créée par Higgsfield à partir de son prompt image — directement à la création. Sans clé, les articles utilisent la banque d'images (repli automatique, aucun blocage).</p>
         <p class="muted" style="font-size:.85rem">🪶 <strong>Toutes les images sont automatiquement compressées en 720p WebP</strong> (~80–140 Ko) avant d'être enregistrées → le site reste ultra-rapide, aucun risque de ralentissement.</p>
+
+        <!-- 💸 Suivi des dépenses de génération -->
+        <?php $cf = fn($n, $d = 2) => rtrim(rtrim(number_format((float) $n, $d, '.', ''), '0'), '.'); ?>
+        <div style="margin:1rem 0;padding:1rem 1.1rem;border-radius:12px;background:rgba(43,214,255,.07);border:1px solid rgba(43,214,255,.25)">
+            <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between">
+                <div>
+                    <strong style="font-size:1.02rem">💸 Dépenses génération d'images</strong>
+                    <div style="margin-top:.35rem">
+                        <span style="font-size:1.5rem;font-weight:800;color:#2bd6ff"><?= number_format($imgSpend['eur'], 2, ',', ' ') ?> €</span>
+                        <span class="muted"> · ~<?= $cf($imgSpend['usd']) ?> $ · <?= $cf($imgSpend['credits']) ?> crédits</span>
+                    </div>
+                    <div class="muted" style="font-size:.82rem"><?= (int) $imgSpend['count'] ?> image(s) générée(s) × <?= $cf($imgSpend['cost']) ?> crédit(s)/image</div>
+                </div>
+                <form method="post" style="margin:0" onsubmit="return confirm('Remettre le compteur de dépenses à zéro ?')">
+                    <?= csrf_field() ?><input type="hidden" name="action" value="reset_spend">
+                    <button class="btn btn--ghost" type="submit">🔄 Remettre à zéro</button>
+                </form>
+            </div>
+            <form method="post" style="margin:.8rem 0 0;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end">
+                <?= csrf_field() ?><input type="hidden" name="action" value="save_cost">
+                <label style="min-width:160px">Coût par image (crédits)
+                    <input type="text" name="ai_img_cost" value="<?= e($cf($imgSpend['cost'])) ?>" style="display:block;width:100%;margin-top:.3rem">
+                    <small class="muted">Prix du modèle choisi (visible sur ton dashboard Higgsfield). 1 $ = 16 crédits.</small>
+                </label>
+                <label style="flex:1;min-width:280px">Style appliqué à chaque image
+                    <input type="text" name="ai_img_style" value="<?= e($imgStyle) ?>" style="display:block;width:100%;margin-top:.3rem;font-size:.78rem">
+                    <small class="muted">Ajouté à chaque prompt → même rendu Vice City sur tous les articles.</small>
+                </label>
+                <button class="btn btn--primary" type="submit">Enregistrer</button>
+            </form>
+        </div>
 
         <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;margin:.4rem 0 1rem">
             <span style="font-size:1.3rem"><?= $imgEnabled ? '🟢' : ($imgOn ? '🟡' : '⚪') ?></span>
