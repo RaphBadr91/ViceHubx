@@ -124,6 +124,9 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php if ($gsv = trim((string) get_setting('google_site_verification', ''))): ?>
     <meta name="google-site-verification" content="<?= e($gsv) ?>">
     <?php endif; ?>
+    <?php if ($bsv = trim((string) get_setting('bing_site_verification', ''))): ?>
+    <meta name="msvalidate.01" content="<?= e($bsv) ?>">
+    <?php endif; ?>
     <?php if ($ga = trim((string) get_setting('analytics_id', ''))): ?>
     <!-- Google Analytics 4 — chargé uniquement APRÈS acceptation des cookies (RGPD) -->
     <script>(function(){try{if(localStorage.getItem('vhx_cookie')!=='accept')return;

@@ -72,6 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gv = trim((string) ($_POST['google_site_verification'] ?? ''));
         if (preg_match('/content=["\']([^"\']+)["\']/i', $gv, $m)) { $gv = $m[1]; }
         set_setting('google_site_verification', $gv);
+        $bv = trim((string) ($_POST['bing_site_verification'] ?? ''));
+        if (preg_match('/content=["\']([^"\']+)["\']/i', $bv, $mb)) { $bv = $mb[1]; }
+        set_setting('bing_site_verification', $bv);
         set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
         $flash = ['ok', 'Réglages enregistrés.'];
     }
@@ -83,6 +86,7 @@ $contact_v   = (string) get_setting('contact_email', '');
 $has_resend  = resend_enabled();
 
 $gverify = (string) get_setting('google_site_verification', '');
+$bverify = (string) get_setting('bing_site_verification', '');
 $ga_id   = (string) get_setting('analytics_id', '');
 $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
@@ -120,6 +124,12 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Google Search Console — code de vérification</label>
         <input type="text" name="google_site_verification" value="<?= e($gverify) ?>" placeholder="collez le code (ou la balise meta entière)">
         <small class="muted">Dans <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Search Console</a> → « Balise HTML » : copiez le <code>content="…"</code> ici (la balise complète marche aussi). Active la vérification du site.</small>
+    </div>
+
+    <div>
+        <label>Bing Webmaster — code de vérification <span class="muted">(optionnel)</span></label>
+        <input type="text" name="bing_site_verification" value="<?= e($bverify) ?>" placeholder="collez le code (ou la balise meta entière)">
+        <small class="muted">Dans <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener">Bing Webmaster Tools</a> → « Balise meta » : copiez le <code>content="…"</code>. Bing alimente aussi ChatGPT Search, DuckDuckGo et Ecosia.</small>
     </div>
 
     <div>
