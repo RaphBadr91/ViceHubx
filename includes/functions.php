@@ -1106,8 +1106,16 @@ function article_shop_cta(string $variant = 'full'): string
         : ($fr ? 'Édition fan ViceHub X. Paiement sécurisé Stripe.' : 'ViceHub X fan edition. Secure Stripe checkout.');
     $cta1 = $is_wp ? ($fr ? 'Voir ce wallpaper' : 'View this wallpaper') : ($fr ? 'Voir le produit' : 'View product');
 
+    // Achat DIRECT : produit externe (Amazon…) → lien revendeur tagué ; produit
+    // ViceHub (Stripe) → sa fiche. « Les gens peuvent acheter directement. »
+    $isExt = ($p['sale_type'] ?? 'external') === 'external' && !empty($p['url']);
+    $buyBtn = $isExt
+        ? '<a class="btn btn--primary" href="' . e(amazon_url((string) $p['url'])) . '" target="_blank" rel="sponsored nofollow noopener">'
+            . ($fr ? 'Acheter' : 'Buy') . ' · ' . e($p['merchant'] ?: 'Amazon') . ' ↗</a>'
+        : '<a class="btn btn--primary" href="' . e($purl) . '">' . $cta1 . ' →</a>';
+
     return '<aside class="art-cta">'
-        . '<a class="art-cta__media" href="' . e($purl) . '" aria-label="' . e($p['name']) . '">'
+        . '<a class="art-cta__media" href="' . e($isExt ? amazon_url((string) $p['url']) : $purl) . '"' . ($isExt ? ' target="_blank" rel="sponsored nofollow noopener"' : '') . ' aria-label="' . e($p['name']) . '">'
         . picture_html((string) $p['image'], (string) $p['name'], '', 'loading="lazy" decoding="async" onerror="(this.closest(\'picture\')||this).style.display=\'none\'"')
         . '<span class="art-cta__badge">' . e($badge) . '</span></a>'
         . '<div class="art-cta__body">'
@@ -1115,7 +1123,7 @@ function article_shop_cta(string $variant = 'full'): string
         . '<h3>' . $title . '</h3>'
         . '<p>« ' . e($p['name']) . ' » — <strong>' . $price . '</strong>. ' . $desc . '</p>'
         . '<div class="art-cta__btns">'
-        . '<a class="btn btn--primary" href="' . e($purl) . '">' . $cta1 . ' →</a>'
+        . $buyBtn
         . '<a class="btn btn--ghost" href="' . e($allurl) . '">' . ($fr ? 'La boutique' : 'The shop') . '</a>'
         . '</div></div></aside>';
 }
@@ -1510,7 +1518,25 @@ function cart_total(): float
     return $t;
 }
 
-/** Bouton d'achat contextuel : panier Stripe (produit direct) ou lien revendeur. */
+/**
+ * Ajoute le tag d'affiliation Amazon (réglage 'amazon_tag') à un lien Amazon,
+ * pour que chaque vente génère une commission. Sans effet sur les liens non-Amazon
+ * ou déjà tagués. Prépare le site à monétiser via Amazon Partenaires.
+ */
+function amazon_url(string $url): string
+{
+    $url = trim($url);
+    if ($url === '' || !preg_match('#(^|//|\.)amazon\.[a-z.]+#i', $url)) {
+        return $url;
+    }
+    $tag = trim((string) get_setting('amazon_tag', ''));
+    if ($tag === '' || preg_match('/[?&]tag=/i', $url)) {
+        return $url;
+    }
+    return $url . (strpos($url, '?') !== false ? '&' : '?') . 'tag=' . rawurlencode($tag);
+}
+
+/** Bouton d'achat contextuel : panier Stripe (produit direct) ou lien revendeur (Amazon). */
 function product_buy_button(array $p, bool $small = true): string
 {
     $cls = 'btn btn--primary product__buy' . ($small ? '' : ' btn--lg');
@@ -1523,7 +1549,7 @@ function product_buy_button(array $p, bool $small = true): string
             . '</form>';
     }
     $merchant = !empty($p['merchant']) ? ' · ' . e($p['merchant']) : '';
-    return '<a class="' . $cls . '" href="' . e((string) ($p['url'] ?? '#')) . '" target="_blank" rel="sponsored nofollow noopener">'
+    return '<a class="' . $cls . '" href="' . e(amazon_url((string) ($p['url'] ?? '#'))) . '" target="_blank" rel="sponsored nofollow noopener">'
         . e(t('shop_buy')) . $merchant . ' ↗</a>';
 }
 

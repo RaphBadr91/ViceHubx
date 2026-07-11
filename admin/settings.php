@@ -76,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (preg_match('/content=["\']([^"\']+)["\']/i', $bv, $mb)) { $bv = $mb[1]; }
         set_setting('bing_site_verification', $bv);
         set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
+        set_setting('amazon_tag', trim((string) ($_POST['amazon_tag'] ?? '')));
         $flash = ['ok', 'Réglages enregistrés.'];
     }
 }
@@ -88,6 +89,7 @@ $has_resend  = resend_enabled();
 $gverify = (string) get_setting('google_site_verification', '');
 $bverify = (string) get_setting('bing_site_verification', '');
 $ga_id   = (string) get_setting('analytics_id', '');
+$amztag  = (string) get_setting('amazon_tag', '');
 $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
@@ -136,6 +138,14 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Google Analytics 4 — ID de mesure</label>
         <input type="text" name="analytics_id" value="<?= e($ga_id) ?>" placeholder="G-XXXXXXXXXX">
         <small class="muted">Statistiques de visites. Ne se charge <strong>qu'après acceptation des cookies</strong> (conforme RGPD).</small>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">
+    <h2 style="font-size:1.1rem;margin:0 0 .2rem">🛒 Amazon Partenaires (affiliation)</h2>
+    <div>
+        <label>Tag d'affiliation Amazon</label>
+        <input type="text" name="amazon_tag" value="<?= e($amztag) ?>" placeholder="ex. vicehubx-21">
+        <small class="muted">Ton identifiant <a href="https://partenaires.amazon.fr" target="_blank" rel="noopener">Amazon Partenaires</a>. Il est <strong>ajouté automatiquement à tous tes liens Amazon</strong> (boutique + articles) → chaque vente te rapporte une commission. Laisse vide si pas encore inscrit.</small>
     </div>
 
     <div>
