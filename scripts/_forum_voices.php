@@ -196,7 +196,7 @@ function fv_topic_of(string $title): string
 }
 
 /** Construit une réponse naturelle pour un sujet donné. */
-function fv_reply(string $title, string $emojis = ''): string
+function fv_reply(string $title, string $emojis = '', string $replyTo = ''): string
 {
     static $cores = null, $openers = null, $closers = null;
     $cores   = $cores   ?? fv_cores();
@@ -212,8 +212,21 @@ function fv_reply(string $title, string $emojis = ''): string
     }
     $core = $pool[array_rand($pool)];
 
-    // Phrase principale (ouverture + cœur), terminée proprement.
-    $msg = $openers[array_rand($openers)] . $core;
+    // Interaction : souvent, on répond DIRECTEMENT au membre précédent (par son nom)
+    // → on dirait une vraie conversation entre membres.
+    $rt = trim($replyTo);
+    if ($rt !== '' && mt_rand(1, 100) <= 60) {
+        $lead = [
+            '@' . $rt . ' ', 'Bien vu ' . $rt . ', ', 'Pas faux ' . $rt . ', mais ',
+            'Carrément d’accord avec ' . $rt . ' — ', 'Franchement ' . $rt . ', ',
+            '+1 ' . $rt . ', ', 'Comme le dit ' . $rt . ', ', 'Perso je rejoins ' . $rt . ' : ',
+            'Mouais ' . $rt . ', j’suis pas convaincu… ', 'Exactement ' . $rt . ' ! ',
+        ];
+        $msg = $lead[array_rand($lead)] . $core;
+    } else {
+        // Phrase principale (ouverture + cœur), terminée proprement.
+        $msg = $openers[array_rand($openers)] . $core;
+    }
     $msg = mb_strtoupper(mb_substr($msg, 0, 1)) . mb_substr($msg, 1);
     if (!preg_match('/[.!?…]$/u', $msg)) { $msg .= '.'; }
     // Chute éventuelle, ajoutée comme phrase distincte (commence déjà par un espace).
@@ -244,4 +257,85 @@ function fv_starters(): array
         ['Les véhicules de GTA 6 qui vous font le plus rêver',
          'Supercars, muscle cars rétro, jet-skis, motos… le trailer a montré du beau monde. Quel type de véhicule vous voulez absolument conduire en premier dans Leonida ? Moi c’est décapotable + Ocean Drive au coucher de soleil, sans hésiter.'],
     ];
+}
+
+/**
+ * BATTEMENT DE CŒUR du forum, avec un RYTHME HUMAIN (une interaction toutes les
+ * 2 à 12 h, aléatoire) et des membres qui se répondent par leur nom → très réel.
+ * Appelé par forum-tick.php (web) et scripts/forum-life.php (CLI). Un « verrou »
+ * global (réglage forum_next_at) garantit qu'on ne poste jamais en rafale.
+ *
+ * Réglages : forum_gap_min_h (2) · forum_gap_max_h (12) · forum_new_chance (6).
+ * @return string message de statut
+ */
+function fv_heartbeat(array $opts = []): string
+{
+    $pdo = db();
+    try { $pdo->query('SELECT 1 FROM forum_bot_agents LIMIT 1'); }
+    catch (Throwable $e) { return "Table forum_bot_agents absente. Lance gen-forum-users.php."; }
+
+    $force  = !empty($opts['force']);
+    $minH   = max(1, (int) get_setting('forum_gap_min_h', '2'));
+    $maxH   = max($minH, (int) get_setting('forum_gap_max_h', '12'));
+    $now    = time();
+    $nextAt = (int) get_setting('forum_next_at', '0');
+
+    // Verrou de rythme : tant que l'heure n'est pas venue, on ne poste rien.
+    if (!$force && $now < $nextAt) {
+        return "⏳ Pas encore l'heure. Prochaine interaction dans ~" . max(1, (int) ceil(($nextAt - $now) / 60)) . " min.";
+    }
+
+    // 1 membre IA : « dû » selon sa cadence en priorité, sinon un actif au hasard.
+    $agent = $pdo->query('SELECT user_id, cadence_days, emojis FROM forum_bot_agents WHERE active=1 AND next_post_at <= NOW() ORDER BY next_post_at ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC)
+        ?: $pdo->query('SELECT user_id, cadence_days, emojis FROM forum_bot_agents WHERE active=1 ORDER BY RAND() LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    if (!$agent) { return "Aucun membre IA actif."; }
+    $uid = (int) $agent['user_id'];
+
+    // Sujets « refroidis » : dernier message il y a AU MOINS minH h → on espace les
+    // réponses dans un même fil (2-12 h entre deux prises de parole).
+    $threads = $pdo->query(
+        "SELECT t.id, t.title,
+            (SELECT p.user_id FROM forum_posts p WHERE p.thread_id=t.id ORDER BY p.id DESC LIMIT 1) AS last_uid,
+            (SELECT COALESCE(u.display_name,u.username) FROM forum_posts p LEFT JOIN users u ON u.id=p.user_id WHERE p.thread_id=t.id ORDER BY p.id DESC LIMIT 1) AS last_name
+         FROM forum_threads t
+         WHERE t.locked=0 AND (t.last_post_at IS NULL OR t.last_post_at <= (NOW() - INTERVAL {$minH} HOUR))
+         ORDER BY t.last_post_at DESC LIMIT 30"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
+    $posted = 0; $newThread = 0;
+    if ($threads) {
+        shuffle($threads);
+        $t = null;
+        foreach ($threads as $c) { if ((int) $c['last_uid'] !== $uid) { $t = $c; break; } } // pas répondre juste après soi
+        if (!$t) { $t = $threads[0]; }
+        $replyTo = ((int) $t['last_uid'] !== $uid) ? (string) $t['last_name'] : '';
+        $body = fv_reply((string) $t['title'], (string) ($agent['emojis'] ?? ''), $replyTo);
+        try {
+            $pdo->prepare('INSERT INTO forum_posts (thread_id, user_id, body, created_at) VALUES (?,?,?,NOW())')->execute([(int) $t['id'], $uid, $body]);
+            $pdo->prepare('UPDATE forum_threads SET last_post_at = NOW() WHERE id=?')->execute([(int) $t['id']]);
+            $cad = max(1.0, (float) ($agent['cadence_days'] ?? 5));
+            $pdo->prepare('UPDATE forum_bot_agents SET last_post_at=NOW(), next_post_at=? WHERE user_id=?')
+                ->execute([date('Y-m-d H:i:s', $now + (int) ($cad * 86400 * (mt_rand(75, 125) / 100))), $uid]);
+            $posted = 1;
+        } catch (Throwable $e) { /* on ignore et on reprogramme quand même */ }
+    }
+
+    // De temps en temps, un membre lance un NOUVEAU sujet (contenu SEO frais).
+    if (mt_rand(1, 100) <= max(0, (int) get_setting('forum_new_chance', '6'))) {
+        $starters = fv_starters();
+        shuffle($starters);
+        $exists = $pdo->prepare('SELECT 1 FROM forum_threads WHERE title=? LIMIT 1');
+        foreach ($starters as $st) {
+            $exists->execute([$st[0]]);
+            if ($exists->fetchColumn()) { continue; }
+            try { create_thread(6, $uid, $st[0], $st[1]); $newThread = 1; } catch (Throwable $e) { /* ignore */ }
+            break;
+        }
+    }
+
+    // Prochaine interaction dans 2 à 12 h (aléatoire) → cadence humaine, jamais en rafale.
+    $gap = mt_rand($minH * 60, $maxH * 60) * 60;
+    set_setting('forum_next_at', (string) ($now + $gap));
+
+    return "OK : {$posted} réponse(s)" . ($newThread ? " + 1 sujet" : '') . ". Prochaine interaction dans ~" . round($gap / 3600, 1) . " h.";
 }

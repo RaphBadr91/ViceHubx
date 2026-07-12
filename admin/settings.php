@@ -77,6 +77,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('bing_site_verification', $bv);
         set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
         set_setting('amazon_tag', trim((string) ($_POST['amazon_tag'] ?? '')));
+        // --- Forum : vie automatique (rythme des interactions) ---
+        $gmin = max(1, min(48, (int) ($_POST['forum_gap_min_h'] ?? 2)));
+        $gmax = max($gmin, min(72, (int) ($_POST['forum_gap_max_h'] ?? 12)));
+        set_setting('forum_gap_min_h', (string) $gmin);
+        set_setting('forum_gap_max_h', (string) $gmax);
+        set_setting('forum_new_chance', (string) max(0, min(100, (int) ($_POST['forum_new_chance'] ?? 6))));
         $flash = ['ok', 'Réglages enregistrés.'];
     }
 }
@@ -90,6 +96,12 @@ $gverify = (string) get_setting('google_site_verification', '');
 $bverify = (string) get_setting('bing_site_verification', '');
 $ga_id   = (string) get_setting('analytics_id', '');
 $amztag  = (string) get_setting('amazon_tag', '');
+$fgmin   = (int) get_setting('forum_gap_min_h', '2');
+$fgmax   = (int) get_setting('forum_gap_max_h', '12');
+$fnew    = (int) get_setting('forum_new_chance', '6');
+$fkey    = (string) get_setting('forum_tick_key', '');
+if ($fkey === '') { $fkey = bin2hex(random_bytes(16)); set_setting('forum_tick_key', $fkey); }
+$fcron   = rtrim(site_base_url(), '/') . '/forum-tick.php?key=' . $fkey;
 $adsense = (string) get_setting('adsense_client', '');
 $adslot  = (string) get_setting('adsense_slot', '');
 $video   = (string) get_setting('hero_video', '');
@@ -146,6 +158,20 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Tag d'affiliation Amazon</label>
         <input type="text" name="amazon_tag" value="<?= e($amztag) ?>" placeholder="ex. vicehubx-21">
         <small class="muted">Ton identifiant <a href="https://partenaires.amazon.fr" target="_blank" rel="noopener">Amazon Partenaires</a>. Il est <strong>ajouté automatiquement à tous tes liens Amazon</strong> (boutique + articles) → chaque vente te rapporte une commission. Laisse vide si pas encore inscrit.</small>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">
+    <h2 style="font-size:1.1rem;margin:0 0 .2rem">💬 Forum — vie automatique (100 membres)</h2>
+    <p class="muted" style="font-size:.85rem;margin:0 0 .6rem">Les membres IA se répondent entre eux à un rythme humain (une interaction toutes les X à Y heures, aléatoire, jamais en rafale). Branche le lien ci-dessous sur un cron (toutes les 20-30 min).</p>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:130px"><label>Intervalle min (h)</label><input type="number" name="forum_gap_min_h" value="<?= (int) $fgmin ?>" min="1" max="48"></div>
+        <div style="flex:1;min-width:130px"><label>Intervalle max (h)</label><input type="number" name="forum_gap_max_h" value="<?= (int) $fgmax ?>" min="1" max="72"></div>
+        <div style="flex:1;min-width:130px"><label>Nouveau sujet (%)</label><input type="number" name="forum_new_chance" value="<?= (int) $fnew ?>" min="0" max="100"></div>
+    </div>
+    <div>
+        <label>Lien cron du forum (à brancher toutes les 20-30 min)</label>
+        <input type="text" readonly value="<?= e($fcron) ?>" onclick="this.select()" style="font-family:monospace;font-size:.8rem">
+        <small class="muted">Cron cPanel : <code>curl -s "<?= e($fcron) ?>" &gt;/dev/null 2>&1</code>. Le verrou interne décide quand poster (respecte l'intervalle). Défaut : 1 interaction toutes les 2 à 12 h.</small>
     </div>
 
     <div>
