@@ -3,7 +3,9 @@
  * ViceHub X — Tableau de bord Analytics (admin).
  * Vue d'ensemble de l'activité : contenu, communauté, boutique et tendances.
  */
-$ADMIN_TITLE = APP_NAME . ' — Analytics';
+// ⚠️ Ne PAS utiliser de constante de config ici : elle n'est définie qu'après le
+// require ci-dessous (config.php). Sur PHP 8.1 une constante non définie = fatal 500.
+$ADMIN_TITLE = 'ViceHub X — Analytics';
 require __DIR__ . '/../includes/admin_header.php';
 
 /** Scalaire d'une requête (0 si la table/colonne n'existe pas). */
