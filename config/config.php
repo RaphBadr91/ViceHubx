@@ -69,7 +69,11 @@ define('UPLOAD_ALLOWED', ['image/jpeg', 'image/png', 'image/webp']);
 /* ------------------------------------------------------------------ */
 // Sécurisé par défaut : on n'affiche les erreurs QUE si APP_ENV est explicitement
 // un environnement de développement. En prod (ou si non défini), erreurs masquées.
-$IS_DEV = in_array(strtolower((string) (getenv('APP_ENV') ?: '')), ['dev', 'development', 'local'], true);
+// DÉPANNAGE : créer un fichier vide « config/.debug » (via cPanel) affiche
+// temporairement l'erreur exacte à l'écran, MÊME si la base est injoignable —
+// idéal pour localiser un « écran noir » / HTTP 500. À SUPPRIMER ensuite.
+$IS_DEV = in_array(strtolower((string) (getenv('APP_ENV') ?: '')), ['dev', 'development', 'local'], true)
+    || is_file(__DIR__ . '/.debug');
 error_reporting($IS_DEV ? E_ALL : 0);
 ini_set('display_errors', $IS_DEV ? '1' : '0');
 ini_set('log_errors', '1'); // toujours journalisées (jamais affichées au visiteur en prod)
