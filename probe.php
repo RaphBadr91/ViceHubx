@@ -48,9 +48,23 @@ echo "4) fonctions récentes : "
     . 'unique_slug=' . (function_exists('unique_slug') ? 'ok' : 'ABSENTE') . ' '
     . 'ai_translate_missing=' . (function_exists('ai_translate_missing') ? 'ok' : 'ABSENTE') . "\n\n";
 
-echo "5) require includes/admin_header.php (sans rendu) ... \n";
-// On simule juste l'inclusion des dépendances admin, pas le rendu HTML complet.
-echo "   (sauté — nécessite une session admin)\n\n";
+echo "5) chargement de includes/admin_header.php + admin_footer.php ... \n";
+// Simule une session admin pour passer require_admin(), puis inclut les fichiers
+// partagés par TOUTES les pages admin (dont analytics). Le HTML est jeté.
+try {
+    $aid = (int) (db()->query("SELECT id FROM users WHERE role IN ('admin','editor') ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0);
+    $_SESSION['user_id'] = $aid ?: 1;
+    ob_start();
+    require __DIR__ . '/includes/admin_header.php';
+    require __DIR__ . '/includes/admin_footer.php';
+    ob_end_clean();
+    echo "   OK — admin_header + admin_footer se chargent sans erreur (admin id=$aid)\n\n";
+} catch (Throwable $e) {
+    while (ob_get_level() > 0) { ob_end_clean(); }
+    echo "   ❌ ERREUR : " . $e->getMessage() . "\n   @ " . $e->getFile() . ':' . $e->getLine() . "\n\n";
+}
 
-echo "=== TOUT EST OK CÔTÉ PHP/BASE ===\n";
-echo "Si tu vois ce message, le coeur fonctionne : le souci est ailleurs (page précise ou .htaccess).\n";
+echo "=== FIN DU PROBE ===\n";
+echo "Si tout est OK ici mais qu'analytics.php plante quand même : c'est un souci\n";
+echo "de RESSOURCES serveur (limite de processus O2Switch) ou de .htaccess. Sinon\n";
+echo "l'erreur exacte est affichée ci-dessus. Copie-colle TOUT ce texte.\n";
