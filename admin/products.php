@@ -29,6 +29,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Auto-réparation : normalise en minuscules les slugs legacy en majuscules
+// (URL propres + évite la page 404 « noire » due au routage. BINARY = compare
+// octet à octet, sinon la collation insensible à la casse ne trouverait rien).
+try { db()->exec('UPDATE products SET slug = LOWER(slug) WHERE BINARY slug <> LOWER(slug)'); } catch (Throwable $e) {}
+
 $products = db()->query('SELECT * FROM products ORDER BY sort ASC, id ASC')->fetchAll();
 $cats = product_categories();
 $cta_count = max(1, min(50, (int) get_setting('cta_count', '6')));

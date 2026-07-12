@@ -47,10 +47,13 @@ AddDefaultCharset UTF-8
     RewriteRule ^ /%1 [R=301,L]
 
     # 2) URL « parlantes » pour les contenus dynamiques.
-    RewriteRule ^article/([a-z0-9-]+)/?$   pages/article.php?slug=$1        [QSA,L]
-    RewriteRule ^produit/([a-z0-9-]+)/?$   pages/product.php?slug=$1        [QSA,L]
-    RewriteRule ^sujet/([0-9]+)/?$         pages/forum-thread.php?id=$1     [QSA,L]
-    RewriteRule ^categorie/([a-z0-9-]+)/?$ pages/forum-category.php?cat=$1  [QSA,L]
+    #    Classe [A-Za-z0-9-] : tolère un slug legacy en majuscules (sinon page 404
+    #    « noire » car la requête n'atteint jamais PHP). Les nouveaux slugs sont
+    #    forcés en minuscules côté PHP (unique_slug).
+    RewriteRule ^article/([A-Za-z0-9-]+)/?$   pages/article.php?slug=$1        [QSA,L]
+    RewriteRule ^produit/([A-Za-z0-9-]+)/?$   pages/product.php?slug=$1        [QSA,L]
+    RewriteRule ^sujet/([0-9]+)/?$            pages/forum-thread.php?id=$1     [QSA,L]
+    RewriteRule ^categorie/([A-Za-z0-9-]+)/?$ pages/forum-category.php?cat=$1  [QSA,L]
     RewriteRule ^membre/([a-zA-Z0-9_.-]+)/?$ pages/profil.php?u=$1          [QSA,L]
 
     # 3) Page simple : /news → pages/news.php (uniquement si la page existe).
