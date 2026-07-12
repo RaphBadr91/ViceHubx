@@ -92,7 +92,7 @@ require ROOT_PATH . '/includes/header.php';
     <div class="os-grid" style="margin-top:1rem">
         <a class="os-card glass" href="<?= e(with_lang(url('pages/gta6.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🎮 <?= e($fr ? 'GTA 6 : tout savoir' : 'GTA 6: everything') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/map.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🗺️ <?= e($fr ? 'La carte de Leonida' : 'The Leonida map') ?></span></span><span class="os-card__arrow">→</span></a>
-        <a class="os-card glass" href="<?= e(with_lang(url('pages/characters.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🎭 <?= e($fr ? 'Jason &amp; Lucia' : 'Jason &amp; Lucia') ?></span></span><span class="os-card__arrow">→</span></a>
+        <a class="os-card glass" href="<?= e(with_lang(url('pages/characters.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🎭 <?= e($fr ? 'Jason & Lucia' : 'Jason & Lucia') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/news.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">📰 <?= e($fr ? 'Actus GTA 6' : 'GTA 6 news') ?></span></span><span class="os-card__arrow">→</span></a>
     </div>
 

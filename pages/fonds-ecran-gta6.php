@@ -69,7 +69,7 @@ require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">
     <span class="eyebrow">🖥️ <?= e($fr ? 'Téléchargement immédiat · sans filigrane' : 'Instant download · watermark-free') ?></span>
-    <h1><?= e($fr ? 'Fonds d’écran GTA 6 &amp; Vice City' : 'GTA 6 &amp; Vice City wallpapers') ?></h1>
+    <h1><?= e($fr ? 'Fonds d’écran GTA 6 & Vice City' : 'GTA 6 & Vice City wallpapers') ?></h1>
     <p class="lede" style="max-width:70ch;font-size:1.1rem;color:var(--muted,#b9b3c9);margin:.6rem 0 0">
         <?= $fr
             ? 'Habille ton écran avec l’univers néon de <strong>Vice City</strong> : supercars, skylines, plages et nuits électriques. Des <strong>fonds d’écran HD</strong> pour PC et téléphone, livrés instantanément par e-mail, sans filigrane. Et des <strong>packs</strong> à prix cassé pour tout avoir.'

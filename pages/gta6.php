@@ -82,7 +82,7 @@ require ROOT_PATH . '/includes/header.php';
         <div class="ref glass"><div class="big"><?= $days_left ?></div><small><?= e($fr ? 'jours avant la sortie' : 'days until launch') ?></small></div>
         <div class="ref glass"><div class="big">19/11/26</div><small><?= e($fr ? 'Date de sortie' : 'Release date') ?></small></div>
         <div class="ref glass"><div class="big">PS5 · Xbox</div><small><?= e($fr ? 'Plateformes au lancement' : 'Launch platforms') ?></small></div>
-        <div class="ref glass"><div class="big">2</div><small><?= e($fr ? 'Héros : Jason &amp; Lucia' : 'Heroes: Jason &amp; Lucia') ?></small></div>
+        <div class="ref glass"><div class="big">2</div><small><?= e($fr ? 'Héros : Jason & Lucia' : 'Heroes: Jason & Lucia') ?></small></div>
     </div>
 
     <!-- Date de sortie -->
@@ -92,7 +92,7 @@ require ROOT_PATH . '/includes/header.php';
         : 'Rockstar Games set <strong>GTA 6</strong> for <strong>November 19, 2026</strong>, on PlayStation 5 and Xbox Series X|S. After a first trailer in late 2023 and a second in 2025, the studio confirmed this fall window — one of the most anticipated launches in gaming history. Our homepage countdown tracks it live.' ?></p>
 
     <!-- Prix & éditions -->
-    <h2 id="editions">💸 <?= e($fr ? 'Prix &amp; éditions : Standard ou Ultimate ?' : 'Price &amp; editions: Standard or Ultimate?') ?></h2>
+    <h2 id="editions">💸 <?= e($fr ? 'Prix & éditions : Standard ou Ultimate ?' : 'Price & editions: Standard or Ultimate?') ?></h2>
     <p><?= $fr
         ? 'GTA 6 se décline en <strong>deux éditions</strong> seulement. Voici le comparatif clair pour choisir.'
         : 'GTA 6 comes in <strong>two editions</strong> only. Here is the clear comparison to help you choose.' ?></p>
@@ -114,8 +114,8 @@ require ROOT_PATH . '/includes/header.php';
             <p style="font-size:1.6rem;font-weight:800;margin:.2rem 0">99,99 $ <span style="font-size:1rem;color:var(--muted,#b9b3c9)">/ 99,99 €</span></p>
             <ul style="line-height:1.9;margin:.6rem 0 0;padding-left:1.1rem">
                 <li><?= e($fr ? 'Tout le contenu de l’édition Standard' : 'Everything in Standard') ?></li>
-                <li><?= e($fr ? 'Véhicules &amp; armes exclusifs' : 'Exclusive vehicles &amp; weapons') ?></li>
-                <li><?= e($fr ? 'Packs cosmétiques, boutiques &amp; garage dédiés' : 'Cosmetic packs, dedicated shops &amp; garage') ?></li>
+                <li><?= e($fr ? 'Véhicules & armes exclusifs' : 'Exclusive vehicles & weapons') ?></li>
+                <li><?= e($fr ? 'Packs cosmétiques, boutiques & garage dédiés' : 'Cosmetic packs, dedicated shops & garage') ?></li>
                 <li><?= e($fr ? 'Mission annexe + Vintage Vice City Pack' : 'Side mission + Vintage Vice City Pack') ?></li>
                 <li><?= e($fr ? '1 mois de GTA+ (PlayStation / Xbox)' : '1 month of GTA+ (PlayStation / Xbox)') ?></li>
                 <li><em><?= e($fr ? 'Uniquement en numérique' : 'Digital only') ?></em></li>
@@ -127,13 +127,13 @@ require ROOT_PATH . '/includes/header.php';
         : 'Indicative prices, may vary by region and store. ViceHub X is an independent, unofficial fan media: we do not sell the game.') ?></p>
 
     <!-- Précommande -->
-    <h2 id="precommande">🎁 <?= e($fr ? 'Précommande &amp; bonus' : 'Pre-order &amp; bonuses') ?></h2>
+    <h2 id="precommande">🎁 <?= e($fr ? 'Précommande & bonus' : 'Pre-order & bonuses') ?></h2>
     <p><?= $fr
         ? 'La précommande débloque le <strong>Vintage Vice City Pack</strong> : un véhicule, un garage et des cosmétiques pour Jason et Lucia, pensés dans l’esprit rétro de la ville. Ce pack est <strong>inclus d’office dans l’édition Ultimate</strong>. Les bonus exacts et les dates limites dépendent de la boutique (PlayStation Store, Xbox, Rockstar Store) — vérifie toujours la fiche officielle avant d’acheter.'
         : 'Pre-ordering unlocks the <strong>Vintage Vice City Pack</strong>: a vehicle, a garage and cosmetics for Jason and Lucia, in the city’s retro spirit. This pack is <strong>included by default in the Ultimate edition</strong>. Exact bonuses and deadlines depend on the store (PlayStation Store, Xbox, Rockstar Store) — always check the official listing before buying.' ?></p>
 
     <!-- Histoire -->
-    <h2 id="histoire">🎭 <?= e($fr ? 'L’histoire : Jason &amp; Lucia' : 'The story: Jason &amp; Lucia') ?></h2>
+    <h2 id="histoire">🎭 <?= e($fr ? 'L’histoire : Jason & Lucia' : 'The story: Jason & Lucia') ?></h2>
     <p><?= $fr
         ? 'Pour la première fois dans un GTA principal, on incarne un <strong>duo</strong> : Jason et Lucia. Lucia est la <strong>première protagoniste féminine</strong> de la série. Leur relation, façon Bonnie &amp; Clyde des temps modernes, mêle braquages, loyauté et survie dans une Leonida impitoyable. On décortique chaque indice du trailer dans notre '
         : 'For the first time in a mainline GTA, you play a <strong>duo</strong>: Jason and Lucia. Lucia is the series’ <strong>first female protagonist</strong>. Their modern Bonnie &amp; Clyde bond blends heists, loyalty and survival across a ruthless Leonida. We break down every trailer clue in our ' ?>
@@ -174,8 +174,8 @@ require ROOT_PATH . '/includes/header.php';
     <h2 id="aller-plus-loin">🔗 <?= e($fr ? 'Pour aller plus loin' : 'Go further') ?></h2>
     <div class="os-grid" style="margin-top:1rem">
         <a class="os-card glass" href="<?= e(with_lang(url('pages/news.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">📰 <?= e($fr ? 'Toutes les actus GTA 6' : 'All GTA 6 news') ?></span></span><span class="os-card__arrow">→</span></a>
-        <a class="os-card glass" href="<?= e(with_lang(url('pages/guides.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">📘 <?= e($fr ? 'Guides &amp; astuces' : 'Guides &amp; tips') ?></span></span><span class="os-card__arrow">→</span></a>
-        <a class="os-card glass" href="<?= e(with_lang(url('pages/leaks-lab.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🔬 <?= e($fr ? 'Leaks &amp; fiabilité' : 'Leaks &amp; reliability') ?></span></span><span class="os-card__arrow">→</span></a>
+        <a class="os-card glass" href="<?= e(with_lang(url('pages/guides.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">📘 <?= e($fr ? 'Guides & astuces' : 'Guides & tips') ?></span></span><span class="os-card__arrow">→</span></a>
+        <a class="os-card glass" href="<?= e(with_lang(url('pages/leaks-lab.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🔬 <?= e($fr ? 'Leaks & fiabilité' : 'Leaks & reliability') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/gta6-vs-gta5.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">⚔️ <?= e($fr ? 'GTA 6 vs GTA 5' : 'GTA 6 vs GTA 5') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/vehicles.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">🚗 <?= e($fr ? 'Véhicules' : 'Vehicles') ?></span></span><span class="os-card__arrow">→</span></a>
         <a class="os-card glass" href="<?= e(with_lang(url('pages/forum.php'))) ?>"><span class="os-card__txt"><span class="os-card__name">💬 <?= e($fr ? 'Le Forum' : 'The Forum') ?></span></span><span class="os-card__arrow">→</span></a>
