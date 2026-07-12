@@ -59,6 +59,7 @@ $nav = [
         ['evenements.php',  lang() === 'fr' ? 'Événements' : 'Events'],
     ]],
     ['label' => t('nav_community'), 'children' => [
+        ['vice-persona.php', lang() === 'fr' ? '🌴 Ton perso Vice City' : '🌴 Your Vice City persona'],
         ['forum.php',      'Forum'],
         ['classement.php', lang() === 'fr' ? 'Classement' : 'Leaderboard'],
         ['galerie.php',    lang() === 'fr' ? 'Fan-arts' : 'Fan-arts'],
