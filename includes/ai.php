@@ -626,9 +626,18 @@ function ai_blog_cat_id(): int
     return $id;
 }
 
-/** Tons rédactionnels (pour toucher un maximum de lecteurs). */
-function ai_tones(): array
+/** Tons rédactionnels (pour toucher un maximum de lecteurs). Bilingue FR/EN. */
+function ai_tones(string $lang = 'fr'): array
 {
+    if ($lang === 'en') {
+        return [
+            'journalistique' => 'JOURNALISTIC TONE: factual, structured and credible, like a major gaming outlet (IGN, GameSpot). Put facts in perspective, cite numbers, stay neutral and professional.',
+            'joueur'         => 'GAMER TONE: direct, enthusiastic, "controller-level". Talk about gameplay, fun and hype, with a few natural gaming expressions.',
+            'connaisseur'    => 'CONNOISSEUR TONE: GTA saga expert. Precise references to previous entries, sharp analysis, mastered vocabulary, historical context.',
+            'passionne'      => 'PASSIONATE TONE: vibrant and nostalgic about Vice City, emotional, conveying love for the franchise and building anticipation.',
+            'geek'           => 'GEEK TONE: technical depth (RAGE engine, 60 fps, physics, NPC AI, ray tracing), easter eggs, theories and hidden trailer details.',
+        ];
+    }
     return [
         'journalistique' => 'TON JOURNALISTIQUE : factuel, structuré et crédible, façon grand média gaming (IGN, JVC). Mets les faits en perspective, cite des chiffres, reste neutre et pro.',
         'joueur'         => 'TON JOUEUR : direct, enthousiaste, « à hauteur de manette ». Parle d\'expérience de jeu, de fun, de hype, avec quelques expressions gaming naturelles.',
@@ -636,6 +645,13 @@ function ai_tones(): array
         'passionne'      => 'TON PASSIONNÉ : vibrant et nostalgique de Vice City, chargé d\'émotion, qui transmet l\'amour de la licence et fait monter l\'attente.',
         'geek'           => 'TON GEEK : pointu sur la technique (moteur RAGE, 60 fps, physique, IA des PNJ, ray tracing), les easter eggs, les théories et les détails cachés des trailers.',
     ];
+}
+
+/** Résout une langue : 'fr'/'en' fixe, ou 'both' → alterne selon l'index. */
+function ai_resolve_lang(string $sel, int $index = 0): string
+{
+    if ($sel === 'en' || $sel === 'fr') { return $sel; }
+    return ($index % 2 === 0) ? 'fr' : 'en'; // 'both' → alternance FR/EN
 }
 
 /** Libellés courts des 5 personnalités (pour les menus admin). Clés = ai_tones(). */
@@ -664,60 +680,98 @@ function ai_resolve_tone(string $sel, int $index = 0): string
  * Génère UN article COMPLET (~2000 mots) via l'IA, avec un TON donné (ou aléatoire).
  * @return array{title:string,excerpt:string,body:string,image:string,image_prompt:string,category:string,tone:string}
  */
-function ai_generate_article(?string $topic = null, ?string $toneKey = null): array
+function ai_generate_article(?string $topic = null, ?string $toneKey = null, string $lang = 'fr'): array
 {
+    $lang    = $lang === 'en' ? 'en' : 'fr';
     $topics  = ai_topics();
     $topic   = $topic ?: $topics[array_rand($topics)];
-    $tones   = ai_tones();
+    $tones   = ai_tones($lang);
     $toneKey = ($toneKey !== null && isset($tones[$toneKey])) ? $toneKey : (string) array_rand($tones);
 
-    // Anti-doublon SEO : on liste les titres/metas déjà utilisés pour que l'IA en
-    // produise de 100% différents (chaque page cible d'autres requêtes Google).
+    // Anti-doublon SEO : titres/metas déjà utilisés (même langue) à ne pas reprendre.
     $used = [];
     try {
-        $used = db()->query("SELECT title, excerpt FROM articles ORDER BY id DESC LIMIT 60")->fetchAll(PDO::FETCH_ASSOC);
+        $st = db()->prepare("SELECT title, excerpt FROM articles WHERE lang = ? ORDER BY id DESC LIMIT 60");
+        $st->execute([$lang]);
+        $used = $st->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $e) {
         $used = [];
     }
-    $avoid = '';
-    if ($used) {
-        $titles = array_filter(array_map(fn($r) => mb_substr((string) $r['title'], 0, 100), $used));
-        $metas  = array_filter(array_map(fn($r) => mb_substr((string) $r['excerpt'], 0, 120), $used));
-        $avoid  = "\n\n⛔ DÉJÀ UTILISÉS SUR LE SITE — INTERDIT de reprendre ou paraphraser (trouve un TITRE et une META 100% différents, ciblant d'AUTRES mots-clés) :\n"
-            . "Titres existants :\n- " . implode("\n- ", array_slice($titles, 0, 40)) . "\n"
-            . "Metas existantes :\n- " . implode("\n- ", array_slice($metas, 0, 20)) . "\n";
+    $titles = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['title'], 0, 100), $used)), 0, 40) : [];
+    $metas  = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['excerpt'], 0, 120), $used)), 0, 20) : [];
+
+    $facts = 'game developed by Rockstar Games (publisher Take-Two); 1st trailer December 2023, 2nd trailer 2025; '
+        . 'release announced November 19, 2026 on PS5 and Xbox Series X|S; Standard ($79.99) and Ultimate ($99.99) editions; '
+        . 'dual protagonists Jason Duval & Lucia Caminos (Lucia = first female lead of the main series); fictional state of '
+        . 'Leonida (inspired by Florida) and return of Vice City; RAGE engine; radio stations incl. V-Rock. Everything else '
+        . '(detailed map, exact vehicles, PC date, online content) is NOT confirmed: treat it as rumor.';
+
+    if ($lang === 'en') {
+        $avoid = '';
+        if ($titles) {
+            $avoid = "\n\n⛔ ALREADY USED ON THE SITE — do NOT reuse or paraphrase (find a 100% different TITLE and META, targeting OTHER keywords):\n"
+                . "Existing titles:\n- " . implode("\n- ", $titles) . "\n"
+                . ($metas ? "Existing metas:\n- " . implode("\n- ", $metas) . "\n" : '');
+        }
+        $system = 'You are a SENIOR SEO writer for ViceHub X, an INDEPENDENT, UNOFFICIAL fan media about GTA VI and Vice City. '
+            . 'You write flawless, rich, fluent ENGLISH. '
+            . "\n\nGOLDEN RULE — RELIABILITY: publish ONLY VERIFIED information. NEVER invent a date, price, name, feature or "
+            . 'statement. ALWAYS clearly separate CONFIRMED FACTS from rumors: any unofficial info must be explicitly framed '
+            . 'as "rumor", "unconfirmed" or "according to leaks". No speculation presented as fact. When in doubt, stay '
+            . 'general or present it as community discussion. '
+            . "\n\nCONFIRMED FACTS (use as-is): " . $facts
+            . "\n\nGoal: a REFERENCE article, accurate and useful, worthy of Google's #1 spot and an AI Overview. "
+            . 'Write like a PASSIONATE HUMAN (never mention AI). ' . $tones[$toneKey];
+        $user = "Write a COMPLETE, ORIGINAL article of about 2000 words on: \"{$topic}\".\n\n"
+            . "Rules:\n"
+            . "- ABSOLUTE RELIABILITY: state only VERIFIED facts. Any unofficial info = framed as rumor/leak (\"according to rumors…\", \"unconfirmed\"). Never invent a date, price, name or feature.\n"
+            . "- 100% UNIQUE TITLE and META DESCRIPTION: never the same as another article. Each article targets DIFFERENT keywords/angle to capture maximum Google searches (long tail).\n"
+            . "- ~2000 words, rich, no filler, SEO-optimized (natural keywords: GTA 6, GTA VI, Vice City, Leonida).\n"
+            . "- Structure: strong hook, then 5-7 <h2> sections (with <h3> if useful), <ul>/<ol> lists, and a final <h2>FAQ</h2> section with 3-4 questions as <h3>Question?</h3><p>Answer</p> (ideal for Google AI Overview).\n"
+            . "- ALLOWED tags only: <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. NO <a>, NO <h1>, NO markdown.\n"
+            . "- Write like a PASSIONATE HUMAN: NEVER say you are an AI, add NO technical marker. Do NOT end with \"===END===\" or any separator: the last FAQ <p> ends the article.\n"
+            . $avoid . "\n"
+            . "STRICT RESPONSE FORMAT (nothing else):\n"
+            . 'LINE 1 = compact JSON: {"categorie":"news|guides|leaks|blog|trailers","titre":"unique catchy title <=90 chars with the main keyword (IN ENGLISH)","extrait":"meta description <=180 chars (IN ENGLISH)","theme_image":"one word among: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"ENGLISH prompt for a photorealistic Higgsfield illustration, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . "LINE 2 = exactly: ===CORPS===\n"
+            . "THEN = the article body in HTML (~2000 words, IN ENGLISH).";
+    } else {
+        $avoid = '';
+        if ($titles) {
+            $avoid = "\n\n⛔ DÉJÀ UTILISÉS SUR LE SITE — INTERDIT de reprendre ou paraphraser (trouve un TITRE et une META 100% différents, ciblant d'AUTRES mots-clés) :\n"
+                . "Titres existants :\n- " . implode("\n- ", $titles) . "\n"
+                . ($metas ? "Metas existantes :\n- " . implode("\n- ", $metas) . "\n" : '');
+        }
+        $system = 'Tu es rédacteur SEO SENIOR pour ViceHub X, média de fans INDÉPENDANT et NON OFFICIEL sur GTA VI '
+            . 'et Vice City. Tu écris un français impeccable, riche et fluide. '
+            . "\n\nRÈGLE D'OR — FIABILITÉ : tu ne publies QUE des informations VÉRIFIÉES. Tu N'INVENTES JAMAIS de "
+            . 'date, prix, nom, fonctionnalité ou déclaration. Tu distingues TOUJOURS clairement les FAITS CONFIRMÉS '
+            . 'des rumeurs : toute information non officielle doit être explicitement présentée comme « rumeur », '
+            . '« non confirmé » ou « selon des fuites ». Aucune spéculation présentée comme un fait. En cas de doute, '
+            . 'reste général ou présente-le comme un débat de la communauté. '
+            . "\n\nFAITS CONFIRMÉS (utilisables tels quels) : jeu développé par Rockstar Games (éditeur Take-Two) ; "
+            . '1er trailer en décembre 2023, 2e trailer en 2025 ; sortie annoncée le 19 novembre 2026 sur PS5 et '
+            . 'Xbox Series X|S ; éditions Standard (79,99$) et Ultimate (99,99$) ; duo de protagonistes Jason Duval & '
+            . 'Lucia Caminos (Lucia = 1re protagoniste féminine de la série principale) ; État fictif de Leonida '
+            . '(inspiré de la Floride) et retour de Vice City ; moteur RAGE ; radios dont V-Rock. Tout le reste '
+            . '(carte détaillée, véhicules précis, dates PC, contenu online) n\'est PAS confirmé : traite-le en rumeur. '
+            . "\n\nObjectif : un article de RÉFÉRENCE, exact et utile, qui mérite la 1re place Google et une AI Overview. "
+            . 'Écris comme un HUMAIN passionné (jamais de mention d\'IA). ' . $tones[$toneKey];
+        $user = "Rédige un ARTICLE COMPLET et ORIGINAL d'environ 2000 mots sur : « {$topic} ».\n\n"
+            . "Règles :\n"
+            . "- FIABILITÉ ABSOLUE : n'affirme que des faits VÉRIFIÉS. Toute info non officielle = présentée comme rumeur/fuite (« selon des rumeurs… », « non confirmé »). Jamais d'invention de date, prix, nom ou fonctionnalité.\n"
+            . "- TITRE et META DESCRIPTION 100% UNIQUES : jamais le même titre ni la même meta qu'un autre article du site. Chaque article vise des mots-clés/angle DIFFÉRENTS pour capter un maximum de recherches Google (longue traîne).\n"
+            . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
+            . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
+            . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
+            . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
+            . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
+            . $avoid . "\n"
+            . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
+            . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . "LIGNE 2 = exactement : ===CORPS===\n"
+            . "PUIS = le corps de l'article en HTML (~2000 mots).";
     }
-
-    $system = 'Tu es rédacteur SEO SENIOR pour ViceHub X, média de fans INDÉPENDANT et NON OFFICIEL sur GTA VI '
-        . 'et Vice City. Tu écris un français impeccable, riche et fluide. '
-        . "\n\nRÈGLE D'OR — FIABILITÉ : tu ne publies QUE des informations VÉRIFIÉES. Tu N'INVENTES JAMAIS de "
-        . 'date, prix, nom, fonctionnalité ou déclaration. Tu distingues TOUJOURS clairement les FAITS CONFIRMÉS '
-        . 'des rumeurs : toute information non officielle doit être explicitement présentée comme « rumeur », '
-        . '« non confirmé » ou « selon des fuites ». Aucune spéculation présentée comme un fait. En cas de doute, '
-        . 'reste général ou présente-le comme un débat de la communauté. '
-        . "\n\nFAITS CONFIRMÉS (utilisables tels quels) : jeu développé par Rockstar Games (éditeur Take-Two) ; "
-        . '1er trailer en décembre 2023, 2e trailer en 2025 ; sortie annoncée le 19 novembre 2026 sur PS5 et '
-        . 'Xbox Series X|S ; éditions Standard (79,99$) et Ultimate (99,99$) ; duo de protagonistes Jason Duval & '
-        . 'Lucia Caminos (Lucia = 1re protagoniste féminine de la série principale) ; État fictif de Leonida '
-        . '(inspiré de la Floride) et retour de Vice City ; moteur RAGE ; radios dont V-Rock. Tout le reste '
-        . '(carte détaillée, véhicules précis, dates PC, contenu online) n\'est PAS confirmé : traite-le en rumeur. '
-        . "\n\nObjectif : un article de RÉFÉRENCE, exact et utile, qui mérite la 1re place Google et une AI Overview. "
-        . 'Écris comme un HUMAIN passionné (jamais de mention d\'IA). ' . $tones[$toneKey];
-
-    $user = "Rédige un ARTICLE COMPLET et ORIGINAL d'environ 2000 mots sur : « {$topic} ».\n\n"
-        . "Règles :\n"
-        . "- FIABILITÉ ABSOLUE : n'affirme que des faits VÉRIFIÉS. Toute info non officielle = présentée comme rumeur/fuite (« selon des rumeurs… », « non confirmé »). Jamais d'invention de date, prix, nom ou fonctionnalité.\n"
-        . "- TITRE et META DESCRIPTION 100% UNIQUES : jamais le même titre ni la même meta qu'un autre article du site. Chaque article vise des mots-clés/angle DIFFÉRENTS pour capter un maximum de recherches Google (longue traîne).\n"
-        . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
-        . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
-        . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
-        . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
-        . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
-        . $avoid . "\n"
-        . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
-        . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
-        . "LIGNE 2 = exactement : ===CORPS===\n"
-        . "PUIS = le corps de l'article en HTML (~2000 mots).";
 
     $raw = anthropic_complete($system, $user, 5200);
 
@@ -750,6 +804,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null): ar
         'image_prompt' => $iprompt,
         'category'     => $cat,
         'tone'         => $toneKey,
+        'lang'         => $lang,
     ];
 }
 
@@ -781,12 +836,13 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
         if ($gen) { $data['image'] = $gen; }
     }
 
+    $lang = (($data['lang'] ?? 'fr') === 'en') ? 'en' : 'fr';
     $st = db()->prepare(
         'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, author_id, status, published_at, created_at)
-         VALUES (?, \'fr\', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
     $st->execute([
-        ai_blog_cat_id(), $data['title'], $slug, $data['excerpt'], $data['body'],
+        ai_blog_cat_id(), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
         $data['image'], $data['image_prompt'], $authorId, $status, $pub,
     ]);
     return (int) db()->lastInsertId();
@@ -829,13 +885,15 @@ function ai_admin_author_id(): ?int
     return (int) (db()->query("SELECT id FROM users WHERE role = 'admin' ORDER BY id ASC LIMIT 1")->fetchColumn() ?: 0) ?: null;
 }
 
-/** Ajoute N articles à la FILE de génération en arrière-plan (statut + personnalité). */
-function ai_queue_add(int $n, string $status, string $tone = 'multi'): void
+/** Ajoute N articles à la FILE de génération en arrière-plan (statut + personnalité + langue). */
+function ai_queue_add(int $n, string $status, string $tone = 'multi', string $lang = 'fr'): void
 {
     $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
     set_setting('ai_gen_status', $status);
     $tone = ($tone === 'multi' || in_array($tone, array_keys(ai_tones()), true)) ? $tone : 'multi';
     set_setting('ai_gen_tone', $tone);
+    $lang = in_array($lang, ['fr', 'en', 'both'], true) ? $lang : 'fr';
+    set_setting('ai_gen_lang', $lang);
     set_setting('ai_gen_queue', (string) max(0, (int) get_setting('ai_gen_queue', '0') + max(0, $n)));
 }
 
@@ -855,13 +913,14 @@ function ai_drain_queue(int $budgetSeconds = 0): int
     $status   = get_setting('ai_gen_status', 'draft');
     $status   = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
     $toneSel  = (string) get_setting('ai_gen_tone', 'multi'); // 'multi' = rotation des 5 personnalités
+    $langSel  = (string) get_setting('ai_gen_lang', 'fr');    // 'fr' / 'en' / 'both' (alterne)
     $authorId = ai_admin_author_id();
     $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
     $done = 0;
     while ((int) get_setting('ai_gen_queue', '0') > 0 && time() < $deadline) {
         try {
-            // Multi → chaque article change de personnalité (rotation) ; sinon personnalité fixe.
-            $art = ai_generate_article(null, ai_resolve_tone($toneSel, $done));
+            // Multi → chaque article change de personnalité/langue (rotation) ; sinon fixe.
+            $art = ai_generate_article(null, ai_resolve_tone($toneSel, $done), ai_resolve_lang($langSel, $done));
             ai_save_article($art, $status, $authorId);
             $done++;
         } catch (Throwable $e) {
@@ -936,9 +995,11 @@ function ai_auto_run(int $budgetSeconds = 130): array
     if ($autoOn && $stillSched === 0 && ($last === 0 || ($now - $last) >= $interval * 3600)) {
         $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
         $autoTone = (string) get_setting('ai_auto_tone', 'multi');
+        $autoLang = (string) get_setting('ai_auto_lang', 'fr');
         try {
             $id = null; $t = 0;
-            while (!$id && $t < 3) { $id = ai_save_article(ai_generate_article(null, ai_resolve_tone($autoTone, (int) get_setting('ai_auto_last', '0') + $t)), $st, ai_admin_author_id()); $t++; }
+            $seed = (int) get_setting('ai_auto_last', '0');
+            while (!$id && $t < 3) { $id = ai_save_article(ai_generate_article(null, ai_resolve_tone($autoTone, $seed + $t), ai_resolve_lang($autoLang, $seed + $t)), $st, ai_admin_author_id()); $t++; }
             if ($id) { set_setting('ai_auto_last', (string) $now); $msgs[] = '1 article ' . ($st === 'published' ? 'publié' : 'en brouillon'); }
         } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
     }

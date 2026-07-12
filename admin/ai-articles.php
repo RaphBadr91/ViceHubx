@@ -99,6 +99,8 @@ if ($act === 'save_auto') {
     set_setting('ai_auto_status', ($_POST['ai_auto_status'] ?? 'published') === 'draft' ? 'draft' : 'published');
     $atone = (string) ($_POST['ai_auto_tone'] ?? 'multi');
     set_setting('ai_auto_tone', ($atone === 'multi' || in_array($atone, array_keys(ai_tones()), true)) ? $atone : 'multi');
+    $alang = (string) ($_POST['ai_auto_lang'] ?? 'fr');
+    set_setting('ai_auto_lang', in_array($alang, ['fr', 'en', 'both'], true) ? $alang : 'fr');
     $flash = ['ok', '✅ Publication automatique enregistrée.'];
 }
 // --- Test manuel du déclencheur auto (génère le lot dû maintenant) ---
@@ -114,10 +116,11 @@ if ($act === 'generate') {
     $count  = in_array($count, [5, 10, 15, 20], true) ? $count : 5;
     $status = in_array($_POST['status'] ?? '', ['draft', 'pending', 'published'], true) ? $_POST['status'] : 'draft';
     $tone   = (string) ($_POST['tone'] ?? 'multi');
+    $lang   = in_array($_POST['lang'] ?? '', ['fr', 'en', 'both'], true) ? $_POST['lang'] : 'fr';
     if (!ai_enabled()) {
         $flash = ['err', 'Connecte d’abord ta clé API Anthropic ci-dessous.'];
     } else {
-        ai_queue_add($count, $status, $tone);   // met en file (statut + personnalité)
+        ai_queue_add($count, $status, $tone, $lang);   // file (statut + personnalité + langue)
         $spawned = ai_spawn_worker();           // lance le worker détaché (arrière-plan)
         $lbl = ['draft' => 'en brouillon', 'pending' => 'programmé(s) (CRON)', 'published' => 'à publier'][$status] ?? '';
         $flash = ['ok', "🚀 {$count} article(s) {$lbl} en génération EN ARRIÈRE-PLAN. "
@@ -235,6 +238,13 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                     <?php endforeach; ?>
                 </select>
             </label>
+            <label>Langue
+                <select name="lang" style="display:block;margin-top:.3rem">
+                    <option value="fr">🇫🇷 Français</option>
+                    <option value="en">🇬🇧 English</option>
+                    <option value="both">🌍 Les deux (alterne FR/EN)</option>
+                </select>
+            </label>
             <div>
                 <span class="muted" style="display:block;margin-bottom:.3rem">Nombre d’articles</span>
                 <div style="display:flex;gap:.5rem">
@@ -275,13 +285,20 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                     <option value="draft" <?= $autoStatus === 'draft' ? 'selected' : '' ?>>Brouillon (à relire)</option>
                 </select>
             </label>
-            <?php $autoTone = (string) get_setting('ai_auto_tone', 'multi'); ?>
+            <?php $autoTone = (string) get_setting('ai_auto_tone', 'multi'); $autoLang = (string) get_setting('ai_auto_lang', 'fr'); ?>
             <label>Personnalité
                 <select name="ai_auto_tone" style="display:block;margin-top:.3rem">
                     <option value="multi" <?= $autoTone === 'multi' ? 'selected' : '' ?>>🎲 Multi (rotation)</option>
                     <?php foreach (ai_tone_labels() as $tk => $tl): ?>
                         <option value="<?= e($tk) ?>" <?= $autoTone === $tk ? 'selected' : '' ?>><?= e($tl) ?></option>
                     <?php endforeach; ?>
+                </select>
+            </label>
+            <label>Langue
+                <select name="ai_auto_lang" style="display:block;margin-top:.3rem">
+                    <option value="fr" <?= $autoLang === 'fr' ? 'selected' : '' ?>>🇫🇷 FR</option>
+                    <option value="en" <?= $autoLang === 'en' ? 'selected' : '' ?>>🇬🇧 EN</option>
+                    <option value="both" <?= $autoLang === 'both' ? 'selected' : '' ?>>🌍 FR/EN</option>
                 </select>
             </label>
             <button class="btn btn--primary" type="submit">Enregistrer</button>
