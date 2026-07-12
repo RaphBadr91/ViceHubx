@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($title === '') {
                 throw new RuntimeException('Le titre est obligatoire.');
             }
-            $slug   = trim((string) ($_POST['slug'] ?? '')) ?: slugify($title);
+            $slug   = unique_slug(trim((string) ($_POST['slug'] ?? '')) ?: $title, 'articles');
             $lang   = in_array($_POST['lang'] ?? 'fr', ['fr', 'en'], true) ? $_POST['lang'] : 'fr';
             $status = ($_POST['status'] ?? 'draft') === 'published' ? 'published' : 'draft';
             $badge  = in_array($_POST['badge'] ?? '', $badge_keys, true) ? $_POST['badge'] : null;

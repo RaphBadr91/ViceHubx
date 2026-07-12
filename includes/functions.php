@@ -316,6 +316,29 @@ function slugify(string $text): string
     return trim($text, '-') ?: 'article';
 }
 
+/**
+ * Slug SEO GARANTI UNIQUE dans une table (ajoute -2, -3… en cas de collision).
+ * Évite les erreurs « Duplicate entry … for key 'slug' » à l'insertion/édition.
+ * $exceptId : id de la ligne courante à ignorer (utile en modification).
+ */
+function unique_slug(string $base, string $table = 'articles', string $column = 'slug', ?int $exceptId = null): string
+{
+    $base = slugify($base);
+    if ($base === '') { return ''; }
+    // Sécurité : table/colonne jamais issues d'une entrée utilisateur (liste blanche stricte).
+    $table  = preg_replace('/[^a-z_]/', '', $table) ?: 'articles';
+    $column = preg_replace('/[^a-z_]/', '', $column) ?: 'slug';
+    $sql = "SELECT 1 FROM `$table` WHERE `$column` = ?" . ($exceptId ? ' AND id <> ' . (int) $exceptId : '') . ' LIMIT 1';
+    $chk = db()->prepare($sql);
+    $slug = $base;
+    for ($i = 2; $i <= 200; $i++) {
+        $chk->execute([$slug]);
+        if (!$chk->fetchColumn()) { return $slug; }
+        $slug = $base . '-' . $i;
+    }
+    return $base . '-' . substr(md5($base . microtime()), 0, 6);
+}
+
 /** Formate une date courte localisée. */
 function fmt_date(?string $datetime): string
 {

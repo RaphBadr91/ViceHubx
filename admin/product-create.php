@@ -20,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($sale_type === 'external' && $url === '') {
                 throw new RuntimeException('Le lien d’achat (revendeur / affiliation) est obligatoire pour un produit externe.');
             }
-            $slug     = trim((string) ($_POST['slug'] ?? '')) ?: slugify($name);
+            // Slug rendu UNIQUE (jamais d'erreur « Duplicate entry » : -2, -3… au besoin).
+            $slug     = unique_slug(trim((string) ($_POST['slug'] ?? '')) ?: $name, 'products');
             $category = isset($cats[$_POST['category'] ?? '']) ? $_POST['category'] : 'accessory';
             $desc     = mb_substr(trim((string) ($_POST['description'] ?? '')), 0, 400);
             $price    = ($_POST['price'] ?? '') !== '' ? (float) str_replace(',', '.', $_POST['price']) : null;
