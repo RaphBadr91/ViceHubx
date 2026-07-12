@@ -917,9 +917,10 @@ function ai_auto_run(int $budgetSeconds = 130): array
     // Auto-répare : donne une date espacée aux articles programmés sans date.
     ai_schedule_pending($interval);
 
-    // Publie TOUS les articles programmés dont l'heure prévue est arrivée.
+    // Publie TOUS les articles PROGRAMMÉS (datés) dont l'heure est arrivée.
+    // Les contributions en modération ont published_at NULL → jamais publiées ici.
     $due = db()->query(
-        "SELECT id FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at IS NOT NULL AND published_at <= NOW() ORDER BY published_at ASC"
+        "SELECT id FROM articles WHERE status='pending' AND published_at IS NOT NULL AND published_at <= NOW() ORDER BY published_at ASC"
     )->fetchAll(PDO::FETCH_COLUMN);
     if ($due) {
         $in = implode(',', array_map('intval', $due));
@@ -931,7 +932,7 @@ function ai_auto_run(int $budgetSeconds = 130): array
     // Génération auto : si activée et plus AUCUN article programmé en attente,
     // produit 1 article frais par intervalle.
     $last       = (int) get_setting('ai_auto_last', '0');
-    $stillSched = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''")->fetchColumn();
+    $stillSched = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND published_at IS NOT NULL")->fetchColumn();
     if ($autoOn && $stillSched === 0 && ($last === 0 || ($now - $last) >= $interval * 3600)) {
         $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
         $autoTone = (string) get_setting('ai_auto_tone', 'multi');
@@ -944,7 +945,7 @@ function ai_auto_run(int $budgetSeconds = 130): array
 
     if (!$msgs) {
         // Prochain article programmé (date la plus proche à venir).
-        $next = db()->query("SELECT MIN(published_at) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at > NOW()")->fetchColumn();
+        $next = db()->query("SELECT MIN(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL AND published_at > NOW()")->fetchColumn();
         $tail = '';
         if ($next) {
             $mins = max(1, (int) ceil((strtotime((string) $next) - $now) / 60));
@@ -967,7 +968,7 @@ function ai_auto_run(int $budgetSeconds = 130): array
 function ai_sched_progress(): array
 {
     $pending = (int) db()->query(
-        "SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''"
+        "SELECT COUNT(*) FROM articles WHERE status='pending' AND published_at IS NOT NULL"
     )->fetchColumn();
 
     $total = (int) get_setting('ai_sched_total', '0');

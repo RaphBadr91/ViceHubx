@@ -20,7 +20,7 @@ function vhx_status_badge(string $status): string
 
 // Actions (POST + CSRF)
 $act = $_POST['action'] ?? '';
-if (in_array($act, ['delete', 'publish', 'reschedule', 'autoplan'], true)) {
+if (in_array($act, ['delete', 'publish', 'reschedule', 'autoplan', 'schedule_all_drafts'], true)) {
     if (!verify_csrf()) {
         $flash = ['err', 'Jeton CSRF invalide.'];
     } elseif ($act === 'delete') {
@@ -43,17 +43,35 @@ if (in_array($act, ['delete', 'publish', 'reschedule', 'autoplan'], true)) {
     } elseif ($act === 'autoplan') {
         ai_schedule_pending(max(1, (int) get_setting('ai_auto_interval', '6')));
         $flash = ['ok', '🗓️ Articles programmés planifiés automatiquement.'];
+    } elseif ($act === 'schedule_all_drafts') {
+        @set_time_limit(0);
+        $interval = 3;                                   // 1 article publié toutes les 3h
+        set_setting('ai_auto_interval', (string) $interval);
+        set_setting('ai_auto_enabled', '1');             // le CRON publiera les articles dus
+        $drafts = db()->query("SELECT id FROM articles WHERE status='draft' ORDER BY id ASC")->fetchAll(PDO::FETCH_COLUMN);
+        // Départ : après le dernier créneau déjà programmé (ou maintenant).
+        $maxPlanned = db()->query("SELECT MAX(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL")->fetchColumn();
+        $base = max(time(), $maxPlanned ? (int) strtotime((string) $maxPlanned) : 0);
+        $upd  = db()->prepare("UPDATE articles SET status='pending', published_at=? WHERE id=?");
+        foreach ($drafts as $i => $id) {
+            $upd->execute([date('Y-m-d H:i:s', $base + ($i + 1) * $interval * 3600), (int) $id]);
+        }
+        $n = count($drafts);
+        $flash = $n > 0
+            ? ['ok', "📅 {$n} brouillon(s) programmé(s) — 1 article publié toutes les {$interval}h par le CRON."]
+            : ['ok', 'Aucun brouillon à programmer.'];
     }
 }
 
-// Prochaine publication programmée (pour le résumé en tête).
+// Prochaine publication programmée (pour le résumé en tête) — tout article daté.
 $nextPlanned = db()->query(
-    "SELECT MIN(published_at) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> '' AND published_at > NOW()"
+    "SELECT MIN(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL AND published_at > NOW()"
 )->fetchColumn();
 $scheduledCount = (int) db()->query(
-    "SELECT COUNT(*) FROM articles WHERE status='pending' AND image_prompt IS NOT NULL AND image_prompt <> ''"
+    "SELECT COUNT(*) FROM articles WHERE status='pending' AND published_at IS NOT NULL"
 )->fetchColumn();
 $pendingAll = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending'")->fetchColumn();
+$draftCount = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='draft'")->fetchColumn();
 
 // Programmés (à venir) d'abord, du plus proche au plus lointain ; puis brouillons ; puis publiés récents.
 $articles = db()->query(
@@ -78,6 +96,19 @@ $btn = 'display:inline-flex;align-items:center;gap:.25rem;background:rgba(255,25
 
 <?php if ($flash): ?>
     <div class="alert alert--<?= e($flash[0]) ?>"><?= e($flash[1]) ?></div>
+<?php endif; ?>
+
+<?php if ($draftCount > 0): ?>
+    <div class="glass" style="border-radius:14px;padding:1rem 1.1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;justify-content:space-between;border:1px solid rgba(255,176,46,.3)">
+        <div>
+            <strong>📝 <?= $draftCount ?> brouillon(s)</strong>
+            <span class="muted"> · programme-les tous d'un coup pour qu'ils se publient automatiquement 1 par 1 toutes les 3h.</span>
+        </div>
+        <form method="post" style="margin:0" onsubmit="return confirm('Programmer les <?= $draftCount ?> brouillon(s) en CRON (1 publié toutes les 3h) ?')">
+            <?= csrf_field() ?><input type="hidden" name="action" value="schedule_all_drafts">
+            <button class="btn btn--primary" type="submit">📅 Tout programmer en CRON (toutes les 3h)</button>
+        </form>
+    </div>
 <?php endif; ?>
 
 <?php if ($scheduledCount > 0): ?>
