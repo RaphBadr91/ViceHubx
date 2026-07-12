@@ -89,6 +89,29 @@ if ($act === 'gen_all_images') {
     }
 }
 
+// --- Traduire TOUS les articles en anglais (arrière-plan) ---
+if ($act === 'translate_all') {
+    if (!ai_enabled()) {
+        $flash = ['err', 'Connecte d’abord ta clé API Anthropic ci-dessous.'];
+    } else {
+        set_setting('ai_tr_auto', '1');                   // les nouveaux articles seront aussi traduits (CRON)
+        $todo = ai_untranslated_count();
+        if ($todo === 0) {
+            $flash = ['ok', '✅ Tous les articles ont déjà leur version anglaise.'];
+        } else {
+            set_setting('ai_tr_total', (string) $todo);   // repère pour la barre de %
+            $spawned = ai_spawn_worker('ai-translate-worker.php'); // worker détaché
+            $flash = ['ok', "🌍 Traduction de {$todo} article(s) en anglais lancée EN ARRIÈRE-PLAN "
+                . '(URL anglaise, même image & catégorie). Le site reste fluide — recharge cette page pour suivre la progression.'
+                . ($spawned ? '' : ' (worker auto indisponible : branche ai-translate-worker.php sur un cron.)')];
+        }
+    }
+}
+if ($act === 'toggle_tr_auto') {
+    set_setting('ai_tr_auto', !empty($_POST['ai_tr_auto']) ? '1' : '0');
+    $flash = ['ok', 'Traduction automatique des nouveaux articles ' . (!empty($_POST['ai_tr_auto']) ? 'activée' : 'désactivée') . '.'];
+}
+
 // --- Publication automatique (réglages) ---
 if ($act === 'save_auto') {
     set_setting('ai_auto_enabled', !empty($_POST['ai_auto_enabled']) ? '1' : '0');
@@ -183,6 +206,12 @@ $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
 
 // Progression de publication des articles programmés (barre de %).
 $prog = ai_sched_progress();
+
+// Traduction anglaise : progression + reste à traduire.
+$trProg    = ai_translate_progress();
+$trTodo    = ai_untranslated_count();
+$trAuto    = (int) get_setting('ai_tr_auto', '0') === 1;
+$enCount   = (int) db()->query("SELECT COUNT(*) FROM articles WHERE lang='en'")->fetchColumn();
 
 // Réglages illustrations IA (Higgsfield).
 $imgEnabled  = ai_img_enabled();
@@ -337,6 +366,44 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- TRADUCTION ANGLAISE (maximise la portée Google : audience mondiale) -->
+    <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(43,214,255,.30)">
+        <h2 style="margin-top:0">🌍 Version anglaise de tous les articles</h2>
+        <p class="muted">Traduit en <strong>anglais impeccable</strong> chaque article FR déjà créé (publié ou programmé) : <strong>URL anglaise dédiée</strong> (slug traduit), même image et même catégorie, <strong>aucun coût Higgsfield</strong>. Les versions EN apparaissent automatiquement dans le sitemap → Google indexe une audience mondiale (×10 de portée).</p>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-top:.8rem">
+            <div>
+                <strong>🇬🇧 Articles anglais en ligne : <?= (int) $enCount ?></strong>
+                <p class="muted" style="font-size:.82rem;margin:.25rem 0 0">Restant à traduire : <strong><?= (int) $trTodo ?></strong> article(s) FR sans version anglaise.</p>
+            </div>
+            <form method="post" style="margin:0">
+                <?= csrf_field() ?><input type="hidden" name="action" value="translate_all">
+                <button class="btn btn--primary" type="submit" <?= ($enabled && $trTodo > 0) ? '' : 'disabled' ?>>🌍 Traduire tous les articles en anglais<?= $trTodo > 0 ? ' (' . (int) $trTodo . ')' : '' ?></button>
+            </form>
+        </div>
+        <?php if (!$enabled): ?>
+            <p class="muted" style="font-size:.8rem;margin:.6rem 0 0">⚠️ Connecte ta clé API Anthropic (plus bas) pour activer la traduction.</p>
+        <?php endif; ?>
+        <?php if ($trProg['total'] > 0): ?>
+            <div style="margin-top:.9rem">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem">
+                    <strong style="font-size:.88rem">Traduction en anglais en cours…</strong>
+                    <span class="muted" style="font-size:.85rem"><?= (int) $trProg['done'] ?>/<?= (int) $trProg['total'] ?> · <strong style="color:#2bd6ff"><?= (int) $trProg['percent'] ?>%</strong></span>
+                </div>
+                <div style="height:14px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid var(--glass-brd)">
+                    <div style="height:100%;width:<?= (int) $trProg['percent'] ?>%;border-radius:99px;background:linear-gradient(90deg,#2bd6ff,#7a5cff);transition:width .4s ease"></div>
+                </div>
+                <p class="muted" style="font-size:.8rem;margin:.4rem 0 0">Il reste <strong><?= (int) $trProg['remaining'] ?></strong> article(s) à traduire. Recharge la page pour suivre.</p>
+            </div>
+        <?php endif; ?>
+        <form method="post" style="margin:.9rem 0 0;padding-top:.8rem;border-top:1px solid var(--glass-brd);display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+            <?= csrf_field() ?><input type="hidden" name="action" value="toggle_tr_auto">
+            <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer;font-size:.9rem">
+                <input type="checkbox" name="ai_tr_auto" value="1" <?= $trAuto ? 'checked' : '' ?> onchange="this.form.submit()">
+                Traduire aussi <strong>automatiquement</strong> chaque nouvel article publié (via le CRON)
+            </label>
+        </form>
     </div>
 
     <!-- ILLUSTRATIONS IA (Higgsfield) -->

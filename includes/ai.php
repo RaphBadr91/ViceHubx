@@ -1004,6 +1004,13 @@ function ai_auto_run(int $budgetSeconds = 130): array
         } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
     }
 
+    // 3) TRADUCTION EN — si activée, traduit quelques articles FR encore sans VO
+    //    anglaise (les nouveaux publiés gardent ainsi une version EN au fil de l'eau).
+    if ((int) get_setting('ai_tr_auto', '0') === 1 && ai_untranslated_count() > 0) {
+        $tr = ai_translate_missing((int) max(20, $budgetSeconds / 3));
+        if ($tr > 0) { $msgs[] = "{$tr} article(s) traduit(s) en anglais"; }
+    }
+
     if (!$msgs) {
         // Prochain article programmé (date la plus proche à venir).
         $next = db()->query("SELECT MIN(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL AND published_at > NOW()")->fetchColumn();
@@ -1044,4 +1051,205 @@ function ai_sched_progress(): array
     $published = max(0, $total - $pending);
     $percent   = $total > 0 ? (int) round($published / $total * 100) : 0;
     return ['total' => $total, 'pending' => $pending, 'published' => $published, 'percent' => $percent];
+}
+
+/* ================================================================== */
+/*  TRADUCTION EN ANGLAIS — versions EN des articles FR déjà créés     */
+/*  (URL/slug anglais, même image & catégorie, aucun coût Higgsfield). */
+/* ================================================================== */
+
+/**
+ * Garantit la colonne `source_id` sur `articles` (lie une VO anglaise à sa
+ * source FR pour ne jamais retraduire). Vérifie information_schema d'abord
+ * (compatible multi-BDD / droits limités : reste silencieux si impossible).
+ */
+function ai_ensure_source_col(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    $done = true;
+    try {
+        $has = (int) db()->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles' AND COLUMN_NAME = 'source_id'"
+        )->fetchColumn();
+        if ($has === 0) {
+            db()->exec('ALTER TABLE articles ADD COLUMN source_id INT DEFAULT NULL');
+            try { db()->exec('ALTER TABLE articles ADD INDEX idx_source (source_id)'); } catch (Throwable $e) { /* index best-effort */ }
+        }
+    } catch (Throwable $e) {
+        // Colonne déjà présente ou droits DDL limités : on continue sans bloquer.
+    }
+}
+
+/** Génère un slug UNIQUE (ajoute -2, -3… en cas de collision). URL anglaise propre. */
+function ai_unique_slug(string $base): string
+{
+    $base = slugify($base);
+    if ($base === '') { return ''; }
+    $chk  = db()->prepare('SELECT 1 FROM articles WHERE slug = ? LIMIT 1');
+    $slug = $base;
+    for ($i = 2; $i <= 60; $i++) {
+        $chk->execute([$slug]);
+        if (!$chk->fetchColumn()) { return $slug; }
+        $slug = $base . '-' . $i;
+    }
+    return $base . '-' . substr(md5($base . microtime()), 0, 6);
+}
+
+/** Articles FR (publiés ou programmés) qui n'ont pas encore leur version EN. */
+function ai_untranslated_count(): int
+{
+    ai_ensure_source_col();
+    try {
+        return (int) db()->query(
+            "SELECT COUNT(*) FROM articles fr
+             WHERE fr.lang='fr' AND fr.status IN ('published','pending')
+               AND NOT EXISTS (SELECT 1 FROM articles en WHERE en.lang='en' AND en.source_id = fr.id)"
+        )->fetchColumn();
+    } catch (Throwable $e) {
+        return 0;
+    }
+}
+
+/**
+ * Traduit un article FR en ANGLAIS via l'API Anthropic (titre + méta + corps).
+ * Conserve les balises HTML, les faits et la structure. Aucun marqueur IA.
+ * @return array{title:string,excerpt:string,body:string}
+ */
+function ai_translate_article(array $fr): array
+{
+    $title   = (string) ($fr['title'] ?? '');
+    $excerpt = (string) ($fr['excerpt'] ?? '');
+    $body    = (string) ($fr['body'] ?? '');
+
+    $system = 'You are a professional FR→EN translator and native English SEO editor for ViceHub X, an '
+        . 'INDEPENDENT, UNOFFICIAL fan media about GTA VI and Vice City. Translate the French article into '
+        . 'flawless, natural, idiomatic ENGLISH (not word-for-word) — same meaning, same facts, same structure, '
+        . 'same tone. Keep EVERY HTML tag exactly as-is; only translate the text inside tags. Do NOT add, remove '
+        . 'or invent any fact. Keep proper nouns unchanged (GTA VI, GTA 6, Vice City, Leonida, Jason Duval, '
+        . 'Lucia Caminos, Rockstar Games, Take-Two). Write like a passionate human: never mention AI, add NO '
+        . 'technical marker and NO separator like "===END===".';
+    $user = "Translate this French article into ENGLISH.\n\n"
+        . "STRICT RESPONSE FORMAT (nothing else):\n"
+        . 'LINE 1 = compact JSON: {"titre":"unique English title <=90 chars, catchy, SEO, keeps the main keyword","extrait":"English meta description <=180 chars"}' . "\n"
+        . "LINE 2 = exactly: ===CORPS===\n"
+        . "THEN = the article body translated into English HTML (keep ALL tags identical, only translate text).\n\n"
+        . "FRENCH TITLE: {$title}\n"
+        . "FRENCH META: {$excerpt}\n"
+        . "FRENCH BODY (HTML):\n{$body}";
+
+    $raw  = anthropic_complete($system, $user, 5200);
+    $bpos = strpos($raw, '===CORPS===');
+    if ($bpos === false) {
+        throw new RuntimeException('Traduction sans séparateur ===CORPS===.');
+    }
+    $head     = substr($raw, 0, $bpos);
+    $bodyHtml = trim(substr($raw, $bpos + strlen('===CORPS===')));
+    $js = strpos($head, '{'); $je = strrpos($head, '}');
+    $json = ($js !== false && $je !== false && $je > $js) ? json_decode(substr($head, $js, $je - $js + 1), true) : null;
+    if (!is_array($json) || empty($json['titre']) || $bodyHtml === '') {
+        throw new RuntimeException('Traduction incomplète (en-tête/corps manquant).');
+    }
+
+    $enTitle   = trim((string) $json['titre']);
+    $enExcerpt = clean_ai_markers(mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200));
+    $enBody    = clean_ai_markers(strip_tags($bodyHtml, '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>'));
+
+    return [
+        'title'   => $enTitle,
+        'excerpt' => $enExcerpt !== '' ? $enExcerpt : mb_substr(strip_tags($enBody), 0, 160),
+        'body'    => $enBody,
+    ];
+}
+
+/**
+ * Enregistre la VO anglaise d'un article FR : même catégorie, même image (0 coût
+ * Higgsfield), même statut/date, mais SLUG ANGLAIS (URL anglaise) et source_id.
+ * @return int|null id inséré, ou null si slug invalide.
+ */
+function ai_save_translation(array $fr, array $tr, ?int $authorId): ?int
+{
+    $slug = ai_unique_slug($tr['title']);
+    if ($slug === '') { return null; }
+    $status = in_array($fr['status'] ?? 'published', ['draft', 'pending', 'published'], true) ? $fr['status'] : 'published';
+    $st = db()->prepare(
+        'INSERT INTO articles (category_id, lang, source_id, title, slug, excerpt, body, badge, image, image_prompt, author_id, status, published_at, created_at)
+         VALUES (?, "en", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+    );
+    $st->execute([
+        $fr['category_id'] ?: ai_blog_cat_id(),
+        (int) $fr['id'],
+        $tr['title'], $slug, $tr['excerpt'], $tr['body'],
+        $fr['badge'] ?? null,
+        $fr['image'], $fr['image_prompt'],
+        $authorId ?: ($fr['author_id'] ?? null),
+        $status, $fr['published_at'] ?? null,
+    ]);
+    return (int) db()->lastInsertId();
+}
+
+/**
+ * Traduit en anglais tous les articles FR sans version EN (arrière-plan).
+ * Verrou anti-double-exécution. $budget=0 → traite tout (CLI). Les échecs isolés
+ * sont sautés ; on stoppe si trop d'échecs d'affilée (clé/quota API).
+ * @return int nombre d'articles traduits
+ */
+function ai_translate_missing(int $budgetSeconds = 0): int
+{
+    if (!ai_enabled()) { return 0; }
+    ai_ensure_source_col();
+    $lock = (int) get_setting('ai_tr_lock', '0');
+    if (time() - $lock < 600) { return 0; }          // verrou 10 min (traduction lente)
+    set_setting('ai_tr_lock', (string) time());
+
+    $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
+    $done = 0; $fail = 0; $failedIds = [];
+    $authorId = ai_admin_author_id();
+    try {
+        while (time() < $deadline && $fail < 5) {
+            $excl = $failedIds ? (' AND fr.id NOT IN (' . implode(',', array_map('intval', $failedIds)) . ')') : '';
+            $fr = db()->query(
+                "SELECT fr.* FROM articles fr
+                 WHERE fr.lang='fr' AND fr.status IN ('published','pending')
+                   AND NOT EXISTS (SELECT 1 FROM articles en WHERE en.lang='en' AND en.source_id = fr.id)$excl
+                 ORDER BY (fr.status='published') DESC, fr.id DESC LIMIT 1"
+            )->fetch(PDO::FETCH_ASSOC);
+            if (!$fr) { break; }
+            try {
+                $tr = ai_translate_article($fr);
+                $id = ai_save_translation($fr, $tr, $authorId);
+                if ($id) {
+                    $done++;
+                    set_setting('ai_tr_lock', (string) time());   // rafraîchit le verrou
+                } else {
+                    $fail++; $failedIds[] = (int) $fr['id'];
+                }
+            } catch (Throwable $e) {
+                $fail++; $failedIds[] = (int) $fr['id'];           // saute cet article
+            }
+        }
+    } finally {
+        set_setting('ai_tr_lock', '0');                           // libère
+    }
+    return $done;
+}
+
+/**
+ * Progression de la traduction EN (barre de %). Repère haut posé au lancement,
+ * remis à zéro une fois tout traduit.
+ * @return array{total:int,remaining:int,done:int,percent:int}
+ */
+function ai_translate_progress(): array
+{
+    $remaining = ai_untranslated_count();
+    $total = (int) get_setting('ai_tr_total', '0');
+    if ($remaining <= 0) {
+        if ($total !== 0) { set_setting('ai_tr_total', '0'); }
+        return ['total' => 0, 'remaining' => 0, 'done' => 0, 'percent' => 100];
+    }
+    if ($remaining > $total) { $total = $remaining; set_setting('ai_tr_total', (string) $total); }
+    $doneN   = max(0, $total - $remaining);
+    $percent = $total > 0 ? (int) round($doneN / $total * 100) : 0;
+    return ['total' => $total, 'remaining' => $remaining, 'done' => $doneN, 'percent' => $percent];
 }

@@ -26,6 +26,14 @@ if (!$article || ($article['status'] !== 'published' && !$is_preview)) {
     exit;
 }
 
+// Une URL = UNE langue : l'article impose la langue de la page (nav, pied de page…)
+// pour que les versions anglaises soient 100% anglaises (SEO + confort de lecture).
+if (in_array($article['lang'], array_keys(available_languages()), true) && $article['lang'] !== lang()) {
+    $GLOBALS['LANG_CODE'] = $article['lang'];
+    $__lf = ROOT_PATH . '/lang/' . $article['lang'] . '.php';
+    if (is_file($__lf)) { $GLOBALS['LANG'] = require $__lf; }
+}
+
 // Corps : on n'autorise qu'un HTML simple (sécurité)
 $safe_body = strip_tags(
     (string) $article['body'],
@@ -62,6 +70,29 @@ $__base  = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/')
 $art_url = $__base . '/pages/article.php?slug=' . urlencode($article['slug']);
 $pub_iso = date('c', strtotime($article['published_at'] ?: $article['created_at']));
 $img_abs = preg_match('#^https?://#', (string) $SEO_OG_IMAGE) ? $SEO_OG_IMAGE : $__base . '/' . ltrim((string) $SEO_OG_IMAGE, '/');
+
+// hreflang : relie la VF et la VO anglaise (URL propres /article/<slug>) pour que
+// Google serve la bonne version selon la langue du visiteur (portée maximale).
+$__artUrl = fn(string $s): string => $__base . '/article/' . rawurlencode($s);
+$HREFLANG_ALT = [];
+try {
+    if ($article['lang'] === 'fr') {
+        $HREFLANG_ALT['fr'] = $__artUrl($article['slug']);
+        $q = db()->prepare("SELECT slug FROM articles WHERE lang='en' AND source_id=? AND status='published' ORDER BY id ASC LIMIT 1");
+        $q->execute([(int) $article['id']]);
+        if ($s = $q->fetchColumn()) { $HREFLANG_ALT['en'] = $__artUrl((string) $s); }
+    } elseif ($article['lang'] === 'en') {
+        $HREFLANG_ALT['en'] = $__artUrl($article['slug']);
+        if (!empty($article['source_id'])) {
+            $q = db()->prepare("SELECT slug FROM articles WHERE id=? AND status='published' LIMIT 1");
+            $q->execute([(int) $article['source_id']]);
+            if ($s = $q->fetchColumn()) { $HREFLANG_ALT['fr'] = $__artUrl((string) $s); }
+        }
+    }
+} catch (Throwable $e) {
+    $HREFLANG_ALT = [];
+}
+if (count($HREFLANG_ALT) < 2) { $HREFLANG_ALT = []; } // pas de contrepartie → hreflang par défaut
 
 $OG_TYPE      = 'article';
 $OG_PUBLISHED = $pub_iso;

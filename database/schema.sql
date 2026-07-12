@@ -48,13 +48,15 @@ CREATE TABLE articles (
     image        VARCHAR(255) DEFAULT NULL,
     image_prompt TEXT DEFAULT NULL,            -- prompt Higgsfield (OFF, admin-only) pour illustration sur-mesure
     author_id    INT DEFAULT NULL,
+    source_id    INT DEFAULT NULL,             -- article FR source d'une VO traduite (EN) ; NULL = original
     status       ENUM('draft','pending','published') NOT NULL DEFAULT 'draft',
     published_at DATETIME DEFAULT NULL,
     created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_articles_cat FOREIGN KEY (category_id)
         REFERENCES categories(id) ON DELETE SET NULL,
     INDEX idx_status (status),
-    INDEX idx_lang (lang)
+    INDEX idx_lang (lang),
+    INDEX idx_source (source_id)
 ) ENGINE=InnoDB;
 
 -- ---------- Tags ----------

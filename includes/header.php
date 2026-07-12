@@ -96,10 +96,17 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
     <!-- Versions linguistiques (hreflang) -->
-    <?php foreach (array_keys(available_languages()) as $hl): $__sep = $__qs === '' ? '?' : '&'; ?>
+    <?php if (!empty($HREFLANG_ALT) && is_array($HREFLANG_ALT)): // URLs explicites (ex. article FR ↔ VO anglaise) ?>
+        <?php foreach ($HREFLANG_ALT as $hl => $hurl): ?>
+    <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($hurl) ?>">
+        <?php endforeach; ?>
+    <link rel="alternate" hreflang="x-default" href="<?= e($HREFLANG_ALT['fr'] ?? reset($HREFLANG_ALT)) ?>">
+    <?php else: ?>
+        <?php foreach (array_keys(available_languages()) as $hl): $__sep = $__qs === '' ? '?' : '&'; ?>
     <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($site_base . $canon_path . ($hl === 'fr' ? '' : $__sep . 'lang=' . $hl)) ?>">
-    <?php endforeach; ?>
+        <?php endforeach; ?>
     <link rel="alternate" hreflang="x-default" href="<?= e($canonical) ?>">
+    <?php endif; ?>
 
     <!-- Open Graph -->
     <meta property="og:type" content="<?= e($OG_TYPE ?? 'website') ?>">
