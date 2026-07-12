@@ -203,6 +203,7 @@ $autoStatus   = get_setting('ai_auto_status', 'published');
 $autoLast     = (int) get_setting('ai_auto_last', '0');
 $autoPending  = (int) get_setting('ai_auto_pending', '0');
 $tickUrl      = rtrim(site_base_url(), '/') . '/ai-tick.php?key=' . $tickKey;
+$trCronUrl    = rtrim(site_base_url(), '/') . '/ai-translate-worker.php?key=' . $tickKey;
 
 // Progression de publication des articles programmés (barre de %).
 $prog = ai_sched_progress();
@@ -404,6 +405,14 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                 Traduire aussi <strong>automatiquement</strong> chaque nouvel article publié (via le CRON)
             </label>
         </form>
+        <div style="margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--glass-brd)">
+            <p class="muted" style="font-size:.86rem;margin:0 0 .3rem">🔁 Si le lancement en arrière-plan est bloqué par l'hébergeur, branche ce lien sur un cron (toutes les 30 min) — il traduit les articles restants à chaque passage :</p>
+            <input type="text" readonly value="<?= e($trCronUrl) ?>" onclick="this.select()" style="width:100%;font-size:.8rem;font-family:monospace;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.05);color:#cfc9dd;border:1px solid var(--glass-brd)">
+            <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap">
+                <button class="btn btn--ghost" type="button" data-copy="<?= e($trCronUrl) ?>">📋 Copier le lien cron traduction</button>
+                <a class="btn btn--ghost" href="<?= e($trCronUrl) ?>" target="_blank" rel="noopener">▶️ Lancer maintenant (dans un onglet)</a>
+            </div>
+        </div>
     </div>
 
     <!-- ILLUSTRATIONS IA (Higgsfield) -->
