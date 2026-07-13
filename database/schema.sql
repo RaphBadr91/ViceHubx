@@ -59,6 +59,21 @@ CREATE TABLE articles (
     INDEX idx_source (source_id)
 ) ENGINE=InnoDB;
 
+-- ---------- File d'auto-publication réseaux sociaux (Facebook / Instagram) ----------
+CREATE TABLE social_queue (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    article_id INT NOT NULL,
+    platform   VARCHAR(20) NOT NULL,            -- 'facebook' | 'instagram'
+    status     VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending | posted | error
+    caption    TEXT DEFAULT NULL,
+    post_id    VARCHAR(160) DEFAULT NULL,
+    error      VARCHAR(500) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    posted_at  DATETIME DEFAULT NULL,
+    INDEX idx_status (status),
+    INDEX idx_ap (article_id, platform)
+) ENGINE=InnoDB;
+
 -- ---------- Tags ----------
 CREATE TABLE tags (
     id   INT AUTO_INCREMENT PRIMARY KEY,

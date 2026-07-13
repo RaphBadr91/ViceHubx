@@ -11,6 +11,7 @@ $admin_nav = [
     ['articles.php',  t('admin_articles')],
     ['article-create.php', t('admin_new')],
     ['ai-articles.php', '🤖 Articles IA'],
+    ['social.php',    '📣 Réseaux'],
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],
     ['fanarts.php',   'Fan-arts'],

@@ -1011,6 +1011,15 @@ function ai_auto_run(int $budgetSeconds = 130): array
         if ($tr > 0) { $msgs[] = "{$tr} article(s) traduit(s) en anglais"; }
     }
 
+    // 4) RÉSEAUX SOCIAUX — poste les nouveaux articles publiés sur Facebook/Instagram.
+    if ((int) get_setting('social_auto', '0') === 1) {
+        require_once ROOT_PATH . '/includes/social.php';
+        if (social_any_ready()) {
+            $sp = social_drain((int) max(15, $budgetSeconds / 4));
+            if ($sp['posted'] > 0) { $msgs[] = "{$sp['posted']} publication(s) réseaux"; }
+        }
+    }
+
     if (!$msgs) {
         // Prochain article programmé (date la plus proche à venir).
         $next = db()->query("SELECT MIN(published_at) FROM articles WHERE status='pending' AND published_at IS NOT NULL AND published_at > NOW()")->fetchColumn();
