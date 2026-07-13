@@ -7,6 +7,17 @@
 declare(strict_types=1);
 
 /* ------------------------------------------------------------------ */
+/*  Temporisation de la sortie (web uniquement)                        */
+/*  Permet un redirect()/header() à TOUT moment, même après affichage  */
+/*  HTML — corrige « Cannot modify header information / headers already */
+/*  sent » (ex. sauvegarde d'un produit/article qui redirige ensuite). */
+/*  En CLI (workers), on laisse le flux libre.                         */
+/* ------------------------------------------------------------------ */
+if (PHP_SAPI !== 'cli') {
+    ob_start();
+}
+
+/* ------------------------------------------------------------------ */
 /*  Chargement d'un fichier .env (hébergement mutualisé : O2Switch…)   */
 /*  Sur un mutualisé on ne peut pas définir de variables système ;     */
 /*  on lit donc un fichier .env (non versionné) à la racine du projet. */

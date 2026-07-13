@@ -12,6 +12,8 @@
  * - Ne casse jamais : repli sur un dégradé néon si la source est introuvable.
  */
 require_once __DIR__ . '/config/config.php';
+// Endpoint binaire : on streame le fichier directement (pas de temporisation mémoire).
+while (ob_get_level() > 0) { ob_end_clean(); }
 
 $f = (string) ($_GET['f'] ?? '');
 $w = (int) ($_GET['w'] ?? 1000);

@@ -5,6 +5,8 @@
  * le produit demandé.   Usage : /download.php?s=<stripe_session>&p=<product_id>
  */
 require_once __DIR__ . '/config/config.php';
+// Endpoint binaire : on streame le fichier directement (pas de temporisation mémoire).
+while (ob_get_level() > 0) { ob_end_clean(); }
 
 $session = trim((string) ($_GET['s'] ?? ''));
 $pid = (int) ($_GET['p'] ?? 0);

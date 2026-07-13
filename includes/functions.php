@@ -15,10 +15,20 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-/** Redirection HTTP propre. */
+/** Redirection HTTP propre (fonctionne même après un début d'affichage). */
 function redirect(string $path): void
 {
-    header('Location: ' . $path);
+    // Jette toute sortie déjà mise en tampon pour pouvoir envoyer l'en-tête Location.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    if (!headers_sent()) {
+        header('Location: ' . $path);
+    } else {
+        // Filet de sécurité (en-têtes réellement partis) : redirection navigateur.
+        echo '<meta http-equiv="refresh" content="0;url=' . htmlspecialchars($path, ENT_QUOTES) . '">'
+            . '<script>location.replace(' . json_encode($path) . ');</script>';
+    }
     exit;
 }
 

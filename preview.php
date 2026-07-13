@@ -7,6 +7,8 @@
  *   Usage : /preview.php?p=wall-skyline
  */
 require_once __DIR__ . '/config/config.php';
+// Endpoint binaire : on streame le fichier directement (pas de temporisation mémoire).
+while (ob_get_level() > 0) { ob_end_clean(); }
 
 $p = preg_replace('/[^a-z0-9_-]/i', '', (string) ($_GET['p'] ?? ''));
 if ($p === '') {
