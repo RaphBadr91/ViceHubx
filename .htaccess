@@ -45,6 +45,11 @@ AddDefaultCharset UTF-8
     RewriteRule ^ / [R=301,L]
     RewriteCond %{THE_REQUEST} \s/+pages/([a-z0-9-]+)\.php([\s?]) [NC]
     RewriteRule ^ /%1 [R=301,L]
+    #    c) Pages admin : /admin/xxx.php → /admin/xxx (GET seulement : ne casse
+    #       jamais les formulaires POST, qui restent envoyés au .php via réécriture).
+    RewriteCond %{REQUEST_METHOD} =GET
+    RewriteCond %{THE_REQUEST} \s/+admin/([a-z0-9-]+)\.php[\s?] [NC]
+    RewriteRule ^ /admin/%1 [R=301,L,QSA]
 
     # 2) URL « parlantes » pour les contenus dynamiques.
     #    Classe [A-Za-z0-9-] : tolère un slug legacy en majuscules (sinon page 404
@@ -55,6 +60,12 @@ AddDefaultCharset UTF-8
     RewriteRule ^sujet/([0-9]+)/?$            pages/forum-thread.php?id=$1     [QSA,L]
     RewriteRule ^categorie/([A-Za-z0-9-]+)/?$ pages/forum-category.php?cat=$1  [QSA,L]
     RewriteRule ^membre/([a-zA-Z0-9_.-]+)/?$ pages/profil.php?u=$1          [QSA,L]
+
+    # 2 bis) Admin sans .php : /admin/analytics → admin/analytics.php
+    #        (réécriture INTERNE → préserve la méthode POST et la query string).
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^admin/([a-z0-9-]+)/?$ admin/$1.php [QSA,L]
 
     # 3) Page simple : /news → pages/news.php (uniquement si la page existe).
     RewriteCond %{REQUEST_FILENAME} !-f

@@ -304,6 +304,10 @@ function url(string $path): string
     if (preg_match('#^pages/([a-z0-9-]+)\.php$#', $path, $m)) {
         return BASE_URL . '/' . $m[1] . ($query !== '' ? '?' . $query : '');
     }
+    // Pages admin : /admin/analytics.php → /admin/analytics (query préservé).
+    if (preg_match('#^admin/([a-z0-9-]+)\.php$#', $path, $m)) {
+        return BASE_URL . '/admin/' . $m[1] . ($query !== '' ? '?' . $query : '');
+    }
     return BASE_URL . '/' . $path . ($query !== '' ? '?' . $query : '');
 }
 
