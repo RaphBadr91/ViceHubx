@@ -21,18 +21,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = db()->query('SELECT id, username, display_name, email, role, created_at FROM users ORDER BY id ASC')->fetchAll();
+// Recherche : par ID exact, identifiant, nom affiché ou e-mail (insensible casse).
+$q = trim((string) ($_GET['q'] ?? ''));
+$total = (int) db()->query('SELECT COUNT(*) FROM users')->fetchColumn();
+$LIMIT = 500;
+if ($q !== '') {
+    $like = '%' . $q . '%';
+    $stmt = db()->prepare(
+        'SELECT id, username, display_name, email, role, created_at FROM users
+         WHERE id = ? OR username LIKE ? OR display_name LIKE ? OR email LIKE ?
+         ORDER BY id ASC LIMIT ' . $LIMIT
+    );
+    $stmt->execute([ctype_digit($q) ? (int) $q : 0, $like, $like, $like]);
+    $users = $stmt->fetchAll();
+} else {
+    $users = db()->query('SELECT id, username, display_name, email, role, created_at FROM users ORDER BY id ASC LIMIT ' . $LIMIT)->fetchAll();
+}
 $roles = ['admin' => 'Administrateur', 'editor' => 'Éditeur', 'contributor' => 'Contributeur', 'member' => 'Membre'];
 ?>
-<div class="admin-bar"><h1>Membres</h1></div>
+<div class="admin-bar"><h1>Membres <span class="muted" style="font-size:1rem;font-weight:400">· <?= $total ?></span></h1></div>
 <?php if ($flash): ?><div class="alert alert--<?= e($flash[0]) ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 
 <p class="muted" style="font-size:.9rem;max-width:760px">Gérez les accès : passez un membre en <strong>contributeur</strong> (articles auto-publiés) ou <strong>éditeur/admin</strong> (accès back-office).</p>
+
+<!-- 🔍 Barre de recherche (e-mail, identifiant, nom affiché ou ID) -->
+<form method="get" class="glass" style="border-radius:14px;padding:.8rem 1rem;margin:1rem 0;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+    <input type="search" name="q" value="<?= e($q) ?>" placeholder="🔍 Rechercher par e-mail, identifiant, nom ou ID…" autofocus
+           style="flex:1;min-width:240px;padding:.6rem .8rem;border-radius:10px;background:rgba(255,255,255,.05);color:#fff;border:1px solid var(--glass-brd)">
+    <button class="btn btn--primary" type="submit">Rechercher</button>
+    <?php if ($q !== ''): ?>
+        <a class="btn btn--ghost" href="<?= e(url('admin/users.php')) ?>">✖ Réinitialiser</a>
+    <?php endif; ?>
+</form>
+
+<?php if ($q !== ''): ?>
+    <p class="muted" style="font-size:.88rem;margin:.2rem 0 .8rem">
+        <strong><?= count($users) ?></strong> résultat<?= count($users) > 1 ? 's' : '' ?> pour « <?= e($q) ?> »<?= count($users) >= $LIMIT ? ' (affichage limité à ' . $LIMIT . ')' : '' ?>.
+    </p>
+<?php endif; ?>
 
 <div class="glass" style="border-radius:18px;padding:1rem 1.2rem;overflow-x:auto">
     <table class="data-table">
         <thead><tr><th>#</th><th>Identifiant</th><th>Nom affiché</th><th>E-mail</th><th>Rôle</th><th>Inscrit</th><th></th></tr></thead>
         <tbody>
+        <?php if (!$users): ?>
+            <tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">Aucun membre trouvé<?= $q !== '' ? ' pour « ' . e($q) . ' »' : '' ?>.</td></tr>
+        <?php endif; ?>
         <?php foreach ($users as $u): ?>
             <tr>
                 <td><?= (int) $u['id'] ?></td>
