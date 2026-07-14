@@ -521,6 +521,14 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                     <p class="muted" style="font-size:.8rem;margin:.4rem 0 0">Il reste <strong><?= (int) $imgProg['remaining'] ?></strong> image(s) à générer. Recharge la page pour suivre.</p>
                 </div>
             <?php endif; ?>
+
+            <!-- Cron dédié images (génération de masse fiable, même si le worker est coupé) -->
+            <?php $imgCron = rtrim(site_base_url(), '/') . '/ai-image-worker.php?key=' . $tickKey; ?>
+            <div style="margin-top:.9rem;padding-top:.8rem;border-top:1px solid var(--glass-brd)">
+                <p class="muted" style="font-size:.84rem;margin:0 0 .3rem">🔁 <strong>Génération de masse</strong> (beaucoup d'articles) : branche ce lien sur un cron <strong>toutes les 10 min</strong> — il génère les images restantes petit à petit, 24h/24, jusqu'à ce que tout soit fait (idéal pour des centaines d'articles). Les traductions EN partagent l'image de leur article FR (0 coût en double).</p>
+                <input type="text" readonly value="<?= e($imgCron) ?>" onclick="this.select()" style="width:100%;font-size:.8rem;font-family:monospace;padding:.5rem;border-radius:8px;background:rgba(255,255,255,.05);color:#cfc9dd;border:1px solid var(--glass-brd)">
+                <button class="btn btn--ghost" type="button" data-copy="<?= e($imgCron) ?>" style="margin-top:.5rem">📋 Copier le lien cron images</button>
+            </div>
         </div>
 
         <details style="margin-top:.8rem">

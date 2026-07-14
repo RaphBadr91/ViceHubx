@@ -443,9 +443,19 @@ function ai_download_as_webp(string $url, string $slug): ?string
 /** Compte les articles SANS illustration sur-mesure (vide, ou image de la banque). */
 function ai_missing_image_count(): int
 {
-    return (int) db()->query(
-        "SELECT COUNT(*) FROM articles WHERE image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%'"
-    )->fetchColumn();
+    ai_ensure_source_col();
+    // On ne compte que les ORIGINAUX (source_id IS NULL) : les traductions EN
+    // partagent l'image de leur article FR source → aucune 2e génération payante.
+    try {
+        return (int) db()->query(
+            "SELECT COUNT(*) FROM articles
+             WHERE (image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%') AND source_id IS NULL"
+        )->fetchColumn();
+    } catch (Throwable $e) {
+        return (int) db()->query(
+            "SELECT COUNT(*) FROM articles WHERE image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%'"
+        )->fetchColumn();
+    }
 }
 
 /**
@@ -457,18 +467,22 @@ function ai_missing_image_count(): int
 function ai_generate_missing_images(int $budgetSeconds = 0): int
 {
     if (!ai_img_enabled()) { return 0; }
+    ai_ensure_source_col();
     $lock = (int) get_setting('ai_img_worker_lock', '0');
     if (time() - $lock < 600) { return 0; }          // verrou 10 min (génération lente)
     set_setting('ai_img_worker_lock', (string) time());
 
     $deadline  = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
     $done = 0; $fail = 0; $failedIds = [];
+    $prop = db()->prepare('UPDATE articles SET image=? WHERE source_id=?'); // propage aux VO EN
     try {
         while (time() < $deadline && $fail < 5) {
             $excl = $failedIds ? (' AND id NOT IN (' . implode(',', array_map('intval', $failedIds)) . ')') : '';
+            // Uniquement les ORIGINAUX : une seule image payante partagée avec la VO EN.
             $art  = db()->query(
                 "SELECT id, slug, title, image_prompt FROM articles
-                 WHERE (image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%')$excl
+                 WHERE (image IS NULL OR image='' OR image LIKE '/public/assets/img/scenes/%')
+                   AND source_id IS NULL$excl
                  ORDER BY (status='published') DESC, id DESC LIMIT 1"
             )->fetch();
             if (!$art) { break; }
@@ -481,6 +495,7 @@ function ai_generate_missing_images(int $budgetSeconds = 0): int
             $path = ai_generate_image($prompt, $slug);
             if ($path) {
                 db()->prepare('UPDATE articles SET image=? WHERE id=?')->execute([$path, (int) $art['id']]);
+                $prop->execute([$path, (int) $art['id']]);          // même image pour la VO anglaise
                 $done++;
                 set_setting('ai_img_worker_lock', (string) time()); // rafraîchit le verrou
             } else {
