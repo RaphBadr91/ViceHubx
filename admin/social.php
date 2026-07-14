@@ -18,6 +18,9 @@ if ($act === 'save') {
     }
     $tok = trim((string) ($_POST['fb_page_token'] ?? ''));
     if ($tok !== '') { set_setting('fb_page_token', $tok); } // vide = on conserve
+    if (isset($_POST['social_daily_max'])) {
+        set_setting('social_daily_max', (string) max(1, min(50, (int) $_POST['social_daily_max'])));
+    }
     set_setting('social_fb_enabled', !empty($_POST['social_fb_enabled']) ? '1' : '0');
     set_setting('social_ig_enabled', !empty($_POST['social_ig_enabled']) ? '1' : '0');
     set_setting('social_auto', !empty($_POST['social_auto']) ? '1' : '0');
@@ -53,6 +56,9 @@ $fbPage    = social_fb_page();
 $igUser    = social_ig_user();
 $hasToken  = social_fb_token() !== '';
 $siteUrl   = (string) (get_setting('site_public_url', '') ?: social_base());
+$dailyMax  = max(1, (int) get_setting('social_daily_max', '10'));
+$fbToday   = social_posted_today('facebook');
+$igToday   = social_posted_today('instagram');
 $stats     = social_stats();
 $recent    = social_recent(12);
 
@@ -92,6 +98,10 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
         <label>ID du compte Instagram Business
             <input type="text" name="ig_user_id" value="<?= e($igUser) ?>" placeholder="ex. 17841400000000000" style="display:block;width:100%;margin-top:.3rem">
             <small class="muted">Le compte Instagram doit être <strong>Business/Créateur</strong> et relié à la Page Facebook ci-dessus.</small>
+        </label>
+        <label style="max-width:340px">Plafond de posts par jour <strong>et par réseau</strong> (anti-spam)
+            <input type="number" name="social_daily_max" value="<?= $dailyMax ?>" min="1" max="50" style="display:block;width:120px;margin-top:.3rem">
+            <small class="muted">🛡️ Protège tes comptes d'un bannissement. 8-12/jour est un rythme sûr et naturel. Aujourd'hui : <strong><?= $fbToday ?></strong> FB · <strong><?= $igToday ?></strong> IG.</small>
         </label>
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
             <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer"><input type="checkbox" name="social_fb_enabled" value="1" <?= $fbEnabled ? 'checked' : '' ?>> Activer Facebook</label>

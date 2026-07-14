@@ -270,22 +270,27 @@ function social_drain(int $budgetSeconds = 0): array
     if (time() - $lock < 300) { return ['posted' => 0, 'failed' => 0]; }
     set_setting('social_lock', (string) time());
 
+    // ⚠️ PLAFOND QUOTIDIEN par réseau : poste en douceur (anti-spam / anti-bannissement).
+    $cap   = max(1, (int) get_setting('social_daily_max', '10'));
+    $today = ['facebook' => social_posted_today('facebook'), 'instagram' => social_posted_today('instagram')];
+
     $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
     $posted = 0; $failed = 0;
     try {
         while (time() < $deadline) {
+            // Réseaux encore autorisés aujourd'hui : prêts ET sous le plafond quotidien.
+            $allowed = [];
+            if (social_fb_ready() && $today['facebook'] < $cap) { $allowed[] = 'facebook'; }
+            if (social_ig_ready() && $today['instagram'] < $cap) { $allowed[] = 'instagram'; }
+            if (!$allowed) { break; } // tout est désactivé ou plafond atteint → on s'arrête
+
+            $in  = "'" . implode("','", $allowed) . "'"; // liste blanche (jamais d'entrée user)
             $row = db()->query(
                 "SELECT q.id, q.article_id, q.platform, q.caption, a.title, a.slug, a.excerpt, a.image
                  FROM social_queue q JOIN articles a ON a.id = q.article_id
-                 WHERE q.status='pending' ORDER BY q.id ASC LIMIT 1"
+                 WHERE q.status='pending' AND q.platform IN ($in) ORDER BY q.id ASC LIMIT 1"
             )->fetch(PDO::FETCH_ASSOC);
             if (!$row) { break; }
-
-            // Plateforme désactivée entre-temps : on saute (repassera si réactivée).
-            if (($row['platform'] === 'facebook' && !social_fb_ready())
-                || ($row['platform'] === 'instagram' && !social_ig_ready())) {
-                break;
-            }
 
             $caption = (string) ($row['caption'] ?? '');
             if ($caption === '') {
@@ -301,6 +306,7 @@ function social_drain(int $budgetSeconds = 0): array
                 db()->prepare("UPDATE social_queue SET status='posted', post_id=?, posted_at=NOW(), error=NULL WHERE id=?")
                     ->execute([$res, (int) $row['id']]);
                 $posted++;
+                $today[(string) $row['platform']]++;   // compte pour le plafond quotidien
             } else {
                 db()->prepare("UPDATE social_queue SET status='error', error=? WHERE id=?")
                     ->execute([$res, (int) $row['id']]);
@@ -327,6 +333,18 @@ function social_test(string $platform): array
     return $ok
         ? ['ok' => true, 'msg' => '✅ Posté sur ' . ucfirst($platform) . ' (id ' . $res . ').']
         : ['ok' => false, 'msg' => '❌ ' . ucfirst($platform) . ' : ' . $res];
+}
+
+/** Nombre de posts déjà publiés AUJOURD'HUI sur une plateforme (plafond quotidien). */
+function social_posted_today(string $platform): int
+{
+    try {
+        $st = db()->prepare("SELECT COUNT(*) FROM social_queue WHERE platform=? AND status='posted' AND DATE(posted_at)=CURDATE()");
+        $st->execute([$platform]);
+        return (int) $st->fetchColumn();
+    } catch (Throwable $e) {
+        return 0;
+    }
 }
 
 /** Compteurs pour le tableau de bord. */
