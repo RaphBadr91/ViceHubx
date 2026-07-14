@@ -1203,6 +1203,37 @@ function clean_ai_markers(string $text): string
     return trim($text);
 }
 
+/**
+ * Extrait les paires Question/Réponse d'une section FAQ (structure générée :
+ * <h2>FAQ</h2> puis <h3>Question ?</h3><p>Réponse</p>). Sert au balisage
+ * schema.org FAQPage → rich snippets Google + éligibilité AI Overview.
+ * @return array<int,array{q:string,a:string}>
+ */
+function faq_from_html(string $html): array
+{
+    if ($html === '' || stripos($html, 'faq') === false) {
+        return [];
+    }
+    // On part de la dernière rubrique <h2> contenant « FAQ ».
+    if (!preg_match('#<h2[^>]*>[^<]*faq[^<]*</h2>(.*)$#is', $html, $m)) {
+        return [];
+    }
+    $out = [];
+    if (preg_match_all('#<h3[^>]*>(.*?)</h3>\s*<p[^>]*>(.*?)</p>#is', $m[1], $pairs, PREG_SET_ORDER)) {
+        foreach ($pairs as $p) {
+            $q = trim(strip_tags($p[1]));
+            $a = trim(strip_tags($p[2]));
+            if ($q !== '' && $a !== '' && mb_strlen($q) <= 300) {
+                $out[] = ['q' => $q, 'a' => mb_substr($a, 0, 1200)];
+            }
+            if (count($out) >= 10) {
+                break;
+            }
+        }
+    }
+    return $out;
+}
+
 /** Mots-clés significatifs d'un texte (pour lier pubs internes au sujet de l'article). */
 function article_keywords(string $text, int $min = 4, int $max = 6): array
 {

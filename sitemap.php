@@ -44,11 +44,18 @@ $urls = [
     ['pages/legal.php', 'yearly', '0.2'],
 ];
 
-// Articles publiés
+// Articles publiés (+ langue et article source, pour les alternances hreflang FR/EN)
 try {
-    $arts = db()->query("SELECT slug, published_at FROM articles WHERE status = 'published' ORDER BY published_at DESC")->fetchAll();
+    $arts = db()->query("SELECT id, slug, published_at, lang, source_id FROM articles WHERE status = 'published' ORDER BY published_at DESC")->fetchAll();
 } catch (Throwable $e) {
     $arts = [];
+}
+// Slug de la VO anglaise indexée par article FR source (pour relier les paires).
+$enBySource = [];
+foreach ($arts as $a) {
+    if (($a['lang'] ?? 'fr') === 'en' && !empty($a['source_id'])) {
+        $enBySource[(int) $a['source_id']] = (string) $a['slug'];
+    }
 }
 // Produits actifs
 try {
@@ -66,7 +73,7 @@ try {
 
 header('Content-Type: application/xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
 
 // URL propres (sans /pages/ ni .php) — cohérent avec .htaccess et url().
 $clean = static function (string $p): string {
@@ -77,9 +84,34 @@ $clean = static function (string $p): string {
 foreach ($urls as [$path, $freq, $prio]) {
     echo '  <url><loc>' . e($abs($clean($path))) . '</loc><changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
 }
+$artUrl = static function (string $slug) use ($abs): string {
+    return $abs('article/' . rawurlencode($slug));
+};
 foreach ($arts as $a) {
     $lastmod = !empty($a['published_at']) ? '<lastmod>' . substr($a['published_at'], 0, 10) . '</lastmod>' : '';
-    echo '  <url><loc>' . e($abs('article/' . rawurlencode($a['slug']))) . '</loc>' . $lastmod . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
+
+    // Détermine la paire FR/EN de cet article pour les annotations hreflang.
+    $frSlug = $enSlug = null;
+    if (($a['lang'] ?? 'fr') === 'en') {
+        $enSlug = (string) $a['slug'];
+        if (!empty($a['source_id'])) {
+            foreach ($arts as $b) {           // retrouve le slug FR source
+                if ((int) $b['id'] === (int) $a['source_id']) { $frSlug = (string) $b['slug']; break; }
+            }
+        }
+    } else {
+        $frSlug = (string) $a['slug'];
+        if (isset($enBySource[(int) $a['id']])) { $enSlug = $enBySource[(int) $a['id']]; }
+    }
+
+    // Annotations d'alternance de langue (uniquement si une traduction existe).
+    $alts = '';
+    if ($frSlug !== null && $enSlug !== null) {
+        $alts .= '<xhtml:link rel="alternate" hreflang="fr" href="' . e($artUrl($frSlug)) . '"/>'
+              .  '<xhtml:link rel="alternate" hreflang="en" href="' . e($artUrl($enSlug)) . '"/>'
+              .  '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($artUrl($frSlug)) . '"/>';
+    }
+    echo '  <url><loc>' . e($artUrl((string) $a['slug'])) . '</loc>' . $lastmod . $alts . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
 }
 foreach ($prods as $p) {
     echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";

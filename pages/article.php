@@ -67,7 +67,7 @@ $SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : (cdn_ur
 // URL absolue de l'article (pour og:type=article + schema enrichi)
 $__base  = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/')
     : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost'));
-$art_url = $__base . '/pages/article.php?slug=' . urlencode($article['slug']);
+$art_url = $__base . '/article/' . rawurlencode($article['slug']); // URL canonique propre (cohérence SEO)
 $pub_iso = date('c', strtotime($article['published_at'] ?: $article['created_at']));
 $img_abs = preg_match('#^https?://#', (string) $SEO_OG_IMAGE) ? $SEO_OG_IMAGE : $__base . '/' . ltrim((string) $SEO_OG_IMAGE, '/');
 
@@ -119,11 +119,26 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
         'itemListElement' => [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Accueil', 'item' => $__base . '/'],
             ['@type' => 'ListItem', 'position' => 2, 'name' => $article['category_name'] ?? 'News',
-                'item' => $__base . '/pages/' . ($article['category_slug'] ?? 'news') . '.php'],
+                'item' => $__base . '/' . ($article['category_slug'] ?? 'news')],
             ['@type' => 'ListItem', 'position' => 3, 'name' => $article['title']],
         ],
     ],
 ]];
+
+// FAQPage : si l'article contient une FAQ, on l'expose en données structurées
+// (rich snippets Google + éligibilité AI Overview). Fort levier SEO.
+$__faq = faq_from_html((string) $article['body']);
+if (count($__faq) >= 2) {
+    $JSONLD['@graph'][] = [
+        '@type' => 'FAQPage',
+        '@id'   => $art_url . '#faq',
+        'mainEntity' => array_map(static fn($qa) => [
+            '@type' => 'Question',
+            'name'  => $qa['q'],
+            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $qa['a']],
+        ], $__faq),
+    ];
+}
 
 require ROOT_PATH . '/includes/header.php';
 ?>
@@ -145,7 +160,7 @@ require ROOT_PATH . '/includes/header.php';
     <p class="muted" style="font-size:1.1rem;margin-bottom:1.6rem"><?= e($article['excerpt']) ?></p>
 
     <?php if (!empty($article['image'])): ?>
-        <img src="<?= e(img_src($article['image'])) ?>" alt="<?= e($article['title']) ?>" loading="eager" style="width:100%;border-radius:18px;margin-bottom:1.6rem">
+        <img src="<?= e(img_src($article['image'])) ?>" alt="<?= e($article['title']) ?>" width="1280" height="720" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:18px;margin-bottom:1.6rem">
     <?php endif; ?>
 
     <div class="article-body"><?= $safe_body ?></div>
