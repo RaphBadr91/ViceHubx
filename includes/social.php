@@ -189,8 +189,10 @@ function social_post_facebook(array $a, string $caption): array
 function social_post_instagram(array $a, string $caption): array
 {
     $ver = social_graph_ver();
-    $img = social_image_url($a);
-    if ($img === '') { return [false, 'Article sans image : Instagram exige une image publique (JPG/PNG).']; }
+    if (empty($a['image'])) { return [false, 'Article sans image : Instagram exige une image.']; }
+    // Instagram n'accepte QUE le JPEG → on sert l'image convertie via social-img.php.
+    $aid = (int) ($a['article_id'] ?? $a['id'] ?? 0);
+    $img = $aid > 0 ? (social_base() . '/social-img.php?id=' . $aid) : social_image_url($a);
     $token = social_fb_token();
     $ig = social_ig_user();
 
