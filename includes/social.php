@@ -108,33 +108,44 @@ function social_caption(array $a, string $platform = 'facebook'): string
     $title   = (string) ($a['title'] ?? '');
     $excerpt = (string) ($a['excerpt'] ?? '');
     $url     = social_article_url($a);
+    $isEn    = (($a['lang'] ?? 'fr') === 'en');   // Instagram = EN, Facebook = FR
+    $ig      = $platform === 'instagram';
 
-    $fallback = function () use ($title, $url, $platform) {
+    $fallback = function () use ($title, $url, $ig, $isEn) {
         $tags = '#GTA6 #GTAVI #ViceCity #Rockstar #GTA6News #Leonida #Gaming';
         $base = mb_substr($title, 0, 150);
-        // Instagram : pas de lien cliquable → « lien en bio ». Facebook : lien direct.
-        return $platform === 'instagram'
-            ? $base . " 🌴🔥\n\n👉 Article complet : lien en bio\n\n" . $tags
-            : $base . " 🌴🔥\n\n👉 " . $url . "\n\n" . $tags;
+        $cta  = $ig
+            ? ($isEn ? '👉 Full article: link in bio' : '👉 Article complet : lien en bio')
+            : '👉 ' . $url;
+        return $base . " 🌴🔥\n\n" . $cta . "\n\n" . $tags;
     };
 
     if (!function_exists('ai_enabled') || !ai_enabled()) {
         return $fallback();
     }
     try {
-        $sys = 'Tu es community manager pour ViceHub X, média fan FR sur GTA VI / Vice City. '
-            . 'Tu écris des légendes réseaux sociaux COURTES, punchy, qui donnent envie de cliquer. '
-            . 'Style : 1 à 2 phrases accrocheuses + 1-3 emojis pertinents + 5 à 8 hashtags ciblés '
-            . '(GTA6, GTAVI, ViceCity, Rockstar, gaming…). Jamais de mention d\'IA. Français.';
-        $ig = $platform === 'instagram';
-        $usr = "Article : « {$title} »\nRésumé : {$excerpt}\n\n"
-            . 'Rédige UNIQUEMENT la légende (rien d\'autre), '
-            . ($ig ? 'sans lien (Instagram : termine par « 👉 Lien en bio »), ' : "avec l'appel à l'action « 👉 {$url} », ")
-            . 'puis les hashtags sur une nouvelle ligne. Max 380 caractères hors hashtags.';
+        if ($isEn) {
+            $sys = 'You are the community manager for ViceHub X, an independent GTA VI / Vice City fan media. '
+                . 'Write SHORT, punchy social captions that make people want to click. Style: 1-2 catchy sentences '
+                . '+ 1-3 relevant emojis + 5-8 targeted hashtags (GTA6, GTAVI, ViceCity, Rockstar, gaming…). '
+                . 'Never mention AI. Write in ENGLISH.';
+            $usr = "Article: \"{$title}\"\nSummary: {$excerpt}\n\n"
+                . 'Write ONLY the caption (nothing else), '
+                . ($ig ? 'without a link (Instagram: end with "👉 Link in bio"), ' : "with the call to action \"👉 {$url}\", ")
+                . 'then the hashtags on a new line. Max 380 characters excluding hashtags.';
+        } else {
+            $sys = 'Tu es community manager pour ViceHub X, média fan FR sur GTA VI / Vice City. '
+                . 'Tu écris des légendes réseaux sociaux COURTES, punchy, qui donnent envie de cliquer. '
+                . 'Style : 1 à 2 phrases accrocheuses + 1-3 emojis pertinents + 5 à 8 hashtags ciblés '
+                . '(GTA6, GTAVI, ViceCity, Rockstar, gaming…). Jamais de mention d\'IA. Français.';
+            $usr = "Article : « {$title} »\nRésumé : {$excerpt}\n\n"
+                . 'Rédige UNIQUEMENT la légende (rien d\'autre), '
+                . ($ig ? 'sans lien (Instagram : termine par « 👉 Lien en bio »), ' : "avec l'appel à l'action « 👉 {$url} », ")
+                . 'puis les hashtags sur une nouvelle ligne. Max 380 caractères hors hashtags.';
+        }
         $out = trim(anthropic_complete($sys, $usr, 400));
         $out = function_exists('clean_ai_markers') ? clean_ai_markers($out) : $out;
         if ($out === '') { return $fallback(); }
-        // Facebook : garantit la présence du lien.
         if (!$ig && strpos($out, $url) === false) { $out .= "\n\n👉 " . $url; }
         return mb_substr($out, 0, 2000);
     } catch (Throwable $e) {
@@ -245,14 +256,19 @@ function social_sync(): void
         set_setting('social_since_id', (string) $max);
         return;
     }
-    // Articles FR publiés, plus récents que le repère (les VO EN ne sont pas repostées).
+    // Langue par réseau : articles FR → Facebook, traductions EN → Instagram.
     $rows = db()->query(
-        "SELECT id FROM articles WHERE status='published' AND lang='fr' AND id > {$since} ORDER BY id ASC LIMIT 30"
-    )->fetchAll(PDO::FETCH_COLUMN);
+        "SELECT id, lang FROM articles WHERE status='published' AND id > {$since} ORDER BY id ASC LIMIT 40"
+    )->fetchAll(PDO::FETCH_ASSOC);
     $newMax = $since;
-    foreach ($rows as $id) {
-        social_enqueue((int) $id);
-        $newMax = max($newMax, (int) $id);
+    foreach ($rows as $r) {
+        $id = (int) $r['id'];
+        if (($r['lang'] ?? 'fr') === 'en') {
+            if (social_ig_ready()) { social_enqueue($id, ['instagram']); }
+        } else {
+            if (social_fb_ready()) { social_enqueue($id, ['facebook']); }
+        }
+        $newMax = max($newMax, $id);
     }
     if ($newMax > $since) { set_setting('social_since_id', (string) $newMax); }
 }
@@ -288,7 +304,7 @@ function social_drain(int $budgetSeconds = 0): array
 
             $in  = "'" . implode("','", $allowed) . "'"; // liste blanche (jamais d'entrée user)
             $row = db()->query(
-                "SELECT q.id, q.article_id, q.platform, q.caption, a.title, a.slug, a.excerpt, a.image
+                "SELECT q.id, q.article_id, q.platform, q.caption, a.title, a.slug, a.excerpt, a.image, a.lang
                  FROM social_queue q JOIN articles a ON a.id = q.article_id
                  WHERE q.status='pending' AND q.platform IN ($in) ORDER BY q.id ASC LIMIT 1"
             )->fetch(PDO::FETCH_ASSOC);
@@ -328,8 +344,14 @@ function social_test(string $platform): array
 {
     if ($platform === 'facebook' && !social_fb_ready()) { return ['ok' => false, 'msg' => 'Facebook non configuré (Page + jeton + activé).']; }
     if ($platform === 'instagram' && !social_ig_ready()) { return ['ok' => false, 'msg' => 'Instagram non configuré (compte IG Business + jeton + activé).']; }
-    $a = db()->query("SELECT id, title, slug, excerpt, image FROM articles WHERE status='published' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
-    if (!$a) { return ['ok' => false, 'msg' => 'Aucun article publié à poster.']; }
+    // Langue par réseau : Facebook teste un article FR, Instagram un article EN.
+    $lang = $platform === 'instagram' ? 'en' : 'fr';
+    $a = db()->query("SELECT id, title, slug, excerpt, image, lang FROM articles WHERE status='published' AND lang='{$lang}' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    if (!$a) {
+        return ['ok' => false, 'msg' => $lang === 'en'
+            ? '❌ Aucun article ANGLAIS publié à poster. Active « Traduire automatiquement » (Articles IA) pour alimenter Instagram, ou lance la traduction.'
+            : 'Aucun article publié à poster.'];
+    }
     $caption = social_caption($a, $platform);
     [$ok, $res] = $platform === 'instagram' ? social_post_instagram($a, $caption) : social_post_facebook($a, $caption);
     return $ok

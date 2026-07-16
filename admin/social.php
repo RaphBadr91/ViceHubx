@@ -39,9 +39,19 @@ if ($act === 'run') { @set_time_limit(0); $r = social_drain(60); $flash = ['ok',
 // --- Poster les N derniers articles maintenant (rattrapage) ---
 if ($act === 'post_recent') {
     $n = max(1, min(20, (int) ($_POST['n'] ?? 3)));
-    $ids = db()->query("SELECT id FROM articles WHERE status='published' AND lang='fr' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN);
-    $q = 0; foreach ($ids as $id) { $q += social_enqueue((int) $id); }
-    $flash = ['ok', "🗂️ {$q} publication(s) ajoutée(s) à la file. Clique « Traiter la file » ou attends le cron."];
+    $q = 0;
+    // Langue par réseau : FR → Facebook, EN → Instagram.
+    if (social_fb_ready()) {
+        foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='fr' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+            $q += social_enqueue((int) $id, ['facebook']);
+        }
+    }
+    if (social_ig_ready()) {
+        foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='en' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+            $q += social_enqueue((int) $id, ['instagram']);
+        }
+    }
+    $flash = ['ok', "🗂️ {$q} publication(s) ajoutée(s) à la file (FR→Facebook, EN→Instagram). Clique « Traiter la file » ou attends le cron."];
 }
 // --- Réinitialiser la file en erreur (retenter) ---
 if ($act === 'retry_errors') {
@@ -70,6 +80,10 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
 <?php if ($flash): ?><div class="alert alert--<?= e($flash[0]) ?>" style="margin:1rem 0"><?= e($flash[1]) ?></div><?php endif; ?>
 
 <p class="muted" style="max-width:820px">Publie <strong>automatiquement</strong> chaque nouvel article sur ta <strong>Page Facebook</strong> et ton <strong>compte Instagram</strong>, avec une légende courte + accrocheuse + hashtags générée par l'IA. Reste inactif tant que les jetons ne sont pas renseignés.</p>
+<div class="glass" style="padding:.8rem 1rem;border-radius:12px;margin:.6rem 0;border:1px solid rgba(43,214,255,.25);font-size:.9rem">
+    🌍 <strong>Langue par réseau :</strong> 🇫🇷 <strong>Facebook = articles FR</strong> (légende française) · 🇬🇧 <strong>Instagram = traductions EN</strong> (légende anglaise).
+    <span class="muted">Pour alimenter Instagram, garde <strong>« Traduire automatiquement »</strong> activé (Admin → Articles IA) : chaque nouvel article FR reçoit sa version EN qui part sur Instagram.</span>
+</div>
 
 <!-- État -->
 <div class="glass" style="padding:1rem 1.2rem;border-radius:14px;margin:1rem 0;display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center">
