@@ -67,6 +67,8 @@
             <a href="<?= e(with_lang(url('pages/presse.php'))) ?>"><?= lang() === 'fr' ? 'Presse & Partenariats' : 'Press & Partners' ?></a>
             <a href="<?= e(with_lang(url('pages/contact.php'))) ?>"><?= e(t('nav_contact')) ?></a>
             <a href="<?= e(with_lang(url('pages/legal.php'))) ?>"><?= e(t('page_legal_title')) ?></a>
+            <a href="<?= e(with_lang(url('pages/confidentialite.php'))) ?>"><?= lang() === 'fr' ? 'Confidentialité' : 'Privacy' ?></a>
+            <a href="<?= e(with_lang(url('pages/cgu.php'))) ?>"><?= lang() === 'fr' ? 'CGU' : 'Terms' ?></a>
         </nav>
     </div>
 

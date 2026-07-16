@@ -42,6 +42,8 @@ $urls = [
     ['pages/presse.php', 'monthly', '0.5'],
     ['pages/contact.php', 'yearly', '0.3'],
     ['pages/legal.php', 'yearly', '0.2'],
+    ['pages/confidentialite.php', 'yearly', '0.2'],
+    ['pages/cgu.php', 'yearly', '0.2'],
 ];
 
 // Articles publiés (+ langue et article source, pour les alternances hreflang FR/EN)
