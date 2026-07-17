@@ -14,6 +14,19 @@ require_once dirname(__DIR__) . '/includes/tiktok.php';
 $flash = null;
 if (!empty($_SESSION['tiktok_flash'])) { $flash = $_SESSION['tiktok_flash']; unset($_SESSION['tiktok_flash']); }
 
+// --- Démarrage OAuth (lien GET) : pas de jeton CSRF requis — c'est le paramètre
+//     `state` (vérifié au retour) qui protège le flux. Robuste même si la page a
+//     été servie depuis un cache. ---
+if (isset($_GET['connect'])) {
+    if (tiktok_client_key() === '' || tiktok_client_secret() === '') {
+        $flash = ['err', 'Renseigne d\'abord le Client key + Client secret, puis enregistre.'];
+    } else {
+        $state = bin2hex(random_bytes(16));
+        $_SESSION['tiktok_oauth_state'] = $state;
+        redirect(tiktok_auth_url($state));
+    }
+}
+
 $act = $_POST['action'] ?? '';
 if ($act !== '' && !verify_csrf()) { $flash = ['err', 'Jeton CSRF invalide.']; $act = ''; }
 
@@ -29,16 +42,6 @@ if ($act === 'save') {
     }
     set_setting('tiktok_enabled', !empty($_POST['tiktok_enabled']) ? '1' : '0');
     $flash = ['ok', '💾 Réglages TikTok enregistrés.'];
-}
-// --- Connexion OAuth : redirige vers TikTok ---
-if ($act === 'connect') {
-    if (tiktok_client_key() === '' || tiktok_client_secret() === '') {
-        $flash = ['err', 'Renseigne d\'abord le Client key + Client secret, puis enregistre.'];
-    } else {
-        $state = bin2hex(random_bytes(16));
-        $_SESSION['tiktok_oauth_state'] = $state;
-        redirect(tiktok_auth_url($state));
-    }
 }
 // --- Déconnexion ---
 if ($act === 'disconnect') { tiktok_disconnect(); $flash = ['ok', '🔌 Compte TikTok déconnecté (clé/secret conservés).']; }
@@ -134,8 +137,12 @@ $cronUrl = rtrim(tiktok_base(), '/') . '/tiktok-tick.php?key=' . $tickKey;
 
     <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd);align-items:center">
         <?php if (!$connected): ?>
-            <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="connect"><button class="btn btn--primary" <?= $hasKey && $hasSecret ? '' : 'disabled' ?>>🔗 Connecter mon compte TikTok</button></form>
-            <?php if (!$hasKey || !$hasSecret): ?><span class="muted" style="font-size:.85rem">↑ Renseigne d'abord la clé + le secret, puis enregistre.</span><?php endif; ?>
+            <?php if ($hasKey && $hasSecret): ?>
+                <a class="btn btn--primary" href="?connect=1">🔗 Connecter mon compte TikTok</a>
+            <?php else: ?>
+                <button class="btn btn--primary" disabled>🔗 Connecter mon compte TikTok</button>
+                <span class="muted" style="font-size:.85rem">↑ Renseigne d'abord la clé + le secret, puis enregistre.</span>
+            <?php endif; ?>
         <?php else: ?>
             <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="test"><button class="btn btn--primary">🚀 Tester (poster la 1ʳᵉ vidéo)</button></form>
             <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="run"><button class="btn btn--ghost">▶️ Traiter la file</button></form>

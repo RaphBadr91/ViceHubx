@@ -4,6 +4,14 @@
  */
 require_once dirname(__DIR__) . '/config/config.php';
 require_admin();
+// Anti-cache : une page admin ne doit JAMAIS être servie depuis un cache
+// (LiteSpeed/O2Switch ou navigateur) — un jeton CSRF périmé provoquerait
+// « Jeton CSRF invalide » sur les formulaires (connexion, test, réglages…).
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
 $admin_user = current_user();
 $admin_nav = [
     ['dashboard.php', t('admin_dashboard')],
