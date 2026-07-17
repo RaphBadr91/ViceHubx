@@ -74,6 +74,21 @@ CREATE TABLE social_queue (
     INDEX idx_ap (article_id, platform)
 ) ENGINE=InnoDB;
 
+-- ---------- File TikTok (Content Posting API) ----------
+CREATE TABLE tiktok_queue (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    source_url VARCHAR(1000) NOT NULL,            -- URL de la vidéo (CDN Higgsfield)
+    title      VARCHAR(500) DEFAULT NULL,         -- légende / titre
+    article_id INT DEFAULT NULL,
+    status     VARCHAR(20) NOT NULL DEFAULT 'pending', -- pending | posted | error
+    publish_id VARCHAR(200) DEFAULT NULL,         -- id de publication TikTok
+    mode       VARCHAR(12) DEFAULT NULL,          -- 'draft' | 'public'
+    error      VARCHAR(500) DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    posted_at  DATETIME DEFAULT NULL,
+    INDEX idx_status (status)
+) ENGINE=InnoDB;
+
 -- ---------- Tags ----------
 CREATE TABLE tags (
     id   INT AUTO_INCREMENT PRIMARY KEY,
