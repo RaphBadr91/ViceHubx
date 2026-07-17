@@ -245,7 +245,8 @@ function tiktok_creator_info(): array
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hébergement vidéo (domaine vérifié pour PULL_FROM_URL)             */
+/*  Transfert vidéo (FILE_UPLOAD : octets envoyés directement à TikTok) */
+/*  Pas de PULL_FROM_URL → pas de vérification de propriété d'URL.      */
 /* ------------------------------------------------------------------ */
 /** Dossier local des vidéos TikTok. */
 function tiktok_dir(): string
@@ -256,11 +257,11 @@ function tiktok_dir(): string
 }
 
 /**
- * Rapatrie la vidéo (URL Higgsfield/CDN) en local et renvoie une URL publique
- * sur le domaine VÉRIFIÉ. Si le fichier local existe déjà, ne re-télécharge pas.
- * @return string URL publique https, ou '' en cas d'échec.
+ * Rapatrie la vidéo (URL Higgsfield/CDN) en local et renvoie son CHEMIN local.
+ * Si le fichier existe déjà, ne re-télécharge pas.
+ * @return string chemin absolu du fichier .mp4, ou '' en cas d'échec.
  */
-function tiktok_localize(array $row): string
+function tiktok_localize_path(array $row): string
 {
     $id  = (int) $row['id'];
     $src = (string) $row['source_url'];
@@ -283,7 +284,39 @@ function tiktok_localize(array $row): string
         fclose($fp);
         if (!$ok || !is_file($path) || filesize($path) < 1024) { @unlink($path); return ''; }
     }
-    return tiktok_base() . '/uploads/tiktok/' . $id . '.mp4';
+    return $path;
+}
+
+/**
+ * Envoie (PUT) les octets d'un fichier vidéo vers l'URL d'upload fournie par
+ * TikTok lors du init FILE_UPLOAD. Un seul « chunk » (vidéos courtes ≤ 64 Mo).
+ * @return array{ok:bool,msg?:string}
+ */
+function tiktok_put_file(string $uploadUrl, string $path, int $size): array
+{
+    $fp = @fopen($path, 'rb');
+    if (!$fp) { return ['ok' => false, 'msg' => 'lecture du fichier impossible']; }
+    $ch = curl_init($uploadUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_UPLOAD         => true,               // méthode PUT
+        CURLOPT_INFILE         => $fp,
+        CURLOPT_INFILESIZE     => $size,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: video/mp4',
+            'Content-Range: bytes 0-' . ($size - 1) . '/' . $size,
+            'Expect:',                                 // désactive le 100-continue
+        ],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 300,
+        CURLOPT_CONNECTTIMEOUT => 20,
+    ]);
+    $raw  = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+    fclose($fp);
+    if ($code >= 200 && $code < 300) { return ['ok' => true]; }
+    return ['ok' => false, 'msg' => 'HTTP ' . $code . ' ' . ($err ?: '') . ' ' . mb_substr((string) $raw, 0, 200)];
 }
 
 /* ------------------------------------------------------------------ */
@@ -327,8 +360,20 @@ function tiktok_caption(array $row): string
  */
 function tiktok_post(array $row): array
 {
-    $videoUrl = tiktok_localize($row);
-    if ($videoUrl === '') { return [false, 'Vidéo introuvable/inaccessible (téléchargement échoué).']; }
+    // Rapatrie la vidéo en local (on envoie ses octets directement à TikTok).
+    $path = tiktok_localize_path($row);
+    if ($path === '') { return [false, 'Vidéo introuvable/inaccessible (téléchargement échoué).']; }
+    $size = (int) filesize($path);
+    if ($size < 1024) { return [false, 'Fichier vidéo vide ou corrompu.']; }
+    if ($size > 64 * 1024 * 1024) { return [false, 'Vidéo trop lourde (> 64 Mo) : raccourcis-la.']; }
+
+    // Un seul chunk (vidéos courtes) : chunk_size = video_size, total = 1.
+    $sourceInfo = [
+        'source'            => 'FILE_UPLOAD',
+        'video_size'        => $size,
+        'chunk_size'        => $size,
+        'total_chunk_count' => 1,
+    ];
 
     $mode = tiktok_mode();
 
@@ -344,31 +389,31 @@ function tiktok_post(array $row): array
         $caption = tiktok_caption($row);
         [$c, $b] = tiktok_api_post('https://open.tiktokapis.com/v2/post/publish/video/init/', [
             'post_info' => [
-                'title'                 => mb_substr($caption, 0, 2200),
-                'privacy_level'         => $privacy,
-                'disable_duet'          => false,
-                'disable_comment'       => false,
-                'disable_stitch'        => false,
+                'title'                    => mb_substr($caption, 0, 2200),
+                'privacy_level'            => $privacy,
+                'disable_duet'             => false,
+                'disable_comment'          => false,
+                'disable_stitch'           => false,
                 'video_cover_timestamp_ms' => 1000,
             ],
-            'source_info' => [
-                'source'    => 'PULL_FROM_URL',
-                'video_url' => $videoUrl,
-            ],
+            'source_info' => $sourceInfo,
         ]);
-        if ($c === 200 && !empty($b['data']['publish_id'])) { return [true, (string) $b['data']['publish_id']]; }
+    } else {
+        // Draft / Inbox — dépôt dans la boîte de réception (scope video.upload, sans audit).
+        [$c, $b] = tiktok_api_post('https://open.tiktokapis.com/v2/post/publish/inbox/video/init/', [
+            'source_info' => $sourceInfo,
+        ]);
+    }
+
+    if ($c !== 200 || empty($b['data']['publish_id']) || empty($b['data']['upload_url'])) {
         return [false, tiktok_err($b)];
     }
 
-    // Draft / Inbox — dépôt dans la boîte de réception (scope video.upload, sans audit).
-    [$c, $b] = tiktok_api_post('https://open.tiktokapis.com/v2/post/publish/inbox/video/init/', [
-        'source_info' => [
-            'source'    => 'PULL_FROM_URL',
-            'video_url' => $videoUrl,
-        ],
-    ]);
-    if ($c === 200 && !empty($b['data']['publish_id'])) { return [true, (string) $b['data']['publish_id']]; }
-    return [false, tiktok_err($b)];
+    // Envoi des octets vers l'URL d'upload renvoyée par TikTok.
+    $put = tiktok_put_file((string) $b['data']['upload_url'], $path, $size);
+    if (!$put['ok']) { return [false, 'upload : ' . ($put['msg'] ?? 'échec')]; }
+
+    return [true, (string) $b['data']['publish_id']];
 }
 
 /* ------------------------------------------------------------------ */
