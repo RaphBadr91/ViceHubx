@@ -378,13 +378,18 @@ function tiktok_post(array $row): array
     $mode = tiktok_mode();
 
     if ($mode === 'public') {
-        // Direct Post — publication publique (nécessite l'audit video.publish).
-        // Sans audit, TikTok force la confidentialité à SELF_ONLY.
-        $info = tiktok_creator_info();
-        $privacy = 'SELF_ONLY';
-        if ($info['ok']) {
-            $opts = (array) ($info['data']['privacy_level_options'] ?? []);
-            if (in_array('PUBLIC_TO_EVERYONE', $opts, true)) { $privacy = 'PUBLIC_TO_EVERYONE'; }
+        // Direct Post. AVANT l'audit video.publish, TikTok REFUSE le public pour une
+        // app non auditée (« unaudited_client_can_only_post_to_private_accounts ») :
+        // on poste donc en SELF_ONLY (privé, visible par toi) — parfait pour la démo.
+        // APRÈS l'audit, active le réglage « tiktok_public_ok » pour publier en public.
+        $publicOk = (int) get_setting('tiktok_public_ok', '0') === 1;
+        $privacy  = 'SELF_ONLY';
+        if ($publicOk) {
+            $info = tiktok_creator_info();
+            if ($info['ok']) {
+                $opts = (array) ($info['data']['privacy_level_options'] ?? []);
+                if (in_array('PUBLIC_TO_EVERYONE', $opts, true)) { $privacy = 'PUBLIC_TO_EVERYONE'; }
+            }
         }
         $caption = tiktok_caption($row);
         [$c, $b] = tiktok_api_post('https://open.tiktokapis.com/v2/post/publish/video/init/', [

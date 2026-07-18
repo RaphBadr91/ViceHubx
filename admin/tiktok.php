@@ -41,6 +41,7 @@ if ($act === 'save') {
         set_setting('tiktok_daily_max', (string) max(1, min(20, (int) $_POST['tiktok_daily_max'])));
     }
     set_setting('tiktok_enabled', !empty($_POST['tiktok_enabled']) ? '1' : '0');
+    set_setting('tiktok_public_ok', !empty($_POST['tiktok_public_ok']) ? '1' : '0');
     $flash = ['ok', '💾 Réglages TikTok enregistrés.'];
 }
 // --- Déconnexion ---
@@ -125,6 +126,10 @@ $cronUrl = rtrim(tiktok_base(), '/') . '/tiktok-tick.php?key=' . $tickKey;
             <label style="display:flex;gap:.5rem;align-items:flex-start;cursor:pointer">
                 <input type="radio" name="tiktok_mode" value="public" <?= $mode === 'public' ? 'checked' : '' ?> style="margin-top:.25rem">
                 <span><strong>Public (100% auto)</strong> — publication directe et publique, sans toucher au téléphone. <span class="muted">⚠️ Nécessite l'<strong>audit TikTok</strong> (scope video.publish) ; avant l'audit, la vidéo reste en privé.</span></span>
+            </label>
+            <label style="display:flex;gap:.5rem;align-items:flex-start;cursor:pointer;margin-top:.6rem;padding:.5rem .6rem;background:rgba(57,255,170,.06);border-radius:8px">
+                <input type="checkbox" name="tiktok_public_ok" value="1" <?= (int) get_setting('tiktok_public_ok', '0') === 1 ? 'checked' : '' ?> style="margin-top:.25rem">
+                <span class="muted" style="font-size:.85rem">✅ <strong>Audit TikTok validé</strong> → publier réellement en <strong>PUBLIC</strong>. <em>À cocher UNIQUEMENT après l'accord de TikTok.</em> Tant que c'est décoché, les vidéos partent en <strong>privé</strong> (idéal pour tester/filmer la démo sans erreur).</span>
             </label>
         </fieldset>
         <label style="max-width:340px">Plafond de vidéos par jour (anti-spam)
