@@ -327,6 +327,13 @@ function tiktok_caption(array $row): string
     $title = trim((string) ($row['title'] ?? ''));
     $fallbackTags = '#GTA6 #GTAVI #ViceCity #Rockstar #GTA6News #Leonida #gaming #fyp';
 
+    // Légende FOURNIE telle quelle : si le champ « titre » contient déjà des
+    // hashtags (#), on la publie VERBATIM — l'admin garde le contrôle total du
+    // texte et des hashtags (pas de réécriture par l'IA).
+    if ($title !== '' && strpos($title, '#') !== false) {
+        return mb_substr($title, 0, 2200);
+    }
+
     $fallback = function () use ($title, $fallbackTags) {
         $base = $title !== '' ? mb_substr($title, 0, 120) : 'GTA 6 — Vice City is coming 🌴🔥';
         return $base . "\n\n" . $fallbackTags;
