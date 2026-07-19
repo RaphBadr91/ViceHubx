@@ -514,6 +514,10 @@ function tiktok_drain(int $budgetSeconds = 0): array
                 db()->prepare("UPDATE tiktok_queue SET status='posted', publish_id=?, mode=?, posted_at=NOW(), error=NULL WHERE id=?")
                     ->execute([$res, tiktok_mode(), (int) $row['id']]);
                 $posted++; $today++;
+                // Cross-post Instagram (Reel) si activé — même vidéo, même légende.
+                if ((int) get_setting('tiktok_also_ig', '0') === 1) {
+                    try { tiktok_post_ig_reel($row); } catch (Throwable $e) { /* n'affecte pas TikTok */ }
+                }
             } else {
                 db()->prepare("UPDATE tiktok_queue SET status='error', error=? WHERE id=?")
                     ->execute([$res, (int) $row['id']]);
@@ -561,6 +565,34 @@ function tiktok_test(): array
     }
     // Toujours en traitement après le délai d'attente.
     return ['ok' => true, 'msg' => '✅ Vidéo acceptée par TikTok — ⏳ traitement en cours (publish_id ' . mb_substr($res, 0, 12) . '…). Vérifie ton profil dans 2-3 min.'];
+}
+
+/**
+ * Cross-poste une vidéo de la file en Reel Instagram (même vidéo + même légende).
+ * @return array{ok:bool,msg:string}
+ */
+function tiktok_post_ig_reel(array $row): array
+{
+    if (!function_exists('social_post_instagram_reel') && defined('ROOT_PATH') && is_file(ROOT_PATH . '/includes/social.php')) {
+        require_once ROOT_PATH . '/includes/social.php';
+    }
+    if (!function_exists('social_ig_ready') || !social_ig_ready()) {
+        return ['ok' => false, 'msg' => 'Instagram non configuré (Admin → 📣 Réseaux).'];
+    }
+    $url = (string) ($row['source_url'] ?? '');
+    $cap = tiktok_caption($row);
+    [$ok, $res] = social_post_instagram_reel($url, $cap);
+    return ['ok' => $ok, 'msg' => $ok ? '✅ Reel Instagram publié (id ' . mb_substr($res, 0, 14) . '…).' : '❌ Instagram : ' . $res];
+}
+
+/** Teste le Reel Instagram avec la dernière vidéo de la file (bouton admin). */
+function tiktok_test_ig(): array
+{
+    tiktok_ensure_table();
+    $row = db()->query("SELECT * FROM tiktok_queue ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+    if (!$row) { return ['ok' => false, 'msg' => '❌ Aucune vidéo en file pour tester le Reel Instagram.']; }
+    @set_time_limit(0);
+    return tiktok_post_ig_reel($row);
 }
 
 /** Nombre de vidéos postées AUJOURD'HUI (plafond quotidien). */

@@ -223,6 +223,64 @@ function social_post_instagram(array $a, string $caption): array
     return [false, 'publication : ' . social_err($b2)];
 }
 
+/** Statut de traitement d'un conteneur média IG (utile pour les vidéos/Reels). */
+function social_ig_container_status(string $containerId): string
+{
+    $ver = social_graph_ver();
+    $url = "https://graph.facebook.com/{$ver}/{$containerId}?fields=status_code&access_token=" . urlencode(social_fb_token());
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 10]);
+    $raw = curl_exec($ch);
+    curl_close($ch);
+    $j = json_decode((string) $raw, true);
+    return is_array($j) ? (string) ($j['status_code'] ?? '') : '';
+}
+
+/**
+ * Poste une VIDÉO en Reel Instagram (media_type=REELS). Instagram encode la
+ * vidéo de façon asynchrone : on attend le statut FINISHED avant de publier.
+ * L'audio est celui INTÉGRÉ à la vidéo (l'API n'autorise pas les sons tendance).
+ * @param string $videoUrl URL publique .mp4 (verticale 9:16, 3-90 s).
+ * @return array{0:bool,1:string} [ok, media_id | message d'erreur]
+ */
+function social_post_instagram_reel(string $videoUrl, string $caption): array
+{
+    if (!social_ig_ready()) { return [false, 'Instagram non configuré (compte IG Business + jeton + activé).']; }
+    if ($videoUrl === '' || !preg_match('#^https?://#i', $videoUrl)) { return [false, 'URL vidéo invalide.']; }
+    $ver   = social_graph_ver();
+    $ig    = social_ig_user();
+    $token = social_fb_token();
+
+    // 1) Conteneur Reel
+    [$c1, $b1] = social_http_post("https://graph.facebook.com/{$ver}/{$ig}/media", [
+        'media_type'    => 'REELS',
+        'video_url'     => $videoUrl,
+        'caption'       => mb_substr($caption, 0, 2200),
+        'share_to_feed' => 'true',
+        'access_token'  => $token,
+    ]);
+    if ($c1 !== 200 || empty($b1['id'])) { return [false, 'création Reel : ' . social_err($b1)]; }
+    $containerId = (string) $b1['id'];
+
+    // 2) Attendre l'encodage (max ~40 s ; une vidéo 15 s finit en général vite)
+    $ready = false;
+    for ($i = 0; $i < 13; $i++) {
+        sleep(3);
+        $st = social_ig_container_status($containerId);
+        if ($st === 'FINISHED') { $ready = true; break; }
+        if ($st === 'ERROR' || $st === 'EXPIRED') { return [false, 'traitement Reel : ' . $st]; }
+    }
+    if (!$ready) { return [false, 'traitement Reel trop long — la vidéo est peut-être encore en cours, réessaie dans 1 min.']; }
+
+    // 3) Publier
+    [$c3, $b3] = social_http_post("https://graph.facebook.com/{$ver}/{$ig}/media_publish", [
+        'creation_id'  => $containerId,
+        'access_token' => $token,
+    ]);
+    if ($c3 === 200 && !empty($b3['id'])) { return [true, (string) $b3['id']]; }
+    return [false, 'publication Reel : ' . social_err($b3)];
+}
+
 /** Met un article en file pour les plateformes voulues (dédoublonné). */
 function social_enqueue(int $articleId, ?array $platforms = null): int
 {

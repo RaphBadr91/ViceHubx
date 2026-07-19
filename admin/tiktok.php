@@ -42,6 +42,7 @@ if ($act === 'save') {
     }
     set_setting('tiktok_enabled', !empty($_POST['tiktok_enabled']) ? '1' : '0');
     set_setting('tiktok_public_ok', !empty($_POST['tiktok_public_ok']) ? '1' : '0');
+    set_setting('tiktok_also_ig', !empty($_POST['tiktok_also_ig']) ? '1' : '0');
     $flash = ['ok', '💾 Réglages TikTok enregistrés.'];
 }
 // --- Déconnexion ---
@@ -57,6 +58,8 @@ if ($act === 'add_video') {
 }
 // --- Test : poste la première vidéo en attente ---
 if ($act === 'test') { $r = tiktok_test(); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; }
+// --- Test : poste un Reel Instagram avec la dernière vidéo ---
+if ($act === 'test_ig_reel') { @set_time_limit(0); try { $r = tiktok_test_ig(); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; } catch (Throwable $e) { $flash = ['err', 'Erreur Reel IG : ' . $e->getMessage()]; } }
 // --- Traiter la file maintenant (en arrière-plan pour éviter tout timeout) ---
 if ($act === 'run') {
     if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
@@ -151,6 +154,7 @@ $cronUrl = rtrim(tiktok_base(), '/') . '/tiktok-tick.php?key=' . $tickKey;
             <small class="muted">🛡️ 2-4/jour est un rythme sûr et naturel pour lancer un compte.</small>
         </label>
         <label style="display:flex;gap:.5rem;align-items:center;cursor:pointer"><input type="checkbox" name="tiktok_enabled" value="1" <?= $enabled ? 'checked' : '' ?>> <strong>Activer la publication automatique (cron)</strong></label>
+        <label style="display:flex;gap:.5rem;align-items:flex-start;cursor:pointer"><input type="checkbox" name="tiktok_also_ig" value="1" <?= (int) get_setting('tiktok_also_ig', '0') === 1 ? 'checked' : '' ?> style="margin-top:.25rem"> <span>📸 <strong>Poster aussi en Reel Instagram</strong> <span class="muted" style="font-size:.85rem">(même vidéo + légende ; audio intégré — pas de son tendance via API)</span></span></label>
         <div><button class="btn btn--primary" type="submit">💾 Enregistrer</button></div>
     </form>
 
@@ -165,6 +169,7 @@ $cronUrl = rtrim(tiktok_base(), '/') . '/tiktok-tick.php?key=' . $tickKey;
         <?php else: ?>
             <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="test"><button class="btn btn--primary">🚀 Tester (poster la 1ʳᵉ vidéo)</button></form>
             <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="run"><button class="btn btn--ghost">▶️ Traiter la file</button></form>
+            <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="test_ig_reel"><button class="btn btn--ghost">📸 Tester Reel Instagram</button></form>
             <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="disconnect"><button class="btn btn--ghost">🔌 Déconnecter</button></form>
         <?php endif; ?>
         <?php if ($stats['error'] > 0): ?><form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="retry_errors"><button class="btn btn--ghost">🔁 Retenter les erreurs</button></form><?php endif; ?>
