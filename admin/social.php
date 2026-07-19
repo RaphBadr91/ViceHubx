@@ -32,26 +32,47 @@ if ($act === 'save') {
     $flash = ['ok', '💾 Réglages réseaux sociaux enregistrés.'];
 }
 // --- Tests ---
-if ($act === 'test_fb') { @set_time_limit(0); $r = social_test('facebook'); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; }
-if ($act === 'test_ig') { @set_time_limit(0); $r = social_test('instagram'); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; }
+if ($act === 'test_fb') { @set_time_limit(0); try { $r = social_test('facebook'); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; } catch (Throwable $e) { $flash = ['err', 'Erreur Facebook : ' . $e->getMessage()]; } }
+if ($act === 'test_ig') { @set_time_limit(0); try { $r = social_test('instagram'); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; } catch (Throwable $e) { $flash = ['err', 'Erreur Instagram : ' . $e->getMessage()]; } }
 // --- Traiter la file maintenant ---
-if ($act === 'run') { @set_time_limit(0); $r = social_drain(60); $flash = ['ok', "✅ File traitée : {$r['posted']} posté(s), {$r['failed']} échec(s)."]; }
+// ⚠️ Publier plusieurs articles en direct peut dépasser le délai du serveur
+// (page blanche/timeout). On renvoie donc la page D'ABORD, puis on publie en
+// arrière-plan (comme le heartbeat) — aucun timeout possible.
+if ($act === 'run') {
+    if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
+        register_shutdown_function(static function () {
+            if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
+            elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+            @set_time_limit(0); @ignore_user_abort(true);
+            try { social_drain(90); } catch (Throwable $e) { /* silencieux */ }
+        });
+        $flash = ['ok', '✅ Traitement de la file lancé en arrière-plan — rafraîchis la page dans ~30 s pour voir le résultat.'];
+    } else {
+        @set_time_limit(0);
+        try { $r = social_drain(20); $flash = ['ok', "✅ File traitée : {$r['posted']} posté(s), {$r['failed']} échec(s)."]; }
+        catch (Throwable $e) { $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()]; }
+    }
+}
 // --- Poster les N derniers articles maintenant (rattrapage) ---
 if ($act === 'post_recent') {
-    $n = max(1, min(20, (int) ($_POST['n'] ?? 3)));
-    $q = 0;
-    // Langue par réseau : FR → Facebook, EN → Instagram.
-    if (social_fb_ready()) {
-        foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='fr' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
-            $q += social_enqueue((int) $id, ['facebook']);
+    try {
+        $n = max(1, min(20, (int) ($_POST['n'] ?? 3)));
+        $q = 0;
+        // Langue par réseau : FR → Facebook, EN → Instagram.
+        if (social_fb_ready()) {
+            foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='fr' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $q += social_enqueue((int) $id, ['facebook']);
+            }
         }
-    }
-    if (social_ig_ready()) {
-        foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='en' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
-            $q += social_enqueue((int) $id, ['instagram']);
+        if (social_ig_ready()) {
+            foreach (db()->query("SELECT id FROM articles WHERE status='published' AND lang='en' ORDER BY id DESC LIMIT {$n}")->fetchAll(PDO::FETCH_COLUMN) as $id) {
+                $q += social_enqueue((int) $id, ['instagram']);
+            }
         }
+        $flash = ['ok', "🗂️ {$q} publication(s) ajoutée(s) à la file (FR→Facebook, EN→Instagram). Elles partiront automatiquement (arrière-plan) ou clique « Traiter la file »."];
+    } catch (Throwable $e) {
+        $flash = ['err', 'Erreur pendant le rattrapage : ' . $e->getMessage()];
     }
-    $flash = ['ok', "🗂️ {$q} publication(s) ajoutée(s) à la file (FR→Facebook, EN→Instagram). Clique « Traiter la file » ou attends le cron."];
 }
 // --- Réinitialiser la file en erreur (retenter) ---
 if ($act === 'retry_errors') {

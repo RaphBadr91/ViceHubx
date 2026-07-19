@@ -57,8 +57,22 @@ if ($act === 'add_video') {
 }
 // --- Test : poste la première vidéo en attente ---
 if ($act === 'test') { $r = tiktok_test(); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; }
-// --- Traiter la file maintenant ---
-if ($act === 'run') { @set_time_limit(0); $r = tiktok_drain(90); $flash = ['ok', "✅ File traitée : {$r['posted']} postée(s), {$r['failed']} échec(s)."]; }
+// --- Traiter la file maintenant (en arrière-plan pour éviter tout timeout) ---
+if ($act === 'run') {
+    if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
+        register_shutdown_function(static function () {
+            if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
+            elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+            @set_time_limit(0); @ignore_user_abort(true);
+            try { tiktok_drain(120); } catch (Throwable $e) { /* silencieux */ }
+        });
+        $flash = ['ok', '✅ Traitement lancé en arrière-plan — rafraîchis dans ~30 s pour voir le résultat.'];
+    } else {
+        @set_time_limit(0);
+        try { $r = tiktok_drain(25); $flash = ['ok', "✅ File traitée : {$r['posted']} postée(s), {$r['failed']} échec(s)."]; }
+        catch (Throwable $e) { $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()]; }
+    }
+}
 // --- Retenter les erreurs ---
 if ($act === 'retry_errors') {
     try { db()->exec("UPDATE tiktok_queue SET status='pending', error=NULL WHERE status='error'"); } catch (Throwable $e) {}
