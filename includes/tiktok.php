@@ -421,6 +421,43 @@ function tiktok_post(array $row): array
     return [true, (string) $b['data']['publish_id']];
 }
 
+/**
+ * Interroge le statut de traitement d'une publication (après l'upload).
+ * TikTok traite la vidéo de façon asynchrone : un upload OK ne veut pas dire
+ * que la vidéo est publiée. @return array{ok:bool,status:string,fail:string}
+ */
+function tiktok_publish_status(string $publishId): array
+{
+    [$c, $b] = tiktok_api_post('https://open.tiktokapis.com/v2/post/publish/status/fetch/', ['publish_id' => $publishId]);
+    if ($c === 200 && isset($b['data']['status'])) {
+        return ['ok' => true, 'status' => (string) $b['data']['status'], 'fail' => (string) ($b['data']['fail_reason'] ?? '')];
+    }
+    return ['ok' => false, 'status' => '', 'fail' => tiktok_err($b)];
+}
+
+/**
+ * Attend (en interrogeant TikTok) le résultat final du traitement d'une
+ * publication : « done » (publiée / en boîte de réception), « failed » (+raison)
+ * ou « processing » (toujours en cours après le délai). @return array{state:string,detail:string}
+ */
+function tiktok_wait_status(string $publishId, int $tries = 6, int $everySec = 3): array
+{
+    $last = '';
+    for ($i = 0; $i < $tries; $i++) {
+        sleep($everySec);
+        $s = tiktok_publish_status($publishId);
+        if (!$s['ok']) { continue; }
+        $last = $s['status'];
+        if (in_array($last, ['PUBLISH_COMPLETE', 'SEND_TO_USER_INBOX'], true)) {
+            return ['state' => 'done', 'detail' => $last];
+        }
+        if ($last === 'FAILED') {
+            return ['state' => 'failed', 'detail' => $s['fail'] !== '' ? $s['fail'] : 'raison non précisée'];
+        }
+    }
+    return ['state' => 'processing', 'detail' => $last];
+}
+
 /* ------------------------------------------------------------------ */
 /*  File : ajout, traitement, suivi                                   */
 /* ------------------------------------------------------------------ */
@@ -493,14 +530,30 @@ function tiktok_test(): array
     if (!$row) { return ['ok' => false, 'msg' => '❌ Aucune vidéo en file. Ajoute d\'abord une URL de vidéo (ou demande-moi d\'en générer une via Higgsfield).']; }
     @set_time_limit(0);
     [$ok, $res] = tiktok_post($row);
-    if ($ok) {
-        db()->prepare("UPDATE tiktok_queue SET status='posted', publish_id=?, mode=?, posted_at=NOW(), error=NULL WHERE id=?")
-            ->execute([$res, tiktok_mode(), (int) $row['id']]);
-        $where = tiktok_mode() === 'public' ? 'publiée (ou en attente de traitement TikTok)' : 'envoyée dans ta boîte de réception TikTok (ouvre l\'app pour finaliser)';
-        return ['ok' => true, 'msg' => '✅ Vidéo ' . $where . ' — publish_id ' . mb_substr($res, 0, 16) . '…'];
+    if (!$ok) {
+        db()->prepare("UPDATE tiktok_queue SET status='error', error=? WHERE id=?")->execute([$res, (int) $row['id']]);
+        return ['ok' => false, 'msg' => '❌ TikTok : ' . $res];
     }
-    db()->prepare("UPDATE tiktok_queue SET status='error', error=? WHERE id=?")->execute([$res, (int) $row['id']]);
-    return ['ok' => false, 'msg' => '❌ TikTok : ' . $res];
+
+    // Upload OK — on vérifie le VRAI résultat du traitement chez TikTok.
+    $st = tiktok_wait_status($res);
+
+    if ($st['state'] === 'failed') {
+        db()->prepare("UPDATE tiktok_queue SET status='error', error=? WHERE id=?")
+            ->execute(['traitement TikTok refusé : ' . $st['detail'], (int) $row['id']]);
+        return ['ok' => false, 'msg' => '❌ TikTok a refusé la vidéo au traitement : ' . $st['detail']];
+    }
+
+    db()->prepare("UPDATE tiktok_queue SET status='posted', publish_id=?, mode=?, posted_at=NOW(), error=NULL WHERE id=?")
+        ->execute([$res, tiktok_mode(), (int) $row['id']]);
+
+    if ($st['state'] === 'done') {
+        return $st['detail'] === 'SEND_TO_USER_INBOX'
+            ? ['ok' => true, 'msg' => '✅ Vidéo envoyée dans ta boîte de réception TikTok (ouvre l\'app pour finaliser).']
+            : ['ok' => true, 'msg' => '✅ Vidéo publiée sur ton profil (en privé) ! Rafraîchis TikTok Studio → Publications.'];
+    }
+    // Toujours en traitement après le délai d'attente.
+    return ['ok' => true, 'msg' => '✅ Vidéo acceptée par TikTok — ⏳ traitement en cours (publish_id ' . mb_substr($res, 0, 12) . '…). Vérifie ton profil dans 2-3 min.'];
 }
 
 /** Nombre de vidéos postées AUJOURD'HUI (plafond quotidien). */
