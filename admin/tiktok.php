@@ -191,6 +191,10 @@ $cronUrl = rtrim(tiktok_base(), '/') . '/tiktok-tick.php?key=' . $tickKey;
         </label>
         <div><button class="btn btn--ghost" type="submit">➕ Ajouter à la file</button></div>
     </form>
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd)">
+        <a class="btn btn--primary" href="<?= e(url('admin/download-videos.php')) ?>">⬇️ Télécharger TOUTES les vidéos (ZIP)</a>
+        <p class="muted" style="font-size:.82rem;margin:.5rem 0 0">21 vidéos GTA6 nommées par jour (jour-01…jour-19 + 2 bonus). Le téléchargement peut prendre ~30 s (le serveur récupère chaque vidéo).</p>
+    </div>
 </div>
 
 <!-- Cron -->
