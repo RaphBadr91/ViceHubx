@@ -1,4 +1,5 @@
 </main>
+<?php if (function_exists('vhx_auto_heartbeat')) { vhx_auto_heartbeat(); } ?>
 
 <footer class="site-footer">
     <div class="footer-glow" aria-hidden="true"></div>

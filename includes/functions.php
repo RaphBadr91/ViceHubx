@@ -1639,6 +1639,52 @@ function set_setting(string $key, string $value): void
     $stmt->execute([$key, $value]);
 }
 
+/**
+ * « Cron gratuit » déclenché par le TRAFIC : sur une visite de page publique,
+ * si assez de temps s'est écoulé (throttle), on renvoie D'ABORD la page au
+ * visiteur (litespeed/fastcgi_finish_request), PUIS on publie en arrière-plan
+ * sur Facebook / Instagram / TikTok. Aucun ralentissement pour le visiteur, et
+ * pas besoin de configurer un cron externe. (Le cron externe reste possible en
+ * renfort pour les périodes sans trafic.)
+ */
+function vhx_auto_heartbeat(): void
+{
+    if (PHP_SAPI === 'cli') { return; }
+    // On ne bosse en arrière-plan QUE si on peut d'abord clore la réponse HTTP,
+    // sinon on ne fait rien (jamais de page ralentie).
+    $canDetach = function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request');
+    if (!$canDetach) { return; }
+
+    // Throttle : au plus une fois toutes les ~10 min (verrou en base).
+    try {
+        $last = (int) get_setting('vhx_hb', '0');
+        if (time() - $last < 600) { return; }
+        set_setting('vhx_hb', (string) time());
+    } catch (Throwable $e) {
+        return;
+    }
+
+    register_shutdown_function(static function (): void {
+        if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
+        elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+        @set_time_limit(0);
+        @ignore_user_abort(true);
+        try {
+            if (defined('ROOT_PATH')) {
+                if (is_file(ROOT_PATH . '/includes/ai.php'))     { require_once ROOT_PATH . '/includes/ai.php'; }
+                if (is_file(ROOT_PATH . '/includes/social.php')) { require_once ROOT_PATH . '/includes/social.php'; }
+                if (function_exists('social_any_ready') && social_any_ready()) { social_drain(25); }
+                if (is_file(ROOT_PATH . '/includes/tiktok.php')) {
+                    require_once ROOT_PATH . '/includes/tiktok.php';
+                    if (function_exists('tiktok_ready') && tiktok_ready()) { tiktok_drain(25); }
+                }
+            }
+        } catch (Throwable $e) {
+            // silencieux : ne jamais casser une page publique
+        }
+    });
+}
+
 /* ================================================================== */
 /*  Date de sortie & compte à rebours                                 */
 /* ================================================================== */
