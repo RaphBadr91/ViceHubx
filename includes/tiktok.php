@@ -334,7 +334,7 @@ function tiktok_caption(array $row): string
     // hashtags (#), on la publie VERBATIM — l'admin garde le contrôle total du
     // texte et des hashtags (pas de réécriture par l'IA).
     if ($title !== '' && strpos($title, '#') !== false) {
-        return mb_substr($title, 0, 2200);
+        return strip_reach_bait_tags(mb_substr($title, 0, 2200));
     }
 
     $fallback = function () use ($title, $fallbackTags) {
@@ -358,7 +358,7 @@ function tiktok_caption(array $row): string
         if ($out === '') { return $fallback(); }
         // Garantit la présence de hashtags.
         if (strpos($out, '#') === false) { $out .= "\n\n" . $fallbackTags; }
-        return mb_substr($out, 0, 2000);
+        return strip_reach_bait_tags(mb_substr($out, 0, 2000));
     } catch (Throwable $e) {
         return $fallback();
     }

@@ -189,12 +189,27 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
         <table class="data-table">
             <thead><tr><th>Article</th><th>Réseau</th><th>Statut</th><th>Détail</th></tr></thead>
             <tbody>
-            <?php foreach ($recent as $r): $st = (string) $r['status']; ?>
+            <?php foreach ($recent as $r): $st = (string) $r['status'];
+                // Lien de vérification vers le post réel (permet de confirmer qu'il existe).
+                $pid  = (string) ($r['post_id'] ?? '');
+                $link = '';
+                if ($st === 'posted' && $pid !== '') {
+                    if (preg_match('#^https?://#i', $pid)) { $link = $pid; }
+                    elseif ($r['platform'] === 'facebook') { $link = 'https://www.facebook.com/' . rawurlencode($pid); }
+                }
+            ?>
                 <tr>
                     <td><?= e(mb_substr((string) ($r['title'] ?? '—'), 0, 60)) ?></td>
                     <td><?= $r['platform'] === 'instagram' ? '📸 Instagram' : '📘 Facebook' ?></td>
                     <td><?= $st === 'posted' ? '🟢 Posté' : ($st === 'error' ? '🔴 Erreur' : '🟠 En attente') ?></td>
-                    <td class="muted" style="font-size:.82rem;max-width:360px;word-break:break-word"><?= e($st === 'error' ? (string) $r['error'] : ($r['posted_at'] ? 'le ' . date('d/m H:i', strtotime((string) $r['posted_at'])) : '')) ?></td>
+                    <td class="muted" style="font-size:.82rem;max-width:360px;word-break:break-word">
+                        <?php if ($st === 'error'): ?>
+                            <?= e((string) $r['error']) ?>
+                        <?php else: ?>
+                            <?= $r['posted_at'] ? 'le ' . date('d/m H:i', strtotime((string) $r['posted_at'])) : '' ?>
+                            <?php if ($link !== ''): ?> · <a href="<?= e($link) ?>" target="_blank" rel="noopener" style="color:#2bd6ff">Voir ↗</a><?php elseif ($pid !== ''): ?> · <span class="muted">id <?= e(mb_substr($pid, 0, 18)) ?></span><?php endif; ?>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

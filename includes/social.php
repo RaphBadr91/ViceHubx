@@ -151,7 +151,7 @@ function social_caption(array $a, string $platform = 'facebook'): string
         $out = function_exists('clean_ai_markers') ? clean_ai_markers($out) : $out;
         if ($out === '') { return $fallback(); }
         if (!$ig && strpos($out, $url) === false) { $out .= "\n\n👉 " . $url; }
-        return mb_substr($out, 0, 2000);
+        return function_exists('strip_reach_bait_tags') ? strip_reach_bait_tags(mb_substr($out, 0, 2000)) : mb_substr($out, 0, 2000);
     } catch (Throwable $e) {
         return $fallback();
     }
@@ -223,8 +223,24 @@ function social_post_instagram(array $a, string $caption): array
         "https://graph.facebook.com/{$ver}/{$ig}/media_publish",
         ['creation_id' => (string) $b1['id'], 'access_token' => $token]
     );
-    if ($c2 === 200 && !empty($b2['id'])) { return [true, (string) $b2['id']]; }
+    if ($c2 === 200 && !empty($b2['id'])) {
+        $perma = social_ig_permalink((string) $b2['id']);
+        return [true, $perma !== '' ? $perma : (string) $b2['id']];
+    }
     return [false, 'publication : ' . social_err($b2)];
+}
+
+/** Récupère l'URL publique (permalink) d'un média Instagram, pour vérification. */
+function social_ig_permalink(string $mediaId): string
+{
+    $ver = social_graph_ver();
+    $url = "https://graph.facebook.com/{$ver}/{$mediaId}?fields=permalink&access_token=" . urlencode(social_fb_token());
+    $ch  = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_CONNECTTIMEOUT => 10]);
+    $raw = curl_exec($ch);
+    curl_close($ch);
+    $j = json_decode((string) $raw, true);
+    return is_array($j) ? (string) ($j['permalink'] ?? '') : '';
 }
 
 /** Statut de traitement d'un conteneur média IG (utile pour les vidéos/Reels). */
@@ -281,7 +297,10 @@ function social_post_instagram_reel(string $videoUrl, string $caption): array
         'creation_id'  => $containerId,
         'access_token' => $token,
     ]);
-    if ($c3 === 200 && !empty($b3['id'])) { return [true, (string) $b3['id']]; }
+    if ($c3 === 200 && !empty($b3['id'])) {
+        $perma = social_ig_permalink((string) $b3['id']);
+        return [true, $perma !== '' ? $perma : (string) $b3['id']];
+    }
     return [false, 'publication Reel : ' . social_err($b3)];
 }
 
@@ -311,28 +330,36 @@ function social_sync(): void
 {
     if ((int) get_setting('social_auto', '0') !== 1 || !social_any_ready()) { return; }
     social_ensure_table();
-    $since = (int) get_setting('social_since_id', '0');
-    if ($since === 0) {
-        // Baseline : on ne poste pas l'existant, seulement ce qui vient APRÈS l'activation.
-        $max = (int) db()->query('SELECT COALESCE(MAX(id),0) FROM articles')->fetchColumn();
-        set_setting('social_since_id', (string) $max);
-        return;
-    }
-    // Langue par réseau : articles FR → Facebook, traductions EN → Instagram.
-    $rows = db()->query(
-        "SELECT id, lang FROM articles WHERE status='published' AND id > {$since} ORDER BY id ASC LIMIT 40"
-    )->fetchAll(PDO::FETCH_ASSOC);
-    $newMax = $since;
-    foreach ($rows as $r) {
-        $id = (int) $r['id'];
-        if (($r['lang'] ?? 'fr') === 'en') {
-            if (social_ig_ready()) { social_enqueue($id, ['instagram']); }
-        } else {
-            if (social_fb_ready()) { social_enqueue($id, ['facebook']); }
+
+    // Enfile tout article publié RÉCENT (≤ 4 jours) PAS ENCORE mis en file/posté,
+    // par réseau selon la langue (FR → Facebook, EN → Instagram). Robuste : ne
+    // dépend plus d'un repère d'id (qui ratait les articles re-publiés / à petit
+    // id) et ne re-poste jamais un article déjà traité (grâce au NOT EXISTS + au
+    // dédoublonnage de social_enqueue).
+    try {
+        if (social_fb_ready()) {
+            $ids = db()->query(
+                "SELECT a.id FROM articles a
+                 WHERE a.status='published' AND (a.lang='fr' OR a.lang IS NULL OR a.lang='')
+                   AND a.published_at >= (NOW() - INTERVAL 4 DAY)
+                   AND NOT EXISTS (SELECT 1 FROM social_queue q WHERE q.article_id = a.id AND q.platform = 'facebook')
+                 ORDER BY a.id DESC LIMIT 25"
+            )->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($ids as $id) { social_enqueue((int) $id, ['facebook']); }
         }
-        $newMax = max($newMax, $id);
+        if (social_ig_ready()) {
+            $ids = db()->query(
+                "SELECT a.id FROM articles a
+                 WHERE a.status='published' AND a.lang='en'
+                   AND a.published_at >= (NOW() - INTERVAL 4 DAY)
+                   AND NOT EXISTS (SELECT 1 FROM social_queue q WHERE q.article_id = a.id AND q.platform = 'instagram')
+                 ORDER BY a.id DESC LIMIT 25"
+            )->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($ids as $id) { social_enqueue((int) $id, ['instagram']); }
+        }
+    } catch (Throwable $e) {
+        // silencieux : ne jamais casser une page publique / un cron
     }
-    if ($newMax > $since) { set_setting('social_since_id', (string) $newMax); }
 }
 
 /**

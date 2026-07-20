@@ -1640,6 +1640,33 @@ function set_setting(string $key, string $value): void
 }
 
 /**
+ * Retire les hashtags « attrape-vues » (#fyp, #foryou, #viral, #trending,
+ * #gamingcommunity, #gtafans…) de n'importe quelle légende. TikTok/Instagram
+ * les traitent comme de la manipulation de reach et BRIDENT la publication
+ * (« non éligible au fil Pour Toi »). Filet de sécurité appliqué à TOUTES les
+ * légendes (IA, saisie manuelle, repli), pour que ça ne se reproduise plus.
+ */
+function strip_reach_bait_tags(string $text): string
+{
+    static $banned = [
+        'fyp', 'fypage', 'fypp', 'foryou', 'foryoupage', 'fypviral', 'pourtoi', 'pourtoipage',
+        'viral', 'viralvideo', 'viralvideos', 'viralpost', 'viralreels', 'viraltiktok', 'goviral', 'makethisviral',
+        'trending', 'trend', 'trendingnow', 'blowup', 'blowthisup', 'blewup', 'xyzbca', 'xyz',
+        'explore', 'explorepage', 'reelsviral', 'reelitfeelit',
+        'gamingcommunity', 'gtafans', 'gtacommunity', 'gta6community', 'likeforlike', 'followme', 'follow4follow', 'l4l', 'f4f',
+    ];
+    $out = preg_replace_callback('/#([\p{L}0-9_]+)/u', static function ($m) use ($banned) {
+        return in_array(mb_strtolower($m[1]), $banned, true) ? '' : $m[0];
+    }, $text);
+    if ($out === null) { return trim($text); } // regex en échec : on ne casse rien
+    // Nettoie les espaces / lignes vides laissés par les suppressions.
+    $out = preg_replace('/[ \t]{2,}/', ' ', $out);
+    $out = preg_replace('/[ \t]+(\R)/u', '$1', $out);
+    $out = preg_replace('/\R{3,}/u', "\n\n", $out);
+    return trim((string) $out);
+}
+
+/**
  * « Cron gratuit » déclenché par le TRAFIC : sur une visite de page publique,
  * si assez de temps s'est écoulé (throttle), on renvoie D'ABORD la page au
  * visiteur (litespeed/fastcgi_finish_request), PUIS on publie en arrière-plan
@@ -1650,10 +1677,6 @@ function set_setting(string $key, string $value): void
 function vhx_auto_heartbeat(): void
 {
     if (PHP_SAPI === 'cli') { return; }
-    // On ne bosse en arrière-plan QUE si on peut d'abord clore la réponse HTTP,
-    // sinon on ne fait rien (jamais de page ralentie).
-    $canDetach = function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request');
-    if (!$canDetach) { return; }
 
     // Throttle : au plus une fois toutes les ~10 min (verrou en base).
     try {
@@ -1664,19 +1687,28 @@ function vhx_auto_heartbeat(): void
         return;
     }
 
-    register_shutdown_function(static function (): void {
-        if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
-        elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+    // Avec détachement (LiteSpeed/FPM) : gros budget, AUCUN impact visiteur.
+    // Sans détachement : petit budget en fin de script (poste 1-2 éléments) —
+    // impact minime, une seule fois toutes les 10 min. Ainsi l'auto-publication
+    // fonctionne même si l'hébergement n'expose pas *_finish_request().
+    $canDetach = function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request');
+    $budget    = $canDetach ? 25 : 9;
+
+    register_shutdown_function(static function () use ($canDetach, $budget): void {
+        if ($canDetach) {
+            if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
+            elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+        }
         @set_time_limit(0);
         @ignore_user_abort(true);
         try {
             if (defined('ROOT_PATH')) {
                 if (is_file(ROOT_PATH . '/includes/ai.php'))     { require_once ROOT_PATH . '/includes/ai.php'; }
                 if (is_file(ROOT_PATH . '/includes/social.php')) { require_once ROOT_PATH . '/includes/social.php'; }
-                if (function_exists('social_any_ready') && social_any_ready()) { social_drain(25); }
+                if (function_exists('social_any_ready') && social_any_ready()) { social_drain($budget); }
                 if (is_file(ROOT_PATH . '/includes/tiktok.php')) {
                     require_once ROOT_PATH . '/includes/tiktok.php';
-                    if (function_exists('tiktok_ready') && tiktok_ready()) { tiktok_drain(25); }
+                    if (function_exists('tiktok_ready') && tiktok_ready()) { tiktok_drain($budget); }
                 }
             }
         } catch (Throwable $e) {
