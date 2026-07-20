@@ -325,7 +325,10 @@ function tiktok_put_file(string $uploadUrl, string $path, int $size): array
 function tiktok_caption(array $row): string
 {
     $title = trim((string) ($row['title'] ?? ''));
-    $fallbackTags = '#GTA6 #GTAVI #ViceCity #Rockstar #GTA6News #Leonida #gaming #fyp';
+    // Hashtags SPÉCIFIQUES uniquement. On BANNIT #fyp/#foryou/#viral/#fypage et
+    // les tags « reach-bait » génériques : TikTok/Instagram les traitent comme de
+    // la manipulation et BRIDENT la vidéo (« non éligible au fil Pour Toi »).
+    $fallbackTags = '#GTA6 #GTAVI #ViceCity #Rockstar #GTA6News #gaming';
 
     // Légende FOURNIE telle quelle : si le champ « titre » contient déjà des
     // hashtags (#), on la publie VERBATIM — l'admin garde le contrôle total du
@@ -342,9 +345,12 @@ function tiktok_caption(array $row): string
     if (!function_exists('ai_enabled') || !ai_enabled()) { return $fallback(); }
     try {
         $sys = 'You are the TikTok manager for ViceHub X, an independent GTA VI / Vice City fan media. '
-            . 'Write a SHORT, punchy TikTok caption in ENGLISH that maximizes reach: 1 catchy hook line '
-            . '+ 1-3 emojis + 6-10 viral hashtags (GTA6, GTAVI, ViceCity, Rockstar, gaming, fyp…). '
-            . 'Never mention AI. Max 150 characters before hashtags.';
+            . 'Write a SHORT, punchy TikTok caption in ENGLISH: 1 catchy but HONEST hook line (these are '
+            . 'stylised fan/AI concept visuals — do NOT imply real leaked GTA 6 footage) + 1-3 emojis + '
+            . 'exactly 4-6 SPECIFIC relevant hashtags such as #GTA6 #GTAVI #ViceCity #Rockstar #gaming. '
+            . 'STRICTLY FORBIDDEN hashtags: #fyp #fypage #foryou #viral #trending #gamingcommunity #gtafans '
+            . 'or any generic reach-bait tag (they get the video flagged and throttled). '
+            . 'Never mention AI in the text. Max 150 characters before hashtags.';
         $usr = 'Video topic: "' . ($title !== '' ? $title : 'GTA 6 Vice City hype') . '". '
             . 'Return ONLY the caption text (hook then hashtags on a new line), nothing else.';
         $out = trim(anthropic_complete($sys, $usr, 300));

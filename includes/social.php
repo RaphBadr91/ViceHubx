@@ -127,7 +127,9 @@ function social_caption(array $a, string $platform = 'facebook'): string
         if ($isEn) {
             $sys = 'You are the community manager for ViceHub X, an independent GTA VI / Vice City fan media. '
                 . 'Write SHORT, punchy social captions that make people want to click. Style: 1-2 catchy sentences '
-                . '+ 1-3 relevant emojis + 5-8 targeted hashtags (GTA6, GTAVI, ViceCity, Rockstar, gaming…). '
+                . '+ 1-3 relevant emojis + exactly 4-6 SPECIFIC targeted hashtags such as #GTA6 #GTAVI #ViceCity '
+                . '#Rockstar #gaming. STRICTLY FORBIDDEN: #fyp #fypage #foryou #viral #trending #gamingcommunity '
+                . '#gtafans or any generic reach-bait hashtag (they get the post throttled). '
                 . 'Never mention AI. Write in ENGLISH.';
             $usr = "Article: \"{$title}\"\nSummary: {$excerpt}\n\n"
                 . 'Write ONLY the caption (nothing else), '
@@ -136,8 +138,10 @@ function social_caption(array $a, string $platform = 'facebook'): string
         } else {
             $sys = 'Tu es community manager pour ViceHub X, média fan FR sur GTA VI / Vice City. '
                 . 'Tu écris des légendes réseaux sociaux COURTES, punchy, qui donnent envie de cliquer. '
-                . 'Style : 1 à 2 phrases accrocheuses + 1-3 emojis pertinents + 5 à 8 hashtags ciblés '
-                . '(GTA6, GTAVI, ViceCity, Rockstar, gaming…). Jamais de mention d\'IA. Français.';
+                . 'Style : 1 à 2 phrases accrocheuses + 1-3 emojis pertinents + exactement 4 à 6 hashtags '
+                . 'SPÉCIFIQUES comme #GTA6 #GTAVI #ViceCity #Rockstar #gaming. STRICTEMENT INTERDITS : '
+                . '#fyp #fypage #foryou #viral #trending #gamingcommunity #gtafans ou tout hashtag « attrape-vues » '
+                . 'générique (ils font brider la publication). Jamais de mention d\'IA. Français.';
             $usr = "Article : « {$title} »\nRésumé : {$excerpt}\n\n"
                 . 'Rédige UNIQUEMENT la légende (rien d\'autre), '
                 . ($ig ? 'sans lien (Instagram : termine par « 👉 Lien en bio »), ' : "avec l'appel à l'action « 👉 {$url} », ")
