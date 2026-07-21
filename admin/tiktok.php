@@ -62,6 +62,7 @@ if ($act === 'test') { $r = tiktok_test(); $flash = [$r['ok'] ? 'ok' : 'err', $r
 if ($act === 'test_ig_reel') { @set_time_limit(0); try { $r = tiktok_test_ig(); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; } catch (Throwable $e) { $flash = ['err', 'Erreur Reel IG : ' . $e->getMessage()]; } }
 // --- Traiter la file maintenant (en arrière-plan pour éviter tout timeout) ---
 if ($act === 'run') {
+    set_setting('tiktok_lock', '0'); // débloque un verrou resté coincé (action manuelle)
     if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
         register_shutdown_function(static function () {
             // Envoie D'ABORD la page au navigateur (vide le tampon), SINON page blanche.

@@ -39,6 +39,9 @@ if ($act === 'test_ig') { @set_time_limit(0); try { $r = social_test('instagram'
 // (page blanche/timeout). On renvoie donc la page D'ABORD, puis on publie en
 // arrière-plan (comme le heartbeat) — aucun timeout possible.
 if ($act === 'run') {
+    // Débloque un verrou éventuellement resté coincé (après un timeout/kill) —
+    // c'est une action MANUELLE et explicite, donc on force le traitement.
+    set_setting('social_lock', '0');
     if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
         register_shutdown_function(static function () {
             // Envoie D'ABORD la page au navigateur (vide le tampon), SINON page blanche.
