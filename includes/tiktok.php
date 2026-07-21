@@ -503,7 +503,7 @@ function tiktok_drain(int $budgetSeconds = 0): array
     if (!tiktok_ready()) { return ['posted' => 0, 'failed' => 0]; }
 
     $lock = (int) get_setting('tiktok_lock', '0');
-    if (time() - $lock < 300) { return ['posted' => 0, 'failed' => 0]; }
+    if ($lock > 0 && time() - $lock < 120) { return ['posted' => 0, 'failed' => 0]; }
     set_setting('tiktok_lock', (string) time());
 
     $cap      = max(1, (int) get_setting('tiktok_daily_max', '3'));

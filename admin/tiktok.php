@@ -63,21 +63,12 @@ if ($act === 'test_ig_reel') { @set_time_limit(0); try { $r = tiktok_test_ig(); 
 // --- Traiter la file maintenant (en arrière-plan pour éviter tout timeout) ---
 if ($act === 'run') {
     set_setting('tiktok_lock', '0'); // débloque un verrou resté coincé (action manuelle)
-    if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
-        register_shutdown_function(static function () {
-            // Envoie D'ABORD la page au navigateur (vide le tampon), SINON page blanche.
-            while (ob_get_level() > 0) { @ob_end_flush(); }
-            @flush();
-            if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
-            elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
-            @set_time_limit(0); @ignore_user_abort(true);
-            try { tiktok_drain(120); } catch (Throwable $e) { /* silencieux */ }
-        });
-        $flash = ['ok', '✅ Traitement lancé en arrière-plan — rafraîchis dans ~30 s pour voir le résultat.'];
-    } else {
-        @set_time_limit(0);
-        try { $r = tiktok_drain(25); $flash = ['ok', "✅ File traitée : {$r['posted']} postée(s), {$r['failed']} échec(s)."]; }
-        catch (Throwable $e) { $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()]; }
+    @set_time_limit(0);
+    try {
+        $r = tiktok_drain(20);
+        $flash = ['ok', "✅ File traitée : {$r['posted']} postée(s), {$r['failed']} échec(s). Reclique pour le lot suivant."];
+    } catch (Throwable $e) {
+        $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()];
     }
 }
 // --- Retenter les erreurs ---

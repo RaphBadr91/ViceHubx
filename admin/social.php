@@ -39,24 +39,17 @@ if ($act === 'test_ig') { @set_time_limit(0); try { $r = social_test('instagram'
 // (page blanche/timeout). On renvoie donc la page D'ABORD, puis on publie en
 // arrière-plan (comme le heartbeat) — aucun timeout possible.
 if ($act === 'run') {
-    // Débloque un verrou éventuellement resté coincé (après un timeout/kill) —
-    // c'est une action MANUELLE et explicite, donc on force le traitement.
+    // Traitement DIRECT (synchrone) avec petit budget : fiable sur LiteSpeed
+    // (le mode « arrière-plan » se faisait tuer et laissait le verrou coincé).
+    // On débloque le verrou (action manuelle) puis on poste un petit lot ; le
+    // reste part via le cron / les clics suivants.
     set_setting('social_lock', '0');
-    if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
-        register_shutdown_function(static function () {
-            // Envoie D'ABORD la page au navigateur (vide le tampon), SINON page blanche.
-            while (ob_get_level() > 0) { @ob_end_flush(); }
-            @flush();
-            if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
-            elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
-            @set_time_limit(0); @ignore_user_abort(true);
-            try { social_drain(90); } catch (Throwable $e) { /* silencieux */ }
-        });
-        $flash = ['ok', '✅ Traitement de la file lancé en arrière-plan — rafraîchis la page dans ~30 s pour voir le résultat.'];
-    } else {
-        @set_time_limit(0);
-        try { $r = social_drain(20); $flash = ['ok', "✅ File traitée : {$r['posted']} posté(s), {$r['failed']} échec(s)."]; }
-        catch (Throwable $e) { $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()]; }
+    @set_time_limit(0);
+    try {
+        $r = social_drain(15);
+        $flash = ['ok', "✅ File traitée : {$r['posted']} publication(s) postée(s), {$r['failed']} échec(s). Reclique pour poster le lot suivant (ou laisse le cron faire)."];
+    } catch (Throwable $e) {
+        $flash = ['err', 'Erreur pendant le traitement : ' . $e->getMessage()];
     }
 }
 // --- Poster les N derniers articles maintenant (rattrapage) ---

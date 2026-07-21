@@ -165,7 +165,7 @@ function social_http_post(string $url, array $params): array
         CURLOPT_POST           => true,
         CURLOPT_POSTFIELDS     => http_build_query($params),
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 45,
+        CURLOPT_TIMEOUT        => 25,
         CURLOPT_CONNECTTIMEOUT => 15,
     ]);
     $raw  = curl_exec($ch);
@@ -373,8 +373,11 @@ function social_drain(int $budgetSeconds = 0): array
     social_sync(); // enfile d'abord les nouveaux publiés
     if (!social_any_ready()) { return ['posted' => 0, 'failed' => 0]; }
 
+    // Verrou anti-double-exécution avec expiration COURTE (120 s) : si un drain
+    // précédent a été tué (timeout LiteSpeed) sans libérer le verrou, il se
+    // débloque vite au lieu de bloquer 5 min.
     $lock = (int) get_setting('social_lock', '0');
-    if (time() - $lock < 300) { return ['posted' => 0, 'failed' => 0]; }
+    if ($lock > 0 && time() - $lock < 120) { return ['posted' => 0, 'failed' => 0]; }
     set_setting('social_lock', (string) time());
 
     // ⚠️ PLAFOND QUOTIDIEN par réseau : poste en douceur (anti-spam / anti-bannissement).
