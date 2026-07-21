@@ -1695,6 +1695,10 @@ function vhx_auto_heartbeat(): void
     $budget    = $canDetach ? 25 : 9;
 
     register_shutdown_function(static function () use ($canDetach, $budget): void {
+        // Envoie D'ABORD la page au visiteur (vide le tampon de sortie) — sinon on
+        // risque une page blanche quand on détache la connexion.
+        while (ob_get_level() > 0) { @ob_end_flush(); }
+        @flush();
         if ($canDetach) {
             if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
             elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }

@@ -41,6 +41,9 @@ if ($act === 'test_ig') { @set_time_limit(0); try { $r = social_test('instagram'
 if ($act === 'run') {
     if (function_exists('litespeed_finish_request') || function_exists('fastcgi_finish_request')) {
         register_shutdown_function(static function () {
+            // Envoie D'ABORD la page au navigateur (vide le tampon), SINON page blanche.
+            while (ob_get_level() > 0) { @ob_end_flush(); }
+            @flush();
             if (function_exists('litespeed_finish_request')) { @litespeed_finish_request(); }
             elseif (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
             @set_time_limit(0); @ignore_user_abort(true);
