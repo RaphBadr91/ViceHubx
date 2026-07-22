@@ -1,6 +1,7 @@
 <?php
 $ADMIN_TITLE = 'ViceHub X — Réglages';
 require __DIR__ . '/../includes/admin_header.php';
+require_once __DIR__ . '/../includes/printful.php';
 
 $flash = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,6 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? ['ok', 'E-mail de test envoyé à ' . $dest . ' ' . (resend_enabled() ? '(via Resend).' : '(via mail système).')]
                 : ['err', 'Échec de l’envoi. Vérifiez la clé Resend, le domaine vérifié et l’adresse d’expédition.'];
         }
+    } elseif (($_POST['action'] ?? '') === 'test_printful') {
+        // --- Test de connexion Printful ---
+        $r = printful_test();
+        $flash = ($r['ok'] ?? false)
+            ? ['ok', '✅ Printful connecté' . (!empty($r['name']) ? ' — boutique « ' . $r['name'] . ' »' : '') . '.']
+            : ['err', 'Échec Printful : ' . ($r['error'] ?? 'clé invalide.')];
     } elseif (($_POST['action'] ?? '') === 'change_password') {
         // --- Changement du mot de passe admin ---
         $cur = (string) ($_POST['current_password'] ?? '');
@@ -56,6 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($sk !== '') { set_setting('stripe_secret_key', $sk); }
         $ws = trim((string) ($_POST['stripe_webhook_secret'] ?? ''));
         if ($ws !== '') { set_setting('stripe_webhook_secret', $ws); }
+        // --- Impression à la demande (Printful) ---
+        $pfk = trim((string) ($_POST['printful_api_key'] ?? ''));
+        if ($pfk !== '') { set_setting('printful_api_key', $pfk); }
+        set_setting('printful_store_id', trim((string) ($_POST['printful_store_id'] ?? '')));
+        set_setting('printful_enabled', isset($_POST['printful_enabled']) ? '1' : '0');
+        set_setting('printful_auto_confirm', isset($_POST['printful_auto_confirm']) ? '1' : '0');
         $rd = trim((string) ($_POST['release_date'] ?? ''));
         if ($rd !== '') {
             // datetime-local -> ISO
@@ -112,6 +125,9 @@ $shop_cur   = (string) get_setting('shop_currency', 'EUR');
 $shop_cur_en = (string) get_setting('shop_currency_en', 'USD');
 $has_secret = stripe_secret() !== '';
 $has_whsec  = stripe_webhook_secret() !== '';
+$pf         = printful_status();
+$has_pfkey  = $pf['key'];
+$pf_store   = (string) get_setting('printful_store_id', '');
 $release = (string) release_date();
 // ISO -> valeur datetime-local (YYYY-MM-DDTHH:MM)
 $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
@@ -249,6 +265,43 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
     </div>
 
     <hr style="border:0;border-top:1px solid var(--glass-brd);margin:.6rem 0">
+    <h2 style="font-size:1.1rem;margin:0">🖨️ Impression à la demande — Printful</h2>
+    <p class="muted" style="font-size:.85rem;margin:.2rem 0 .4rem">
+        Vendez votre <strong>propre merch</strong> (t-shirts, mugs, posters, casquettes…) sans stock :
+        Printful imprime + expédie automatiquement à chaque commande payée. Créez un compte sur
+        <a href="https://www.printful.com" target="_blank" rel="noopener">printful.com</a>,
+        créez vos produits (avec vos visuels), générez une clé API, collez-la ci-dessous, puis
+        cochez « Traitement automatique ». État :
+        <strong><?php
+            if (!$has_pfkey) {
+                echo '⚪ Dormant (clé non renseignée)';
+            } elseif (!$pf['enabled']) {
+                echo '🟡 Clé OK — traitement désactivé';
+            } else {
+                echo $pf['auto_confirm'] ? '🟢 Actif — confirmation auto (impression immédiate)' : '🟢 Actif — commandes en brouillon';
+            }
+        ?></strong>
+    </p>
+    <div>
+        <label>Clé API Printful</label>
+        <input type="password" name="printful_api_key" autocomplete="off" placeholder="<?= $has_pfkey ? '•••••••• (déjà enregistrée — laisser vide pour conserver)' : 'collez votre jeton API Printful' ?>">
+        <small class="muted">⚠️ Confidentiel. Dans Printful : <em>Settings → API → Add API key</em>. Laissez vide pour conserver la clé actuelle.</small>
+    </div>
+    <div>
+        <label>ID de boutique Printful <span class="muted">(optionnel)</span></label>
+        <input type="text" name="printful_store_id" value="<?= e($pf_store) ?>" placeholder="ex. 12345678 (si votre jeton gère plusieurs boutiques)">
+        <small class="muted">Nécessaire uniquement si votre jeton a accès à plusieurs boutiques. Sinon laissez vide.</small>
+    </div>
+    <label style="display:flex;gap:.5rem;align-items:flex-start;margin:.2rem 0">
+        <input type="checkbox" name="printful_enabled" value="1"<?= $pf['enabled'] ? ' checked' : '' ?> style="margin-top:.25rem">
+        <span>Traitement automatique <strong>activé</strong><br><small class="muted">Décoché = tout reste dormant (aucune commande envoyée à Printful), même avec une clé.</small></span>
+    </label>
+    <label style="display:flex;gap:.5rem;align-items:flex-start;margin:.2rem 0">
+        <input type="checkbox" name="printful_auto_confirm" value="1"<?= $pf['auto_confirm'] ? ' checked' : '' ?> style="margin-top:.25rem">
+        <span>Confirmer automatiquement (impression immédiate)<br><small class="muted">Décoché (<strong>recommandé au début</strong>) = les commandes arrivent en <em>brouillon</em> dans Printful ; vous vérifiez puis confirmez à la main. Coché = Printful imprime + débite tout de suite, sans intervention.</small></span>
+    </label>
+
+    <hr style="border:0;border-top:1px solid var(--glass-brd);margin:.6rem 0">
     <h2 style="font-size:1.1rem;margin:0">📧 E-mails automatiques — Resend</h2>
     <p class="muted" style="font-size:.85rem;margin:.2rem 0 .4rem">
         Pour l’envoi automatique (livraison des wallpapers, contact, notifications).
@@ -310,5 +363,13 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         </div>
         <button class="btn btn--ghost" type="submit" style="white-space:nowrap">Envoyer un test →</button>
     </div>
+</form>
+
+<form method="post" class="form glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="test_printful">
+    <h2 style="font-size:1.05rem;margin:0 0 .2rem">🖨️ Tester Printful</h2>
+    <p class="muted" style="font-size:.84rem;margin:.1rem 0 .6rem">Vérifie que la clé API Printful est valide et lit le nom de votre boutique. <?= $has_pfkey ? '' : '<strong>Renseignez d’abord la clé ci-dessus et enregistrez.</strong>' ?></p>
+    <button class="btn btn--ghost" type="submit"<?= $has_pfkey ? '' : ' disabled' ?>>Tester la connexion →</button>
 </form>
 <?php require __DIR__ . '/../includes/admin_footer.php'; ?>

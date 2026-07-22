@@ -166,6 +166,7 @@ CREATE TABLE products (
     sale_type       ENUM('external','stripe') NOT NULL DEFAULT 'external',
     url             VARCHAR(500),            -- lien externe (si sale_type='external')
     stripe_price_id VARCHAR(120),            -- ID de prix Stripe (optionnel ; sinon price+currency)
+    printful_variant_id VARCHAR(64) DEFAULT NULL, -- impression à la demande : sync_variant_id Printful (vide = non imprimé à la demande)
     digital_file    VARCHAR(255),            -- fichier livré après achat (produit numérique)
     bundle_items    VARCHAR(255) DEFAULT NULL, -- bundle : IDs produits inclus, ex. "12,15,18" (livrés ensemble)
     merchant        VARCHAR(60),
@@ -189,6 +190,17 @@ CREATE TABLE orders (
     items          TEXT,
     delivered      TINYINT(1) NOT NULL DEFAULT 0,
     created_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ---------- Impression à la demande (Printful) : suivi des commandes envoyées ----------
+CREATE TABLE printful_orders (
+    id                INT AUTO_INCREMENT PRIMARY KEY,
+    order_id          INT DEFAULT NULL,
+    stripe_session    VARCHAR(190) UNIQUE,
+    printful_order_id VARCHAR(64) DEFAULT NULL,
+    status            VARCHAR(40) NOT NULL DEFAULT 'pending',  -- pending / created / confirmed / error
+    error             VARCHAR(500) DEFAULT NULL,
+    created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
 -- ---------- Forum communautaire ----------

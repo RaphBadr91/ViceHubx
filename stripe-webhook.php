@@ -70,6 +70,10 @@ if (($event['type'] ?? '') === 'checkout.session.completed') {
             if ($oid > 0) {
                 try { deliver_order($oid); } catch (Throwable $e) { /* on ne bloque pas l'accusé Stripe */ }
             }
+            // Impression à la demande : route les articles physiques vers Printful.
+            // 100% dormant tant que la clé n'est pas renseignée + l'interrupteur activé.
+            require_once __DIR__ . '/includes/printful.php';
+            try { printful_fulfill_session($s); } catch (Throwable $e) { /* ne bloque jamais l'accusé Stripe */ }
         }
     }
 }

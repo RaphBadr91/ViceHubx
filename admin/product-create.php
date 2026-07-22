@@ -1,6 +1,8 @@
 <?php
 $ADMIN_TITLE = 'ViceHub X — Nouveau produit';
 require __DIR__ . '/../includes/admin_header.php';
+require_once __DIR__ . '/../includes/printful.php';
+printful_ensure_schema();
 
 $flash = null;
 $cats = product_categories();
@@ -14,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $url  = trim((string) ($_POST['url'] ?? ''));
             $sale_type = in_array($_POST['sale_type'] ?? 'external', ['external', 'stripe'], true) ? $_POST['sale_type'] : 'external';
             $stripe_price_id = trim((string) ($_POST['stripe_price_id'] ?? ''));
+            $printful_variant = trim((string) ($_POST['printful_variant_id'] ?? ''));
             if ($name === '') {
                 throw new RuntimeException('Le nom est obligatoire.');
             }
@@ -35,10 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $image    = handle_image_upload('image') ?: trim((string) ($_POST['image_url'] ?? ''));
 
             $stmt = db()->prepare(
-                'INSERT INTO products (name, slug, description, category, price, currency, image, sale_type, url, stripe_price_id, merchant, badge, featured, active, sort, lang)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                'INSERT INTO products (name, slug, description, category, price, currency, image, sale_type, url, stripe_price_id, printful_variant_id, merchant, badge, featured, active, sort, lang)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
-            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $sale_type, $url ?: null, $stripe_price_id ?: null, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang]);
+            $stmt->execute([$name, $slug, $desc, $category, $price, $currency, $image, $sale_type, $url ?: null, $stripe_price_id ?: null, $printful_variant ?: null, $merchant ?: null, $badge ?: null, $featured, $active, $sort, $lang]);
             redirect(url('admin/products.php'));
         } catch (Throwable $ex) {
             $flash = ['err', $ex->getMessage()];
@@ -79,6 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
         <div><label>ID prix Stripe (optionnel)</label><input type="text" name="stripe_price_id" maxlength="120" placeholder="price_… (sinon prix ci-dessus)" value="<?= e($_POST['stripe_price_id'] ?? '') ?>"></div>
+    </div>
+    <div><label>🖨️ Variante Printful — impression à la demande <span class="muted">(optionnel)</span></label>
+        <input type="text" name="printful_variant_id" maxlength="64" placeholder="sync_variant_id (ex. 4503821567)" value="<?= e($_POST['printful_variant_id'] ?? '') ?>">
+        <small class="muted">Renseignez l'<strong>ID de variante synchronisée</strong> de votre produit Printful (t-shirt, mug, poster…). À la commande, Printful l'imprime + l'expédie automatiquement. Vide = pas d'impression à la demande.</small>
     </div>
     <div><label>Lien d’achat (si revendeur / affilié)</label><input type="url" name="url" maxlength="500" placeholder="https://www.amazon.fr/...?tag=votre-tag" value="<?= e($_POST['url'] ?? '') ?>"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">

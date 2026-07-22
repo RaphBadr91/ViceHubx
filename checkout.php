@@ -27,10 +27,13 @@ $abs = static fn(string $p): string => str_starts_with($p, 'http') ? $p : $origi
 $cur = strtolower(active_currency());
 $has_physical = false;
 $digital_meta = [];
+$phys_meta    = [];
 $line_items = [];
 foreach ($lines as $l) {
     if (empty($l['digital_file']) && empty($l['bundle_items'])) {
         $has_physical = true;
+        // Physique : on note (id:qty) ; le webhook peut router vers Printful (impression à la demande).
+        $phys_meta[] = ((int) $l['id']) . ':' . max(1, (int) $l['qty']);
     } else {
         // Numérique ou bundle : on note (id:qty) ; le webhook expanse et livre.
         $digital_meta[] = ((int) $l['id']) . ':' . max(1, (int) $l['qty']);
@@ -53,13 +56,25 @@ $params = [
     'cancel_url'                 => $abs('pages/checkout-cancel.php'),
     'billing_address_collection' => 'auto',
 ];
-// Adresse de livraison uniquement si un produit physique est présent (pas pour les wallpapers)
+// Adresse de livraison uniquement si un produit physique est présent (pas pour les wallpapers).
+// Liste internationale : l'impression à la demande (Printful) expédie dans le monde entier.
 if ($has_physical) {
-    $params['shipping_address_collection'] = ['allowed_countries' => ['FR', 'BE', 'CH', 'LU', 'CA', 'MC']];
+    $params['shipping_address_collection'] = ['allowed_countries' => [
+        'FR', 'BE', 'CH', 'LU', 'MC', 'CA', 'US', 'GB', 'IE',
+        'DE', 'ES', 'IT', 'NL', 'PT', 'AT', 'SE', 'DK', 'FI', 'NO', 'PL',
+        'AU', 'NZ', 'JP',
+    ]];
 }
-// Métadonnée : produits numériques à livrer par e-mail (lue par le webhook)
+// Métadonnées lues par le webhook : numériques à livrer par e-mail + physiques (route Printful).
+$meta = [];
 if ($digital_meta) {
-    $params['metadata'] = ['digital' => substr(implode(',', $digital_meta), 0, 480)];
+    $meta['digital'] = substr(implode(',', $digital_meta), 0, 480);
+}
+if ($phys_meta) {
+    $meta['phys'] = substr(implode(',', $phys_meta), 0, 480);
+}
+if ($meta) {
+    $params['metadata'] = $meta;
 }
 
 try {
