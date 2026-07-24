@@ -177,6 +177,43 @@ function printful_test(): array
     }
 }
 
+/**
+ * Liste les produits synchronisés de la boutique Printful, avec pour chaque
+ * variante son `sync_variant_id` (à coller dans la fiche produit du site).
+ * Évite à l'utilisateur toute manipulation technique de l'API.
+ */
+function printful_sync_products(int $maxProducts = 60): array
+{
+    $out  = [];
+    $list = printful_api('GET', 'store/products?limit=' . max(1, min(100, $maxProducts)));
+    foreach (($list['result'] ?? []) as $p) {
+        $pid = (int) ($p['id'] ?? 0);
+        if ($pid <= 0) {
+            continue;
+        }
+        $variants = [];
+        try {
+            $detail = printful_api('GET', 'store/products/' . $pid);
+            foreach (($detail['result']['sync_variants'] ?? []) as $v) {
+                $variants[] = [
+                    'sync_variant_id' => (string) ($v['id'] ?? ''),
+                    'name'            => (string) ($v['name'] ?? ''),
+                    'retail_price'    => (string) ($v['retail_price'] ?? ''),
+                    'currency'        => (string) ($v['currency'] ?? ''),
+                ];
+            }
+        } catch (Throwable $e) {
+            // Détail indisponible pour ce produit : on liste au moins son nom.
+        }
+        $out[] = [
+            'id'       => $pid,
+            'name'     => (string) ($p['name'] ?? ('Produit #' . $pid)),
+            'variants' => $variants,
+        ];
+    }
+    return $out;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Fabrique une commande Printful à partir d'une session Stripe       */
 /* ------------------------------------------------------------------ */

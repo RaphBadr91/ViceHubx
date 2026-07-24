@@ -4,6 +4,7 @@ require __DIR__ . '/../includes/admin_header.php';
 require_once __DIR__ . '/../includes/printful.php';
 
 $flash = null;
+$pf_products = null; // liste des produits Printful (bouton « Lister mes produits »)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verify_csrf()) {
         $flash = ['err', 'Jeton CSRF invalide.'];
@@ -31,6 +32,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = ($r['ok'] ?? false)
             ? ['ok', '✅ Printful connecté' . (!empty($r['name']) ? ' — boutique « ' . $r['name'] . ' »' : '') . '.']
             : ['err', 'Échec Printful : ' . ($r['error'] ?? 'clé invalide.')];
+    } elseif (($_POST['action'] ?? '') === 'list_printful') {
+        // --- Liste des produits Printful + leurs sync_variant_id ---
+        try {
+            $pf_products = printful_sync_products();
+            if (!$pf_products) {
+                $flash = ['ok', 'Aucun produit trouvé dans votre boutique Printful. Créez d’abord vos produits sur printful.com.'];
+            }
+        } catch (Throwable $ex) {
+            $flash = ['err', 'Impossible de lister les produits Printful : ' . $ex->getMessage()];
+        }
     } elseif (($_POST['action'] ?? '') === 'change_password') {
         // --- Changement du mot de passe admin ---
         $cur = (string) ($_POST['current_password'] ?? '');
@@ -365,11 +376,55 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
     </div>
 </form>
 
-<form method="post" class="form glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="test_printful">
-    <h2 style="font-size:1.05rem;margin:0 0 .2rem">🖨️ Tester Printful</h2>
-    <p class="muted" style="font-size:.84rem;margin:.1rem 0 .6rem">Vérifie que la clé API Printful est valide et lit le nom de votre boutique. <?= $has_pfkey ? '' : '<strong>Renseignez d’abord la clé ci-dessus et enregistrez.</strong>' ?></p>
-    <button class="btn btn--ghost" type="submit"<?= $has_pfkey ? '' : ' disabled' ?>>Tester la connexion →</button>
-</form>
+<div class="glass" style="max-width:680px;padding:1.2rem 1.6rem;border-radius:18px;margin-top:1.2rem">
+    <h2 style="font-size:1.05rem;margin:0 0 .2rem">🖨️ Printful — outils</h2>
+    <p class="muted" style="font-size:.84rem;margin:.1rem 0 .8rem">
+        <?= $has_pfkey ? 'Vérifiez la connexion, puis listez vos produits pour récupérer leurs <strong>ID de variante</strong> à coller dans chaque fiche produit.' : '<strong>Renseignez d’abord la clé API ci-dessus et enregistrez</strong>, puis revenez ici.' ?>
+    </p>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap">
+        <form method="post" style="margin:0">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="test_printful">
+            <button class="btn btn--ghost" type="submit"<?= $has_pfkey ? '' : ' disabled' ?>>Tester la connexion →</button>
+        </form>
+        <form method="post" style="margin:0">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="list_printful">
+            <button class="btn btn--primary" type="submit"<?= $has_pfkey ? '' : ' disabled' ?>>Lister mes produits Printful →</button>
+        </form>
+    </div>
+
+    <?php if ($pf_products): ?>
+        <div style="margin-top:1rem;overflow-x:auto">
+            <p class="muted" style="font-size:.84rem;margin:0 0 .5rem">Copiez l’<strong>ID de variante</strong> et collez-le dans le champ « Variante Printful » de la fiche produit correspondante (Admin → Boutique).</p>
+            <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+                <thead>
+                    <tr style="text-align:left;border-bottom:1px solid var(--glass-brd)">
+                        <th style="padding:.4rem .5rem">Produit</th>
+                        <th style="padding:.4rem .5rem">Variante</th>
+                        <th style="padding:.4rem .5rem">Prix</th>
+                        <th style="padding:.4rem .5rem">ID de variante (à copier)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($pf_products as $prod): ?>
+                    <?php if (empty($prod['variants'])): ?>
+                        <tr style="border-bottom:1px solid var(--glass-brd)">
+                            <td style="padding:.4rem .5rem"><?= e($prod['name']) ?></td>
+                            <td style="padding:.4rem .5rem" colspan="3"><span class="muted">— aucune variante synchronisée —</span></td>
+                        </tr>
+                    <?php else: foreach ($prod['variants'] as $i => $v): ?>
+                        <tr style="border-bottom:1px solid var(--glass-brd)">
+                            <td style="padding:.4rem .5rem"><?= $i === 0 ? e($prod['name']) : '' ?></td>
+                            <td style="padding:.4rem .5rem"><?= e($v['name']) ?></td>
+                            <td style="padding:.4rem .5rem"><?= e($v['retail_price'] !== '' ? $v['retail_price'] . ' ' . $v['currency'] : '—') ?></td>
+                            <td style="padding:.4rem .5rem"><input type="text" readonly value="<?= e($v['sync_variant_id']) ?>" onclick="this.select()" style="font-family:monospace;width:100%;min-width:130px"></td>
+                        </tr>
+                    <?php endforeach; endif; ?>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
 <?php require __DIR__ . '/../includes/admin_footer.php'; ?>
