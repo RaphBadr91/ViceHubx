@@ -22,13 +22,14 @@
         <div class="footer-brand">
             <a class="logo" href="<?= e(with_lang(url('index.php'))) ?>">Vice<span class="logo-accent">Hub</span><span class="logo-x">X</span></a>
             <p class="footer-tag"><?= e(lang() === 'fr' ? APP_SLOGAN_FR : APP_SLOGAN_EN) ?></p>
+            <?php $__socials = function_exists('social_profiles') ? social_profiles() : []; ?>
+            <?php if ($__socials): ?>
             <div class="footer-social" aria-label="<?= lang() === 'fr' ? 'Réseaux sociaux' : 'Social media' ?>">
-                <a href="#" aria-label="X / Twitter" title="X">𝕏</a>
-                <a href="#" aria-label="YouTube" title="YouTube">▶</a>
-                <a href="#" aria-label="Instagram" title="Instagram">📸</a>
-                <a href="#" aria-label="Discord" title="Discord">💬</a>
-                <a href="#" aria-label="TikTok" title="TikTok">♪</a>
+                <?php foreach ($__socials as $__sp): ?>
+                    <a href="<?= e($__sp['url']) ?>" target="_blank" rel="noopener" aria-label="<?= e($__sp['label']) ?>" title="<?= e($__sp['label']) ?>"><?= $__sp['icon'] ?></a>
+                <?php endforeach; ?>
             </div>
+            <?php endif; ?>
             <p class="footer-countdown">🕒 <b>GTA VI</b> — <?= e(release_human()) ?></p>
         </div>
 
@@ -65,6 +66,7 @@
             <?php else: ?>
                 <a href="<?= e(with_lang(url('pages/login.php'))) ?>"><?= lang() === 'fr' ? 'Connexion' : 'Login' ?></a>
             <?php endif; ?>
+            <a href="<?= e(with_lang(url('pages/a-propos.php'))) ?>"><?= lang() === 'fr' ? 'À propos' : 'About' ?></a>
             <a href="<?= e(with_lang(url('pages/presse.php'))) ?>"><?= lang() === 'fr' ? 'Presse & Partenariats' : 'Press & Partners' ?></a>
             <a href="<?= e(with_lang(url('pages/contact.php'))) ?>"><?= e(t('nav_contact')) ?></a>
             <a href="<?= e(with_lang(url('pages/legal.php'))) ?>"><?= e(t('page_legal_title')) ?></a>

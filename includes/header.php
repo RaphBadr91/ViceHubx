@@ -153,24 +153,36 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php if (!empty($JSONLD)): ?>
     <script type="application/ld+json"><?= json_encode($JSONLD, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
     <?php endif; ?>
-    <!-- Organisation + WebSite (SEO global) -->
+    <!-- Organisation + WebSite (SEO global + entité claire pour l'IA de Google) -->
+    <?php
+    // Entité « ViceHub X » : nom exact + variantes + profils sociaux officiels
+    // (sameAs). C'est ce qui permet à Google de nous distinguer d'un homonyme
+    // et de nous citer comme source dans l'Aperçu IA.
+    $__org = [
+        '@type'         => 'Organization',
+        '@id'           => $site_base . '/#org',
+        'name'          => APP_NAME,
+        'alternateName' => ['ViceHubX', 'Vice Hub X', 'ViceHub X GTA6'],
+        'url'           => $site_base . '/',
+        'logo'          => $og_image_abs,
+        'description'   => lang() === 'fr'
+            ? 'ViceHub X est un média indépendant non officiel dédié à GTA VI (Grand Theft Auto VI) et Vice City : actualités, leaks, guides et communauté de fans.'
+            : 'ViceHub X is an independent, unofficial media dedicated to GTA VI (Grand Theft Auto VI) and Vice City: news, leaks, guides and a fan community.',
+    ];
+    $__sameAs = array_values(array_map(static fn ($p) => $p['url'], social_profiles()));
+    if ($__sameAs) {
+        $__org['sameAs'] = $__sameAs;
+    }
+    ?>
     <script type="application/ld+json"><?= json_encode([
         '@context' => 'https://schema.org',
         '@graph'   => [
-            [
-                '@type' => 'Organization',
-                '@id'   => $site_base . '/#org',
-                'name'  => APP_NAME,
-                'url'   => $site_base . '/',
-                'logo'  => $og_image_abs,
-                'description' => lang() === 'fr'
-                    ? 'Média indépendant non officiel dédié à GTA VI et Vice City.'
-                    : 'Independent unofficial media about GTA VI and Vice City.',
-            ],
+            $__org,
             [
                 '@type' => 'WebSite',
                 '@id'   => $site_base . '/#website',
                 'name'  => APP_NAME,
+                'alternateName' => 'ViceHubX',
                 'url'   => $site_base . '/',
                 'inLanguage' => lang(),
                 'publisher'  => ['@id' => $site_base . '/#org'],

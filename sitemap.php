@@ -39,6 +39,7 @@ $urls = [
     ['pages/shop.php', 'weekly', '0.8'],
     ['pages/fonds-ecran-gta6.php', 'weekly', '0.8'],
     ['pages/deals.php', 'weekly', '0.6'],
+    ['pages/a-propos.php', 'monthly', '0.6'],
     ['pages/presse.php', 'monthly', '0.5'],
     ['pages/contact.php', 'yearly', '0.3'],
     ['pages/legal.php', 'yearly', '0.2'],

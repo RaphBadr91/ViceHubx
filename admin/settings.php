@@ -101,6 +101,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('bing_site_verification', $bv);
         set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
         set_setting('amazon_tag', trim((string) ($_POST['amazon_tag'] ?? '')));
+        // --- Profils sociaux publics (sameAs = entité claire pour l'IA Google) ---
+        foreach (['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'discord'] as $__sp) {
+            set_setting('profile_' . $__sp, trim((string) ($_POST['profile_' . $__sp] ?? '')));
+        }
         // --- Forum : vie automatique (rythme des interactions) ---
         $gmin = max(1, min(48, (int) ($_POST['forum_gap_min_h'] ?? 2)));
         $gmax = max($gmin, min(72, (int) ($_POST['forum_gap_max_h'] ?? 12)));
@@ -185,6 +189,23 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Tag d'affiliation Amazon</label>
         <input type="text" name="amazon_tag" value="<?= e($amztag) ?>" placeholder="ex. vicehubx-21">
         <small class="muted">Ton identifiant <a href="https://partenaires.amazon.fr" target="_blank" rel="noopener">Amazon Partenaires</a>. Il est <strong>ajouté automatiquement à tous tes liens Amazon</strong> (boutique + articles) → chaque vente te rapporte une commission. Laisse vide si pas encore inscrit.</small>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">
+    <h2 style="font-size:1.1rem;margin:0 0 .2rem">🔗 Réseaux sociaux (profils publics)</h2>
+    <p class="muted" style="font-size:.85rem;margin:0 0 .6rem">
+        <strong>Très important pour être reconnu par Google (et cité dans l'Aperçu IA).</strong>
+        Colle l'adresse <strong>complète</strong> de tes profils officiels. Ils alimentent le
+        <code>sameAs</code> de ton entité (Google comprend alors que « ViceHub X » = ce site + ces comptes,
+        et te distingue des sites au nom proche) et remplacent les icônes du pied de page.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div><label>📸 Instagram</label><input type="url" name="profile_instagram" value="<?= e((string) get_setting('profile_instagram', '')) ?>" placeholder="https://www.instagram.com/vicehubx"></div>
+        <div><label>♪ TikTok</label><input type="url" name="profile_tiktok" value="<?= e((string) get_setting('profile_tiktok', '')) ?>" placeholder="https://www.tiktok.com/@vicehubx"></div>
+        <div><label>▶ YouTube</label><input type="url" name="profile_youtube" value="<?= e((string) get_setting('profile_youtube', '')) ?>" placeholder="https://www.youtube.com/@vicehubx"></div>
+        <div><label>𝕏 X / Twitter</label><input type="url" name="profile_x" value="<?= e((string) get_setting('profile_x', '')) ?>" placeholder="https://x.com/vicehubx"></div>
+        <div><label>f Facebook</label><input type="url" name="profile_facebook" value="<?= e((string) get_setting('profile_facebook', '')) ?>" placeholder="https://www.facebook.com/vicehubx"></div>
+        <div><label>💬 Discord</label><input type="url" name="profile_discord" value="<?= e((string) get_setting('profile_discord', '')) ?>" placeholder="https://discord.gg/…"></div>
     </div>
 
     <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">

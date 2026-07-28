@@ -1640,6 +1640,37 @@ function set_setting(string $key, string $value): void
 }
 
 /**
+ * Profils sociaux publics du média (renseignés dans Admin → Réglages).
+ * Sert à deux choses cruciales pour être reconnu comme ENTITÉ par Google
+ * (et cité dans l'Aperçu IA) : le `sameAs` du schéma Organization + les
+ * icônes du pied de page. Retourne un tableau clé => [label, url, icon].
+ * Les profils vides sont ignorés.
+ */
+function social_profiles(): array
+{
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    $defs = [
+        'instagram' => ['Instagram', '📸'],
+        'tiktok'    => ['TikTok', '♪'],
+        'youtube'   => ['YouTube', '▶'],
+        'x'         => ['X / Twitter', '𝕏'],
+        'facebook'  => ['Facebook', 'f'],
+        'discord'   => ['Discord', '💬'],
+    ];
+    $out = [];
+    foreach ($defs as $key => [$label, $icon]) {
+        $url = trim((string) get_setting('profile_' . $key, ''));
+        if ($url !== '') {
+            $out[$key] = ['label' => $label, 'url' => $url, 'icon' => $icon];
+        }
+    }
+    return $cache = $out;
+}
+
+/**
  * Retire les hashtags « attrape-vues » (#fyp, #foryou, #viral, #trending,
  * #gamingcommunity, #gtafans…) de n'importe quelle légende. TikTok/Instagram
  * les traitent comme de la manipulation de reach et BRIDENT la publication
