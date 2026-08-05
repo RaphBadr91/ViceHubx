@@ -155,6 +155,17 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
         </form>
         <?php if ($stats['error'] > 0): ?><form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="retry_errors"><button class="btn btn--ghost">🔁 Retenter les erreurs</button></form><?php endif; ?>
     </div>
+    <?php
+    $__now = time();
+    $__cools = [];
+    foreach (['facebook' => 'Facebook', 'instagram' => 'Instagram'] as $__k => $__lbl) {
+        $__u = (int) get_setting('social_cooldown_' . $__k, '0');
+        if ($__u > $__now) { $__cools[] = $__lbl . ' → ' . date('H:i', $__u); }
+    }
+    ?>
+    <?php if ($__cools): ?>
+        <p class="muted" style="margin:.8rem 0 0;font-size:.85rem">⏳ <strong>En pause</strong> (limite de débit Meta atteinte) : <strong><?= e(implode(' · ', $__cools)) ?></strong>. Les articles concernés restent en attente et repartiront <strong>automatiquement</strong> — rien à faire.</p>
+    <?php endif; ?>
 </div>
 
 <!-- Cron -->

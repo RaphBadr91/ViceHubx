@@ -188,6 +188,33 @@ function social_err(array $body): string
     return mb_substr(json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: 'erreur inconnue', 0, 480);
 }
 
+/**
+ * L'erreur est-elle TEMPORAIRE (limite de débit Meta / throttling) plutôt qu'un
+ * vrai échec ? Dans ce cas on NE marque PAS l'article en échec permanent : on le
+ * laisse en attente pour un réessai automatique une fois la limite retombée.
+ * Couvre : « Application request limit reached » (codes 4/17/32),
+ * « Please reduce the amount of data… » et les messages de réessai génériques.
+ */
+function social_is_transient_error(string $msg): bool
+{
+    $m = mb_strtolower($msg);
+    foreach ([
+        'request limit reached',
+        'reduce the amount of data',
+        'retry your request',
+        'rate limit',
+        'calls to this api',
+        'temporarily',
+        'try again later',
+        'please try again',
+        'server is temporarily',
+        'timeout', 'timed out', 'curl :',
+    ] as $needle) {
+        if (str_contains($m, $needle)) { return true; }
+    }
+    return false;
+}
+
 /** Poste sur la Page Facebook (lien → carte OG auto). @return [ok, postId|error] */
 function social_post_facebook(array $a, string $caption): array
 {
@@ -383,16 +410,26 @@ function social_drain(int $budgetSeconds = 0): array
     // ⚠️ PLAFOND QUOTIDIEN par réseau : poste en douceur (anti-spam / anti-bannissement).
     $cap   = max(1, (int) get_setting('social_daily_max', '10'));
     $today = ['facebook' => social_posted_today('facebook'), 'instagram' => social_posted_today('instagram')];
+    // Anti-rafale : nombre max de posts par réseau PAR passage de drain (le cron
+    // repasse régulièrement). Évite de bombarder l'API Meta et de la faire throttler.
+    $burstMax = max(1, (int) get_setting('social_burst_max', '4'));
+    $burst    = ['facebook' => 0, 'instagram' => 0];
+    // Pause par réseau (posée quand Meta throttle) : on n'y touche plus avant l'heure dite.
+    $cool = [
+        'facebook'  => (int) get_setting('social_cooldown_facebook', '0'),
+        'instagram' => (int) get_setting('social_cooldown_instagram', '0'),
+    ];
 
     $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
     $posted = 0; $failed = 0;
     try {
         while (time() < $deadline) {
-            // Réseaux encore autorisés aujourd'hui : prêts ET sous le plafond quotidien.
+            $now = time();
+            // Réseaux autorisés : prêts, sous le plafond quotidien, hors pause, sous l'anti-rafale.
             $allowed = [];
-            if (social_fb_ready() && $today['facebook'] < $cap) { $allowed[] = 'facebook'; }
-            if (social_ig_ready() && $today['instagram'] < $cap) { $allowed[] = 'instagram'; }
-            if (!$allowed) { break; } // tout est désactivé ou plafond atteint → on s'arrête
+            if (social_fb_ready() && $today['facebook'] < $cap && $now >= $cool['facebook'] && $burst['facebook'] < $burstMax) { $allowed[] = 'facebook'; }
+            if (social_ig_ready() && $today['instagram'] < $cap && $now >= $cool['instagram'] && $burst['instagram'] < $burstMax) { $allowed[] = 'instagram'; }
+            if (!$allowed) { break; } // tout est désactivé / plafonné / en pause → on s'arrête
 
             $in  = "'" . implode("','", $allowed) . "'"; // liste blanche (jamais d'entrée user)
             $row = db()->query(
@@ -412,11 +449,23 @@ function social_drain(int $budgetSeconds = 0): array
                 ? social_post_instagram($row, $caption)
                 : social_post_facebook($row, $caption);
 
+            $plat = (string) $row['platform'];
             if ($ok) {
                 db()->prepare("UPDATE social_queue SET status='posted', post_id=?, posted_at=NOW(), error=NULL WHERE id=?")
                     ->execute([$res, (int) $row['id']]);
                 $posted++;
-                $today[(string) $row['platform']]++;   // compte pour le plafond quotidien
+                $today[$plat]++;   // compte pour le plafond quotidien
+                $burst[$plat]++;   // compte pour l'anti-rafale de CE passage
+            } elseif (social_is_transient_error($res)) {
+                // Limite de débit Meta : erreur TEMPORAIRE. On garde l'article en
+                // attente (réessai auto au prochain drain) et on met le réseau en
+                // pause 30 min pour ne pas marteler l'API. PAS compté comme échec.
+                set_setting('social_cooldown_' . $plat, (string) (time() + 1800));
+                $cool[$plat] = time() + 1800; // exclut ce réseau du reste de ce drain
+                db()->prepare("UPDATE social_queue SET error=? WHERE id=?")
+                    ->execute(['⏳ ' . mb_substr($res, 0, 280) . ' — réessai auto dans ~30 min', (int) $row['id']]);
+                set_setting('social_lock', (string) time());
+                continue; // ne marque PAS en échec ; passe à l'autre réseau
             } else {
                 db()->prepare("UPDATE social_queue SET status='error', error=? WHERE id=?")
                     ->execute([$res, (int) $row['id']]);
