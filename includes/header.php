@@ -286,6 +286,22 @@ setTimeout(hide,2200);})();</script>
                     <a class="nav-link" href="<?= e(with_lang(url('pages/' . $item['href']))) ?>"><?= e($item['label']) ?></a>
                 <?php endif; ?>
             <?php endforeach; ?>
+
+            <!-- Extras réservés au menu mobile (langue + compte) : sur ordinateur
+                 ils restent dans la barre du haut ; sur mobile ils passent ici pour
+                 que la barre ne déborde jamais. -->
+            <div class="nav-mobile-extra">
+                <div class="nav-mobile-lang" role="group" aria-label="<?= lang() === 'fr' ? 'Langue' : 'Language' ?>">
+                    <?php foreach (available_languages() as $lc => $llabel): ?>
+                        <a href="<?= e(lang_url($lc)) ?>"<?= lang() === $lc ? ' class="is-current"' : '' ?>><?= e($llabel) ?></a>
+                    <?php endforeach; ?>
+                </div>
+                <?php if (is_logged_in()): ?>
+                    <a class="nav-mobile-account" href="<?= e(with_lang(url('pages/account.php'))) ?>">👤 <?= e(mb_strimwidth(display_name(), 0, 18, '…')) ?></a>
+                <?php else: ?>
+                    <a class="nav-mobile-account" href="<?= e(with_lang(url('pages/login.php'))) ?>"><?= lang() === 'fr' ? '👤 Connexion' : '👤 Login' ?></a>
+                <?php endif; ?>
+            </div>
         </nav>
 
         <div class="header-actions">
