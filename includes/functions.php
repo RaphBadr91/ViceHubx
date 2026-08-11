@@ -1640,6 +1640,45 @@ function set_setting(string $key, string $value): void
 }
 
 /**
+ * Table de redirections 301 (consolidation anti-cannibalisation : plusieurs
+ * articles proches → 1 article maître). Créée à la demande côté admin.
+ */
+function redirects_ensure_table(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    $done = true;
+    try {
+        db()->exec(
+            "CREATE TABLE IF NOT EXISTS redirects (
+                from_slug  VARCHAR(220) PRIMARY KEY,
+                to_slug    VARCHAR(220) NOT NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB"
+        );
+    } catch (Throwable $e) {
+        // Table déjà présente ou droits DDL limités.
+    }
+}
+
+/**
+ * Slug maître vers lequel rediriger (301) un slug d'article consolidé, ou ''.
+ * Sur le chemin de lecture on NE crée PAS la table (juste un SELECT tolérant) :
+ * si elle n'existe pas encore, aucune redirection.
+ */
+function redirect_target(string $slug): string
+{
+    if ($slug === '') { return ''; }
+    try {
+        $q = db()->prepare('SELECT to_slug FROM redirects WHERE from_slug = ? LIMIT 1');
+        $q->execute([$slug]);
+        return (string) ($q->fetchColumn() ?: '');
+    } catch (Throwable $e) {
+        return ''; // table absente → pas de redirection
+    }
+}
+
+/**
  * Garantit les colonnes SEO dédiées `meta_title` / `meta_description` sur `articles`
  * (titre & meta rédigés pour le CTR, distincts du H1/extrait). Best-effort, une fois.
  */

@@ -2,6 +2,15 @@
 require_once dirname(__DIR__) . '/config/config.php';
 
 $slug = trim((string) ($_GET['slug'] ?? ''));
+// Consolidation anti-cannibalisation : si ce slug a été redirigé (301) vers un
+// article maître, on redirige AVANT tout rendu (concentre l'autorité sur 1 URL).
+if ($slug !== '') {
+    $__to = redirect_target($slug);
+    if ($__to !== '' && $__to !== $slug) {
+        header('Location: ' . url('pages/article.php?slug=' . rawurlencode($__to)), true, 301);
+        exit;
+    }
+}
 $article = $slug !== '' ? get_article_by_slug($slug) : null;
 
 // Aperçu admin : un administrateur connecté peut LIRE un article non publié

@@ -35,6 +35,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $metaDesc  = mb_substr(trim((string) ($_POST['meta_description'] ?? '')), 0, 200) ?: null;
             $body   = (string) ($_POST['body'] ?? '');
 
+            // Consolidation 301 (anti-cannibalisation) : on tolère un slug, une URL
+            // /article/<slug> ou une URL complète collée → on garde le slug final.
+            $redirectTo = trim((string) ($_POST['redirect_to'] ?? ''));
+            if ($redirectTo !== '') {
+                $redirectTo = basename((string) (parse_url($redirectTo, PHP_URL_PATH) ?: $redirectTo));
+            }
+            $doRedirect = $redirectTo !== '' && $redirectTo !== $slug;
+            if ($doRedirect) { $status = 'draft'; } // le doublon sort du sitemap/rendu
+
             $image = handle_image_upload('image') ?? $article['image'];
             $pub = $article['published_at'];
             if ($status === 'published' && !$pub) {
@@ -46,7 +55,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  WHERE id=?'
             );
             $up->execute([$catId, $lang, $title, $slug, $excerpt, $metaTitle, $metaDesc, $body, $badge, $image, $status, $pub, $id]);
-            $flash = ['ok', 'Article mis à jour.'];
+            // Applique / retire la redirection 301 de consolidation.
+            redirects_ensure_table();
+            if ($doRedirect) {
+                db()->prepare('INSERT INTO redirects (from_slug, to_slug) VALUES (?, ?) ON DUPLICATE KEY UPDATE to_slug = VALUES(to_slug)')
+                    ->execute([$slug, $redirectTo]);
+                db()->prepare('DELETE FROM redirects WHERE from_slug = ?')->execute([$redirectTo]); // évite une chaîne A→B→A
+            } else {
+                db()->prepare('DELETE FROM redirects WHERE from_slug = ?')->execute([$slug]);
+            }
+            $flash = ['ok', $doRedirect ? 'Article mis à jour + redirigé (301) vers « ' . $redirectTo . ' ».' : 'Article mis à jour.'];
             $stmt->execute([$id]);
             $article = $stmt->fetch();
         } catch (Throwable $ex) {
@@ -54,6 +72,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+// Redirection 301 actuelle de cet article (pour préremplir le champ).
+$currentRedirect = redirect_target((string) $article['slug']);
 ?>
 <div class="admin-bar">
     <h1><?= e(t('admin_edit')) ?> #<?= (int) $article['id'] ?></h1>
@@ -96,6 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <legend style="padding:0 .4rem;font-size:.85rem">🔎 SEO (facultatif — sinon repli auto sur titre/extrait)</legend>
         <div><label>Titre SEO <small class="muted">(≤ 60 car., mot-clé en tête)</small></label><input type="text" name="meta_title" maxlength="90" value="<?= e($article['meta_title'] ?? '') ?>" placeholder="GTA 6 sur PC : date de sortie et tout ce qu'on sait (2026)"></div>
         <div><label>Meta description <small class="muted">(150-160 car.)</small></label><textarea name="meta_description" maxlength="200" style="min-height:56px" placeholder="Mot-clé en tête, un chiffre/une date, un appel à l'action."><?= e($article['meta_description'] ?? '') ?></textarea></div>
+        <div><label>🔀 Rediriger (301) cet article vers le slug <small class="muted">(consolidation d'un doublon ; vide = aucune. L'article passe alors en brouillon.)</small></label>
+            <input type="text" name="redirect_to" value="<?= e($currentRedirect) ?>" placeholder="slug-de-l-article-maitre"></div>
     </fieldset>
     <div><label>Contenu</label><textarea name="body" style="min-height:200px"><?= e($article['body']) ?></textarea></div>
     <?php if ($article['image']): ?>
