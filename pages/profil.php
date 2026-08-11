@@ -15,6 +15,9 @@ if (!$u) {
 }
 
 $uid = (int) $u['id'];
+// Profils membres : contenu mince → noindex (on concentre le crawl/qualité sur
+// les articles et piliers). Les liens restent suivis (follow).
+$ROBOTS = 'noindex,follow';
 $stats = user_xp_stats($uid);
 $rk = rank_for_xp($stats['xp']);
 $nx = $rk['next'];

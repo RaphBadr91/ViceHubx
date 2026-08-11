@@ -59,7 +59,11 @@ define('RELEASE_DATE', '2026-11-19T00:00:00');
 
 // Chemins
 define('ROOT_PATH', dirname(__DIR__));
-define('BASE_URL', getenv('VICEHUB_BASE_URL') ?: '');           // vide => racine du serveur
+// Domaine canonique FIGÉ (sans www) : canonical, og:url, hreflang, JSON-LD et
+// TOUS les liens internes pointent toujours vers l'hôte non-www, quel que soit
+// l'hôte frappé par le visiteur ou Googlebot → fin de la scission www/sans-www.
+// Surcharge possible en dev/staging via la variable VICEHUB_BASE_URL.
+define('BASE_URL', getenv('VICEHUB_BASE_URL') ?: 'https://vicehubx.com'); // canonique sans www
 define('UPLOAD_DIR', ROOT_PATH . '/uploads');
 define('UPLOAD_URL', BASE_URL . '/uploads');
 

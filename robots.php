@@ -26,3 +26,4 @@ echo "Disallow: /pages/checkout-cancel.php\n";
 // canonical retire déjà le paramètre de langue pour éviter les doublons).
 echo "\n";
 echo "Sitemap: {$base}/sitemap.xml\n";
+echo "Sitemap: {$base}/news-sitemap.xml\n";

@@ -31,6 +31,7 @@ AddDefaultCharset UTF-8
     # robots.txt & sitemap.xml dynamiques (Sitemap en URL absolue pour Google)
     RewriteRule ^robots\.txt$ robots.php [L]
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
+    RewriteRule ^news-sitemap\.xml$ news-sitemap.php [L]
 
     # ======================================================================
     #  URL PROPRES (sans /pages/ ni .php)

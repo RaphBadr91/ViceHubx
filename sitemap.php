@@ -112,27 +112,18 @@ foreach ($arts as $a) {
     if ($frSlug !== null && $enSlug !== null) {
         $alts .= '<xhtml:link rel="alternate" hreflang="fr" href="' . e($artUrl($frSlug)) . '"/>'
               .  '<xhtml:link rel="alternate" hreflang="en" href="' . e($artUrl($enSlug)) . '"/>'
-              .  '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($artUrl($frSlug)) . '"/>';
+              .  '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($artUrl($enSlug)) . '"/>';
     }
     echo '  <url><loc>' . e($artUrl((string) $a['slug'])) . '</loc>' . $lastmod . $alts . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
 }
 foreach ($prods as $p) {
     echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
 }
-// Profils publics des membres actifs
-try {
-    $members = db()->query("SELECT DISTINCT u.username FROM users u JOIN forum_posts p ON p.user_id = u.id ORDER BY u.username LIMIT 200")->fetchAll(PDO::FETCH_COLUMN);
-} catch (Throwable $e) {
-    $members = [];
-}
-foreach ($members as $mu) {
-    echo '  <url><loc>' . e($abs('membre/' . rawurlencode($mu))) . "</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>\n";
-}
+// Profils membres et sujets forum : contenu mince → volontairement EXCLUS du
+// sitemap pour concentrer le budget de crawl sur les articles et les piliers
+// (les profils passent aussi en noindex, cf. pages/profil.php).
 foreach ($fcats as $slug) {
     echo '  <url><loc>' . e($abs('categorie/' . rawurlencode($slug))) . "</loc><changefreq>daily</changefreq><priority>0.5</priority></url>\n";
-}
-foreach ($fthreads as $tid) {
-    echo '  <url><loc>' . e($abs('sujet/' . (int) $tid)) . "</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>\n";
 }
 
 echo '</urlset>' . "\n";

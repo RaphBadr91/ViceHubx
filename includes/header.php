@@ -85,7 +85,9 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($SEO_TITLE) ?></title>
     <meta name="description" content="<?= e($SEO_DESC) ?>">
-    <?php if (!empty($ROBOTS)): ?><meta name="robots" content="<?= e($ROBOTS) ?>"><?php endif; ?>
+    <?php // Par défaut : indexable + grande vignette (éligibilité Google Discover / Top Stories).
+          //           Les pages privées gardent leur override $ROBOTS (noindex…). ?>
+    <meta name="robots" content="<?= e($ROBOTS ?: 'index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1') ?>">
     <meta name="theme-color" content="#0a0a16">
     <link rel="manifest" href="<?= e(url('manifest.webmanifest')) ?>">
     <link rel="icon" type="image/svg+xml" href="<?= e(asset('img/favicon.svg')) ?>">
@@ -95,17 +97,15 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
-    <!-- Versions linguistiques (hreflang) -->
-    <?php if (!empty($HREFLANG_ALT) && is_array($HREFLANG_ALT)): // URLs explicites (ex. article FR ↔ VO anglaise) ?>
+    <!-- Versions linguistiques (hreflang) — UNIQUEMENT des paires RÉELLES (ex. article
+         FR ↔ VO anglaise), chacune auto-canonique. On n'émet plus d'alternates ?lang=
+         factices : leur cible se canonicalisait ailleurs → Google ignorait tout le bloc.
+         x-default = anglais en priorité (marché dominant), repli français. -->
+    <?php if (!empty($HREFLANG_ALT) && is_array($HREFLANG_ALT)): ?>
         <?php foreach ($HREFLANG_ALT as $hl => $hurl): ?>
     <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($hurl) ?>">
         <?php endforeach; ?>
-    <link rel="alternate" hreflang="x-default" href="<?= e($HREFLANG_ALT['fr'] ?? reset($HREFLANG_ALT)) ?>">
-    <?php else: ?>
-        <?php foreach (array_keys(available_languages()) as $hl): $__sep = $__qs === '' ? '?' : '&'; ?>
-    <link rel="alternate" hreflang="<?= e($hl) ?>" href="<?= e($site_base . $canon_path . ($hl === 'fr' ? '' : $__sep . 'lang=' . $hl)) ?>">
-        <?php endforeach; ?>
-    <link rel="alternate" hreflang="x-default" href="<?= e($canonical) ?>">
+    <link rel="alternate" hreflang="x-default" href="<?= e($HREFLANG_ALT['en'] ?? $HREFLANG_ALT['fr'] ?? reset($HREFLANG_ALT)) ?>">
     <?php endif; ?>
 
     <!-- Open Graph -->
@@ -165,9 +165,14 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
         'alternateName' => ['ViceHubX', 'Vice Hub X', 'ViceHub X GTA6'],
         'url'           => $site_base . '/',
         'logo'          => $og_image_abs,
+        'foundingDate'  => '2026',
+        'knowsAbout'    => ['Grand Theft Auto VI', 'GTA 6', 'Vice City', 'Leonida', 'Rockstar Games'],
         'description'   => lang() === 'fr'
             ? 'ViceHub X est un média indépendant non officiel dédié à GTA VI (Grand Theft Auto VI) et Vice City : actualités, leaks, guides et communauté de fans.'
             : 'ViceHub X is an independent, unofficial media dedicated to GTA VI (Grand Theft Auto VI) and Vice City: news, leaks, guides and a fan community.',
+        'disambiguatingDescription' => lang() === 'fr'
+            ? 'Média officiel « ViceHub X » (vicehubx.com), à ne pas confondre avec d\'autres sites au nom proche. Non affilié à Rockstar Games ni Take-Two.'
+            : 'Official "ViceHub X" media (vicehubx.com), not to be confused with other similarly named sites. Not affiliated with Rockstar Games or Take-Two.',
     ];
     $__sameAs = array_values(array_map(static fn ($p) => $p['url'], social_profiles()));
     if ($__sameAs) {
