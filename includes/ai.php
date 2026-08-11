@@ -783,7 +783,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
             . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
             . $avoid . "\n"
             . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
-            . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre accrocheur unique <=90 car. avec le mot-clé principal","extrait":"meta description <=180 car.","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre SEO UNIQUE <=62 car. : MOT-CLÉ PRINCIPAL EN TÊTE, + si pertinent l\'année 2026 et/ou un chiffre, + un mot fort (Confirmé, Révélé, Guide, Tout ce qu\'on sait)","extrait":"meta description 150-160 car. : mot-clé principal dans les 100 premiers caractères, avec un chiffre ou une date, et un mini appel à l\'action (Découvrez, On fait le point)","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
             . "LIGNE 2 = exactement : ===CORPS===\n"
             . "PUIS = le corps de l'article en HTML (~2000 mots).";
     }

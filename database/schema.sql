@@ -43,6 +43,8 @@ CREATE TABLE articles (
     title        VARCHAR(200) NOT NULL,
     slug         VARCHAR(220) NOT NULL UNIQUE,
     excerpt      VARCHAR(400),
+    meta_title       VARCHAR(90)  DEFAULT NULL,  -- titre SEO dédié (CTR) ; sinon repli sur title
+    meta_description VARCHAR(200) DEFAULT NULL,  -- meta description dédiée ; sinon repli sur excerpt
     body         MEDIUMTEXT,
     badge        VARCHAR(20) DEFAULT NULL,
     image        VARCHAR(255) DEFAULT NULL,

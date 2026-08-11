@@ -60,8 +60,15 @@ $related = get_articles(['category' => $article['category_slug'] ?? 'news', 'lan
 $related = array_values(array_filter($related, fn($r) => $r['id'] !== $article['id']));
 $related = array_slice($related, 0, 3);
 
-$SEO_TITLE    = $article['title'] . ' — ' . APP_NAME;
-$SEO_DESC     = $article['excerpt'] ?: APP_NAME;
+// Titre & meta SEO : champ dédié (meta_title/meta_description) s'il est renseigné,
+// sinon repli intelligent. La marque n'est ajoutée QUE si le titre est court, pour
+// ne pas se faire tronquer par Google et garder le mot-clé visible (levier CTR).
+$__mt = trim((string) ($article['meta_title'] ?? ''));
+$SEO_TITLE = $__mt !== ''
+    ? $__mt
+    : ($article['title'] . (mb_strlen((string) $article['title']) <= 52 ? ' — ' . APP_NAME : ''));
+$__md = trim((string) ($article['meta_description'] ?? ''));
+$SEO_DESC = $__md !== '' ? $__md : ($article['excerpt'] ?: APP_NAME);
 $SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : (cdn_url('brand-cover.png') ?: asset('img/og-default.svg'));
 
 // URL absolue de l'article (pour og:type=article + schema enrichi)

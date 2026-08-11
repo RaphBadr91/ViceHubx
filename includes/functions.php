@@ -1640,6 +1640,30 @@ function set_setting(string $key, string $value): void
 }
 
 /**
+ * Garantit les colonnes SEO dédiées `meta_title` / `meta_description` sur `articles`
+ * (titre & meta rédigés pour le CTR, distincts du H1/extrait). Best-effort, une fois.
+ */
+function article_ensure_seo_cols(): void
+{
+    static $done = false;
+    if ($done) { return; }
+    $done = true;
+    try {
+        $n = (int) db()->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles'
+               AND COLUMN_NAME IN ('meta_title', 'meta_description')"
+        )->fetchColumn();
+        if ($n < 2) {
+            try { db()->exec("ALTER TABLE articles ADD COLUMN meta_title VARCHAR(90) DEFAULT NULL"); } catch (Throwable $e) {}
+            try { db()->exec("ALTER TABLE articles ADD COLUMN meta_description VARCHAR(200) DEFAULT NULL"); } catch (Throwable $e) {}
+        }
+    } catch (Throwable $e) {
+        // Colonnes déjà présentes ou droits DDL limités : on continue.
+    }
+}
+
+/**
  * Profils sociaux publics du média (renseignés dans Admin → Réglages).
  * Sert à deux choses cruciales pour être reconnu comme ENTITÉ par Google
  * (et cité dans l'Aperçu IA) : le `sameAs` du schéma Organization + les
