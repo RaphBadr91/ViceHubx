@@ -81,7 +81,7 @@ require ROOT_PATH . '/includes/header.php';
     <h2><?= $fr ? 'Ce qui est confirmé' : 'What\'s confirmed' ?></h2>
     <ul>
         <li><?= $fr ? '<strong>Sortie console :</strong> 19 novembre 2026, sur PS5 et Xbox Series X|S.' : '<strong>Console release:</strong> November 19, 2026, on PS5 and Xbox Series X|S.' ?></li>
-        <li><?= $fr ? '<strong>Éditions &amp; prix :</strong> non officiellement annoncés par Rockstar — les chiffres évoqués (~79,99 $ / 99,99 $) sont des estimations de la communauté, à confirmer.' : '<strong>Editions &amp; pricing:</strong> not officially announced by Rockstar — figures circulating (~$79.99 / $99.99) are community estimates, unconfirmed.' ?></li>
+        <li><?= $fr ? '<strong>Éditions &amp; prix :</strong> Standard à 79,99 $ et Ultimate à 99,99 $, officialisés par Rockstar (juin 2026). L\'Ultimate ajoute véhicules, armes et tenues exclusifs ; bonus de précommande : le Vintage Vice City Pack.' : '<strong>Editions &amp; pricing:</strong> Standard $79.99 and Ultimate $99.99, officially confirmed by Rockstar (June 2026). Ultimate adds exclusive vehicles, weapons and outfits; pre-order bonus: the Vintage Vice City Pack.' ?></li>
         <li><?= $fr ? '<strong>Version PC :</strong> non annoncée officiellement à ce jour.' : '<strong>PC version:</strong> not officially announced as of today.' ?></li>
     </ul>
 
