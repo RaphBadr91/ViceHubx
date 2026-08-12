@@ -29,29 +29,47 @@ $SEO_DESC     = mb_substr(trim(strip_tags((string) ($product['description'] ?: $
 // Photo du produit (résolution locale WebP / CDN), comme pour les articles.
 $SEO_OG_IMAGE = !empty($product['image']) ? img_src($product['image']) : asset('img/og-default.svg');
 
-$JSONLD = [
-    '@context'    => 'https://schema.org',
+$__base = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : site_base_url();
+$productUrl = $__base . '/produit/' . rawurlencode((string) $product['slug']);
+$__prod = [
     '@type'       => 'Product',
     'name'        => $product['name'],
     'description' => $product['description'] ?: $product['name'],
     'category'    => $cats[$product['category']] ?? $product['category'],
     'brand'       => ['@type' => 'Brand', 'name' => APP_NAME],
+    'sku'         => 'VHX-' . (int) $product['id'],
+    'url'         => $productUrl,
 ];
 if (!empty($product['image'])) {
-    $JSONLD['image'] = preg_match('#^https?://#', $SEO_OG_IMAGE)
+    $__prod['image'] = preg_match('#^https?://#', $SEO_OG_IMAGE)
         ? $SEO_OG_IMAGE
-        : site_base_url() . '/' . ltrim($SEO_OG_IMAGE, '/');
+        : $__base . '/' . ltrim($SEO_OG_IMAGE, '/');
 }
 if ($product['price'] !== null && $product['price'] !== '') {
-    $JSONLD['offers'] = [
+    $__prod['offers'] = [
         '@type'         => 'Offer',
         'price'         => number_format((float) $product['price'], 2, '.', ''),
-        'priceCurrency' => active_currency(),
+        'priceCurrency' => $product['currency'] ?: active_currency(),
         'availability'  => 'https://schema.org/InStock',
-        'url'           => $product['url'],
+        'itemCondition' => 'https://schema.org/NewCondition',
+        'url'           => $productUrl,
         'seller'        => ['@type' => 'Organization', 'name' => $product['merchant'] ?: APP_NAME],
     ];
 }
+$JSONLD = [
+    '@context' => 'https://schema.org',
+    '@graph'   => [
+        $__prod,
+        [
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => [
+                ['@type' => 'ListItem', 'position' => 1, 'name' => lang() === 'fr' ? 'Accueil' : 'Home', 'item' => $__base . '/'],
+                ['@type' => 'ListItem', 'position' => 2, 'name' => t('page_shop_title'), 'item' => $__base . '/shop'],
+                ['@type' => 'ListItem', 'position' => 3, 'name' => $product['name']],
+            ],
+        ],
+    ],
+];
 
 require ROOT_PATH . '/includes/header.php';
 ?>
