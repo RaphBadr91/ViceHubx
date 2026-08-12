@@ -50,6 +50,7 @@ $nav = [
     ]],
     ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
         ['gta6.php',        lang() === 'fr' ? '🎮 GTA 6 : tout savoir' : '🎮 GTA 6: everything'],
+        ['gta6-pc.php',     lang() === 'fr' ? '🖥️ GTA 6 sur PC' : '🖥️ GTA 6 on PC'],
         ['gta6-vs-gta5.php', lang() === 'fr' ? '⚔️ GTA 6 vs GTA 5' : '⚔️ GTA 6 vs GTA 5'],
         ['dossier.php',     lang() === 'fr' ? 'Le Dossier' : 'The Files'],
         ['map.php',         t('nav_map')],
