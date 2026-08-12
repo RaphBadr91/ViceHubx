@@ -1595,3 +1595,21 @@ body.is-wanted .vhud__radar { border-color: rgba(255,46,136,.85); box-shadow: in
 .lore-links__col li { margin: 0 0 .35rem; }
 .lore-links__col li a { color: var(--text); text-decoration: none; font-size: .9rem; line-height: 1.35; display: inline-block; border-bottom: 1px solid transparent; transition: color .2s, border-color .2s; }
 .lore-links__col li a:hover { color: #fff; border-bottom-color: rgba(255,46,136,.6); }
+
+/* ---------- Bandeau TOP news (événement) ---------- */
+.top-news-bar {
+    display: flex; align-items: center; gap: .7rem; justify-content: center;
+    padding: .6rem 1rem; text-align: center; text-decoration: none;
+    background: linear-gradient(90deg, rgba(255,46,136,.96), rgba(122,63,255,.96));
+    color: #fff; font-weight: 600; font-size: .92rem; line-height: 1.3;
+    border-bottom: 1px solid rgba(255,255,255,.15);
+}
+.top-news-bar:hover { filter: brightness(1.08); }
+.top-news-bar__tag {
+    background: rgba(0,0,0,.28); padding: .2rem .55rem; border-radius: 999px;
+    font-weight: 800; font-size: .78rem; white-space: nowrap;
+    animation: vhxPulse 1.6s ease-in-out infinite;
+}
+.top-news-bar__txt { max-width: 900px; }
+@keyframes vhxPulse { 0%,100% { opacity: 1 } 50% { opacity: .55 } }
+@media (max-width: 560px) { .top-news-bar { font-size: .82rem; padding: .55rem .7rem } }

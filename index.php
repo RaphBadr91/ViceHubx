@@ -88,7 +88,20 @@ $JSONLD = [
         : 'Independent GTA VI media: news, guides, leaks and analysis.',
 ];
 require __DIR__ . '/includes/header.php';
+
+// ============ BANDEAU TOP NEWS (événement gameplay GTA 6 — auto-masqué après) ============
+// Affiché jusqu'au lendemain de l'événement (28 août 2026, ~06h UTC), puis disparaît seul.
+$__topNewsUntil = 1787896800; // 2026-08-28 06:00:00 UTC (lendemain de l'événement)
+$__showTopNews  = time() < $__topNewsUntil;
 ?>
+<?php if ($__showTopNews): ?>
+<a class="top-news-bar" href="<?= e(with_lang(url('pages/gta6-extended-look.php'))) ?>">
+    <span class="top-news-bar__tag">🔴 <?= lang() === 'fr' ? 'TOP' : 'BREAKING' ?></span>
+    <span class="top-news-bar__txt"><?= lang() === 'fr'
+        ? 'Gameplay GTA 6 en avant-première Netflix le 27 août — puis GRATUIT sur YouTube à 3h. Comment regarder →'
+        : 'GTA 6 gameplay premieres on Netflix Aug 27 — then FREE on YouTube. How to watch →' ?></span>
+</a>
+<?php endif; ?>
 
 <!-- ============ HERO ============ -->
 <section class="hero">

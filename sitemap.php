@@ -16,6 +16,7 @@ $abs = static function (string $path) use ($base): string {
 
 $urls = [
     ['index.php', 'daily', '1.0'],
+    ['pages/gta6-extended-look.php', 'daily', '0.9'],
     ['pages/gta6.php', 'weekly', '0.9'],
     ['pages/gta6-pc.php', 'daily', '0.9'],
     ['pages/gta6-vs-gta5.php', 'monthly', '0.8'],
@@ -86,7 +87,7 @@ $clean = static function (string $p): string {
 };
 
 // Piliers bilingues servis via ?lang= : on annonce l'alternance FR/EN.
-$biPillars = ['gta6-pc', 'gta6-trailer-2-analyse'];
+$biPillars = ['gta6-pc', 'gta6-trailer-2-analyse', 'gta6-extended-look'];
 foreach ($urls as [$path, $freq, $prio]) {
     $cp   = $clean($path);
     $loc  = $abs($cp);

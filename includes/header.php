@@ -44,6 +44,7 @@ $og_image_abs = (function ($img) use ($site_base) {
 
 $nav = [
     ['label' => lang() === 'fr' ? 'Actus' : 'News', 'children' => [
+        ['gta6-extended-look.php', lang() === 'fr' ? '🔴 Gameplay Netflix 27/08' : '🔴 Netflix Gameplay Aug 27'],
         ['news.php',        t('nav_news')],
         ['blog.php',        'Blog'],
         ['guides.php',      t('nav_guides')],
