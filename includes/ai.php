@@ -913,6 +913,34 @@ function ai_queue_add(int $n, string $status, string $tone = 'multi', string $la
 }
 
 /**
+ * File de BRIEFS : sujets PRÉCIS fournis par l'admin (≠ sujets auto aléatoires).
+ * Idéal le jour d'un gros événement (ex. reveal GTA 6) : on colle une ligne par
+ * angle observé, l'IA écrit un article complet pour chacun. Drainée par le même
+ * worker en arrière-plan. @return nombre de briefs ajoutés.
+ */
+function ai_brief_add(array $briefs, string $status = 'published', string $lang = 'fr'): int
+{
+    $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'published';
+    $lang   = in_array($lang, ['fr', 'en'], true) ? $lang : 'fr';
+    $q = json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: [];
+    $added = 0;
+    foreach ($briefs as $b) {
+        $b = trim((string) $b);
+        if ($b === '') { continue; }
+        $q[] = ['t' => mb_substr($b, 0, 400), 's' => $status, 'l' => $lang];
+        $added++;
+    }
+    set_setting('ai_brief_queue', json_encode(array_slice($q, 0, 100), JSON_UNESCAPED_UNICODE));
+    return $added;
+}
+
+/** Nombre de briefs en attente. */
+function ai_brief_count(): int
+{
+    return count(json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: []);
+}
+
+/**
  * VIDE la file de génération (worker en arrière-plan). Un verrou évite que deux
  * process génèrent en double. $budgetSeconds = 0 → aucune limite (draine tout).
  * @return int nombre d'articles générés
@@ -932,6 +960,27 @@ function ai_drain_queue(int $budgetSeconds = 0): int
     $authorId = ai_admin_author_id();
     $deadline = $budgetSeconds > 0 ? time() + $budgetSeconds : PHP_INT_MAX;
     $done = 0;
+
+    // 1) D'ABORD les BRIEFS (sujets précis fournis — priorité, ex. jour du reveal GTA 6).
+    $briefs = json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: [];
+    while ($briefs && time() < $deadline) {
+        $item = array_shift($briefs);
+        // On retire le brief AVANT de générer (évite un doublon si le process est tué en cours).
+        set_setting('ai_brief_queue', json_encode(array_values($briefs), JSON_UNESCAPED_UNICODE));
+        try {
+            $bStatus = in_array(($item['s'] ?? 'published'), ['draft', 'pending', 'published'], true) ? $item['s'] : 'published';
+            $bLang   = in_array(($item['l'] ?? 'fr'), ['fr', 'en'], true) ? $item['l'] : 'fr';
+            $art = ai_generate_article((string) ($item['t'] ?? ''), ai_resolve_tone($toneSel, $done), $bLang);
+            ai_save_article($art, $bStatus, $authorId);
+            $done++;
+        } catch (Throwable $e) {
+            break; // erreur API : on s'arrête, on reprendra plus tard
+        }
+        set_setting('ai_worker_lock', (string) time());
+        $briefs = json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: []; // re-lit (ajouts concurrents)
+    }
+
+    // 2) PUIS la file "auto" (sujets aléatoires du pool).
     while ((int) get_setting('ai_gen_queue', '0') > 0 && time() < $deadline) {
         try {
             // Multi → chaque article change de personnalité/langue (rotation) ; sinon fixe.

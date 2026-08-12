@@ -152,6 +152,25 @@ if ($act === 'generate') {
     }
 }
 
+// --- Articles express depuis des BRIEFS (sujets précis, ex. jour du reveal) ---
+if ($act === 'generate_briefs') {
+    $raw    = (string) ($_POST['briefs'] ?? '');
+    $lines  = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw))));
+    $status = in_array($_POST['b_status'] ?? 'published', ['draft', 'pending', 'published'], true) ? $_POST['b_status'] : 'published';
+    $lang   = in_array($_POST['b_lang'] ?? 'fr', ['fr', 'en'], true) ? $_POST['b_lang'] : 'fr';
+    if (!ai_enabled()) {
+        $flash = ['err', 'Connecte d’abord ta clé API Anthropic ci-dessous.'];
+    } elseif (!$lines) {
+        $flash = ['err', 'Colle au moins un sujet (une ligne = un article).'];
+    } else {
+        $added   = ai_brief_add($lines, $status, $lang);
+        $spawned = ai_spawn_worker();
+        $flash = ['ok', "⚡ {$added} article(s) express en génération EN ARRIÈRE-PLAN"
+            . ($status === 'published' ? ' (publication immédiate au fil de l\'eau).' : '.')
+            . ($spawned ? '' : ' ⚠️ Lancement direct indisponible : le CRON les générera.')];
+    }
+}
+
 // --- Publier / supprimer un article IA ---
 if ($act === 'publish') {
     db()->prepare("UPDATE articles SET status='published', published_at=COALESCE(published_at, NOW()) WHERE id=?")
@@ -245,6 +264,36 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
             <strong>IA <?= $enabled ? 'connectée' : 'non connectée' ?></strong>
             <p class="muted" style="margin:.2rem 0 0">Modèle : <code><?= e(ai_model()) ?></code><?= $enabled ? '' : ' — ajoute ta clé Anthropic ci-dessous pour activer la génération.' ?></p>
         </div>
+    </div>
+
+    <!-- Articles express (briefs = sujets précis fournis) -->
+    <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(255,46,136,.45)">
+        <h2 style="margin-top:0">⚡ Articles express — sujets précis (jour J)</h2>
+        <p class="muted" style="font-size:.85rem;margin:.2rem 0 .8rem">Colle <strong>un sujet par ligne</strong>. L'IA écrit un article complet pour chacun, en arrière-plan. Idéal pour être <strong>le premier</strong> à couvrir un événement (ex. le jour du gameplay GTA 6 : note ce que tu vois, une ligne par angle).</p>
+        <form method="post">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="generate_briefs">
+            <textarea name="briefs" rows="6" style="width:100%;font-size:.9rem;padding:.6rem;border-radius:10px" placeholder="GTA 6 gameplay : tous les véhicules confirmés dans la vidéo&#10;GTA 6 gameplay : les lieux de Leonida montrés dans le trailer&#10;GTA 6 gameplay : les nouvelles mécaniques dévoilées (tir, conduite, police)&#10;GTA 6 gameplay : ce que la vidéo confirme sur Jason et Lucia"></textarea>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;margin-top:.7rem">
+                <label>Statut
+                    <select name="b_status" style="display:block;margin-top:.3rem">
+                        <option value="published">🚀 Publier tout de suite</option>
+                        <option value="draft">📝 Brouillon (relire)</option>
+                        <option value="pending">⏱️ Programmé CRON</option>
+                    </select>
+                </label>
+                <label>Langue
+                    <select name="b_lang" style="display:block;margin-top:.3rem">
+                        <option value="fr">🇫🇷 Français</option>
+                        <option value="en">🇬🇧 English</option>
+                    </select>
+                </label>
+                <button class="btn btn--primary" type="submit" <?= $enabled ? '' : 'disabled' ?>>⚡ Générer les articles</button>
+            </div>
+        </form>
+        <?php $bq = ai_brief_count(); ?>
+        <?php if ($bq > 0): ?><div class="alert alert--ok" style="margin:.9rem 0 0">⏳ <strong><?= $bq ?></strong> brief(s) en cours de génération en arrière-plan…</div><?php endif; ?>
+        <p class="muted" style="font-size:.8rem;margin:.7rem 0 0">💡 Astuce fiabilité : formule tes briefs à partir de ce qui est <strong>réellement montré/confirmé</strong>. L'IA distingue faits et rumeurs, mais c'est TON observation qui garantit l'exactitude et la primeur.</p>
     </div>
 
     <!-- Génération -->
