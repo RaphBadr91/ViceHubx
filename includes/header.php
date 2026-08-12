@@ -47,6 +47,7 @@ $nav = [
         ['guides.php',      t('nav_guides')],
         ['leaks-lab.php',   t('nav_leaks')],
         ['trailer-lab.php', t('nav_trailer')],
+        ['gta6-trailer-2-analyse.php', lang() === 'fr' ? '🎬 Analyse Trailer 2' : '🎬 Trailer 2 Breakdown'],
     ]],
     ['label' => lang() === 'fr' ? 'Univers' : 'Universe', 'children' => [
         ['gta6.php',        lang() === 'fr' ? '🎮 GTA 6 : tout savoir' : '🎮 GTA 6: everything'],

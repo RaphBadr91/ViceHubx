@@ -25,6 +25,7 @@ $urls = [
     ['pages/guides.php', 'weekly', '0.8'],
     ['pages/leaks-lab.php', 'daily', '0.8'],
     ['pages/trailer-lab.php', 'weekly', '0.7'],
+    ['pages/gta6-trailer-2-analyse.php', 'weekly', '0.8'],
     ['pages/map.php', 'monthly', '0.7'],
     ['pages/dossier.php', 'weekly', '0.8'],
     ['pages/quiz.php', 'monthly', '0.6'],
