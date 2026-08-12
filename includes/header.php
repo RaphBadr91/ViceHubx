@@ -211,8 +211,9 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <?php endif; ?>
 </head>
 <?php
-// Bandeau TOP news (événement gameplay GTA 6) — auto-masqué après le 28/08/2026 06h UTC.
-$__topbar = time() < 1787896800;
+// Bandeau TOP news (événement gameplay GTA 6) — se retire tout seul le
+// 28 août 2026 à 10h00 (heure de Paris) ; ensuite l'accueil redevient normal.
+$__topbar = time() < 1787904000; // 2026-08-28 08:00 UTC = 10h00 CEST (Paris)
 ?>
 <body class="<?= e(trim($BODY_CLASS . ($__topbar ? ' has-topbar' : ''))) ?>">
 <a class="skip-link" href="#main"><?= lang() === 'fr' ? 'Aller au contenu' : 'Skip to content' ?></a>
