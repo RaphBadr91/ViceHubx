@@ -1598,13 +1598,18 @@ body.is-wanted .vhud__radar { border-color: rgba(255,46,136,.85); box-shadow: in
 
 /* ---------- Bandeau TOP news (événement) ---------- */
 .top-news-bar {
+    position: relative; z-index: 120;   /* au-dessus du header, en flux normal */
     display: flex; align-items: center; gap: .7rem; justify-content: center;
     padding: .6rem 1rem; text-align: center; text-decoration: none;
     background: linear-gradient(90deg, rgba(255,46,136,.96), rgba(122,63,255,.96));
-    color: #fff; font-weight: 600; font-size: .92rem; line-height: 1.3;
-    border-bottom: 1px solid rgba(255,255,255,.15);
+    color: #fff; font-weight: 700; font-size: .92rem; line-height: 1.3;
+    border-bottom: 1px solid rgba(255,255,255,.18);
 }
 .top-news-bar:hover { filter: brightness(1.08); }
+/* Accueil : le header est en position:fixed → on le décale SOUS le bandeau au
+   repos, puis il se colle en haut dès que le bandeau a défilé (classe .scrolled). */
+body.has-topbar.is-home .site-header { top: var(--topbar-h, 46px); }
+body.has-topbar.is-home .site-header.scrolled { top: 0; }
 .top-news-bar__tag {
     background: rgba(0,0,0,.28); padding: .2rem .55rem; border-radius: 999px;
     font-weight: 800; font-size: .78rem; white-space: nowrap;

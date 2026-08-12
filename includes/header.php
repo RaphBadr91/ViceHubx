@@ -210,8 +210,21 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
             crossorigin="anonymous"></script>
     <?php endif; ?>
 </head>
-<body class="<?= e($BODY_CLASS) ?>">
+<?php
+// Bandeau TOP news (événement gameplay GTA 6) — auto-masqué après le 28/08/2026 06h UTC.
+$__topbar = time() < 1787896800;
+?>
+<body class="<?= e(trim($BODY_CLASS . ($__topbar ? ' has-topbar' : ''))) ?>">
 <a class="skip-link" href="#main"><?= lang() === 'fr' ? 'Aller au contenu' : 'Skip to content' ?></a>
+<?php if ($__topbar): ?>
+<a class="top-news-bar" id="vhx-topbar" href="<?= e(with_lang(url('pages/gta6-extended-look.php'))) ?>">
+    <span class="top-news-bar__tag">🔴 <?= lang() === 'fr' ? 'TOP' : 'LIVE' ?></span>
+    <span class="top-news-bar__txt"><?= lang() === 'fr'
+        ? 'Gameplay GTA 6 en avant-première Netflix le 27 août — puis GRATUIT sur YouTube à 3h →'
+        : 'GTA 6 gameplay premieres on Netflix Aug 27 — then FREE on YouTube →' ?></span>
+</a>
+<script>(function(){var b=document.getElementById('vhx-topbar');if(!b)return;function s(){document.documentElement.style.setProperty('--topbar-h',b.offsetHeight+'px');}s();window.addEventListener('resize',s);})();</script>
+<?php endif; ?>
 
 <!-- Écran de chargement -->
 <?php
