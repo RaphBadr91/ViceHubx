@@ -84,10 +84,10 @@
 ## 5) GTA 6 Wanted Level & Police — `gta-6-wanted-level-police…`
 
 **Answer-box (EN) :**
-> GTA 6 keeps the series' star-based wanted system: commit crimes, raise your
-> stars, and police escalate the response. Trailers show an active Leonida police
-> presence, but Rockstar hasn't detailed the exact 2026 wanted mechanics — so the
-> finer rules remain partly unconfirmed.
+> GTA 6 is expected to keep the series' star-based wanted system: commit crimes,
+> raise your stars, and police escalate the response. Trailers show an active
+> Leonida police presence, but Rockstar hasn't detailed the exact 2026 wanted
+> mechanics, so the finer rules remain unconfirmed for now.
 
 **FAQ :**
 - **Q: How does the wanted level work in GTA 6?** — A: It follows the classic star system — more stars means a tougher police response — though GTA 6's specific tuning hasn't been officially detailed.

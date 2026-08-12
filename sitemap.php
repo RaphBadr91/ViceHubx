@@ -20,7 +20,6 @@ $urls = [
     ['pages/gta6-pc.php', 'daily', '0.9'],
     ['pages/gta6-vs-gta5.php', 'monthly', '0.8'],
     ['pages/news.php', 'daily', '0.9'],
-    ['pages/recherche.php', 'monthly', '0.4'],
     ['pages/blog.php', 'daily', '0.8'],
     ['pages/guides.php', 'weekly', '0.8'],
     ['pages/leaks-lab.php', 'daily', '0.8'],
@@ -86,8 +85,18 @@ $clean = static function (string $p): string {
     return (string) preg_replace('#^pages/([a-z0-9-]+)\.php$#', '$1', $p);
 };
 
+// Piliers bilingues servis via ?lang= : on annonce l'alternance FR/EN.
+$biPillars = ['gta6-pc', 'gta6-trailer-2-analyse'];
 foreach ($urls as [$path, $freq, $prio]) {
-    echo '  <url><loc>' . e($abs($clean($path))) . '</loc><changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
+    $cp   = $clean($path);
+    $loc  = $abs($cp);
+    $alts = '';
+    if (in_array($cp, $biPillars, true)) {
+        $alts = '<xhtml:link rel="alternate" hreflang="fr" href="' . e($loc) . '"/>'
+              . '<xhtml:link rel="alternate" hreflang="en" href="' . e($loc . '?lang=en') . '"/>'
+              . '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($loc . '?lang=en') . '"/>';
+    }
+    echo '  <url><loc>' . e($loc) . '</loc>' . $alts . '<changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
 }
 $artUrl = static function (string $slug) use ($abs): string {
     return $abs('article/' . rawurlencode($slug));

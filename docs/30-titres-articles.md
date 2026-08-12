@@ -5,8 +5,8 @@
 > relie automatiquement via source_id → hreflang). Chaque ligne = 1 requête cible réelle (GSC).
 
 ## 🔴 Vague 1 — Consolider les clusters DÉJÀ en page 1 (semaines 1-2)
-1. **EN** `GTA 6 Engine: Is Rockstar Using RAGE? (2026 Confirmed)` — *gta 6 engine / rage engine*
-2. **FR** `Moteur de GTA 6 : RAGE confirmé ? Tout ce qu'on sait (2026)`
+1. **EN** `GTA 6 Engine: Is It Really RAGE? What We Know (2026)` — *gta 6 engine / rage engine* — ⚠️ pas de « Confirmed » (moteur non officiellement nommé par Rockstar)
+2. **FR** `Moteur de GTA 6 : RAGE ? Tout ce qu'on sait vraiment (2026)`
 3. **EN** `Is GTA 6 Campaign Co-Op? Everything We Know (2026)` — *gta 6 co op campaign*
 4. **FR** `GTA 6 en coop ? Ce que Rockstar a confirmé (2026)`
 5. **EN** `GTA 6 Driving Physics: What's New vs GTA 5 (2026)` — *gta 6 driving physics*
@@ -16,7 +16,7 @@
 9. **FR** `GTA 6 Standard ou Ultimate : quelle édition choisir ? (2026)`
 
 ## 🟠 Vague 2 — Cluster PC + personnages (semaines 3-4)
-10. **EN** `GTA 6 PC Release Date: When Is It Coming? (2026)` — *gta 6 pc release date* (soutient le pilier /gta6-pc)
+10. **EN** `GTA 6 on PC: Why Rockstar Always Delays the Port (2026)` — *gta 6 pc* — ⚠️ angle DISTINCT du pilier /gta6-pc (ne pas dupliquer son titre) + lien interne vers le pilier
 11. **EN** `Will GTA 6 Be on Steam and Epic Games? (2026)` — *gta 6 steam*
 12. **EN** `Jason Duval: GTA 6's Male Protagonist Explained (2026)` — *jason duval*
 13. **FR** `Jason Duval : le héros de GTA 6 décrypté (2026)`
@@ -27,10 +27,10 @@
 ## 🟠 Vague 3 — Gameplay & mécaniques (mois 2)
 17. **EN** `GTA 6 Map Size: How Big Is Leonida? (2026)` — *gta 6 map size*
 18. **EN** `GTA 6 NPC AI: How Rockstar Builds a Living City (2026)` — *gta 6 ai npc*
-19. **EN** `GTA 6 vs GTA 5: 12 Biggest Confirmed Changes (2026)` — *gta 6 vs gta 5*
-20. **FR** `GTA 6 vs GTA 5 : 12 changements confirmés (2026)`
-21. **EN** `GTA 6 Gameplay Mechanics: 8 Confirmed Features (2026)` — *gta 6 mechanics*
-22. **EN** `GTA 6 Radio Stations: V-Rock & Every Confirmed Track` — *gta 6 radio / v-rock*
+19. **EN** `GTA 6 vs GTA 5: 12 Biggest Changes We Expect (2026)` — *gta 6 vs gta 5* — ⚠️ « We Expect », pas « Confirmed »
+20. **FR** `GTA 6 vs GTA 5 : 12 changements attendus (2026)`
+21. **EN** `GTA 6 Gameplay: 8 Features We Expect (2026)` — *gta 6 mechanics* — ⚠️ « We Expect », pas « Confirmed »
+22. **EN** `GTA 6 Radio Stations: V-Rock & What We Know (2026)` — *gta 6 radio / v-rock* — ⚠️ aucune tracklist confirmée ; V-Rock = attendu
 23. **EN** `PS5 vs Xbox Series X for GTA 6: Which Runs Better?` — *gta 6 ps5 vs xbox* (article maître unique)
 
 ## 🟢 Vague 4 — Pré-lancement & longue traîne (octobre)
@@ -38,7 +38,7 @@
 25. **EN** `GTA 6 Trailer 2: Every Detail Spotted (2026)` — *gta 6 trailer 2* (renvoie vers /gta6-trailer-2-analyse)
 26. **EN** `How Much Did GTA 6 Cost Rockstar to Make? (2026)` — *combien a coûté gta 6*
 27. **FR** `Combien a coûté GTA 6 à Rockstar ? (2026)`
-28. **EN** `Will [Streamer] Be in GTA 6? What We Know (2026)` — *will X be in gta 6* (format court, réactif)
+28. **EN** `Will IShowSpeed Be in GTA 6? What We Know (2026)` — *will X be in gta 6* — ⚠️ remplacer par un nom RÉEL à chaque fois (jamais de `[placeholder]`) + cadrer en rumeur non confirmée
 29. **EN** `GTA 6 Online: Everything We Know So Far (2026)` — *gta 6 online*
 30. **EN** `GTA 6 Cheats: Will There Be Cheat Codes? (2026)` — *gta 6 cheats*
 

@@ -13,21 +13,27 @@ $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' :
 $base   = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'vicehubx.com');
 $self   = $base . '/gta6-trailer-2-analyse';
 
+// Chaque langue auto-canonique + hreflang réciproques (correctif panel SEO).
+$CANONICAL    = (lang() === 'en') ? $self . '?lang=en' : $self;
+$HREFLANG_ALT = ['fr' => $self, 'en' => $self . '?lang=en'];
+$pubDate = '2026-08-12';
+$modDate = '2026-08-12';
+
 $SEO_TITLE = $fr
-    ? 'GTA 6 Trailer 2 : analyse détaillée, tout ce qu\'on a repéré (2026)'
-    : 'GTA 6 Trailer 2: Full Breakdown & Every Detail Spotted (2026)';
+    ? 'GTA 6 Trailer 2 : ce qui est confirmé et ce qui reste rumeur (2026)'
+    : 'GTA 6 Trailer 2: What\'s Confirmed vs Rumor (2026)';
 $SEO_DESC = $fr
-    ? 'Analyse complète du trailer 2 de GTA 6 : personnages, lieux de Leonida, véhicules et indices confirmés — et ce qui reste une rumeur. Le décryptage image par image.'
-    : 'A full breakdown of the GTA 6 Trailer 2: characters, Leonida locations, vehicles and confirmed clues — plus what\'s still rumor. The frame-by-frame analysis.';
+    ? 'Trailer 2 de GTA 6 : ce que Rockstar confirme (Vice City, Leonida, Jason & Lucia, 19/11/2026) et ce qui reste une rumeur. On fait le tri, clairement.'
+    : 'GTA 6 Trailer 2: what Rockstar confirms (Vice City, Leonida, Jason & Lucia, Nov 19 2026) and what\'s still rumor. A clear, sourced breakdown.';
 $SEO_OG_IMAGE = cdn_url('downtown.png');
 
 $faq = $fr ? [
-    ['Quand est sorti le trailer 2 de GTA 6 ?', 'Le premier trailer de GTA 6 est sorti en décembre 2023 et le deuxième en 2025. Ils présentent Vice City et l\'État de Leonida, ainsi que les deux protagonistes Jason Duval et Lucia Caminos.'],
+    ['Quand est sorti le trailer 2 de GTA 6 ?', 'Le deuxième trailer de GTA 6 est sorti en 2025 (le premier en décembre 2023). Ils présentent Vice City et l\'État de Leonida, ainsi que les deux protagonistes Jason Duval et Lucia Caminos.'],
     ['Qui sont les personnages du trailer 2 de GTA 6 ?', 'Le duo principal est Jason Duval et Lucia Caminos — Lucia étant la première protagoniste féminine de la série principale. D\'autres personnages apparaissent mais ne sont pas officiellement nommés.'],
     ['Où se déroule GTA 6 d\'après le trailer ?', 'Dans l\'État fictif de Leonida (inspiré de la Floride), avec le retour de Vice City. Les trailers montrent plages, quartiers néon, marécages et zones urbaines denses.'],
     ['Le trailer 2 confirme-t-il la date de sortie ?', 'Oui : GTA 6 est annoncé pour le 19 novembre 2026 sur PS5 et Xbox Series X|S. La version PC n\'a pas de date officielle.'],
 ] : [
-    ['When did the GTA 6 Trailer 2 release?', 'GTA 6\'s first trailer released in December 2023 and the second in 2025. They showcase Vice City and the state of Leonida, plus the two protagonists Jason Duval and Lucia Caminos.'],
+    ['When did the GTA 6 Trailer 2 release?', 'GTA 6\'s second trailer released in 2025 (the first came in December 2023). They showcase Vice City and the state of Leonida, plus the two protagonists Jason Duval and Lucia Caminos.'],
     ['Who are the characters in GTA 6 Trailer 2?', 'The main duo is Jason Duval and Lucia Caminos — Lucia being the first female protagonist in the main series. Other characters appear but are not officially named.'],
     ['Where is GTA 6 set based on the trailer?', 'In the fictional state of Leonida (inspired by Florida), with the return of Vice City. The trailers show beaches, neon districts, swamps and dense urban areas.'],
     ['Does Trailer 2 confirm the release date?', 'Yes: GTA 6 is announced for November 19, 2026 on PS5 and Xbox Series X|S. The PC version has no official date.'],
@@ -43,6 +49,7 @@ $JSONLD = [
          ], $faq)],
         ['@type' => 'Article', '@id' => $self . '#article',
          'headline' => $SEO_TITLE, 'description' => $SEO_DESC, 'inLanguage' => lang(),
+         'datePublished' => $pubDate, 'dateModified' => $modDate,
          'author' => ['@id' => $base . '/#org'], 'publisher' => ['@id' => $base . '/#org'],
          'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $self]],
     ],
@@ -52,7 +59,8 @@ require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
     <span class="eyebrow">🎬 GTA 6 · Trailer 2</span>
-    <h1><?= $fr ? 'GTA 6 Trailer 2 : analyse détaillée' : 'GTA 6 Trailer 2: Full Breakdown' ?></h1>
+    <h1><?= $fr ? 'GTA 6 Trailer 2 : confirmé vs rumeur' : 'GTA 6 Trailer 2: Confirmed vs Rumor' ?></h1>
+    <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
 
     <div class="lore-block glass" style="margin:1rem 0 1.6rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.15rem;margin:0"><strong><?= $fr
@@ -66,8 +74,10 @@ require ROOT_PATH . '/includes/header.php';
         <li><strong>Jason Duval & Lucia Caminos</strong> — <?= $fr ? 'le duo de protagonistes ; Lucia est la 1re héroïne de la série principale.' : 'the protagonist duo; Lucia is the main series\' first female lead.' ?></li>
         <li><strong><?= $fr ? 'Date de sortie' : 'Release date' ?></strong> — 19/11/2026 (PS5, Xbox Series X|S).</li>
         <li><strong><?= $fr ? 'Ambiance' : 'Atmosphere' ?></strong> — <?= $fr ? 'plages, néons, marécages, foules denses, cycle jour/nuit, météo dynamique.' : 'beaches, neon, swamps, dense crowds, day/night cycle, dynamic weather.' ?></li>
-        <li><strong><?= $fr ? 'Moteur' : 'Engine' ?></strong> — RAGE (<?= $fr ? 'éclairage et densité nouvelle génération.' : 'next-gen lighting and density.' ?>)</li>
     </ul>
+    <p class="muted" style="font-size:.9rem"><?= $fr
+        ? '<strong>À noter :</strong> le moteur n\'est pas officiellement nommé par Rockstar — il s\'agit très probablement d\'une évolution de RAGE (moteur maison depuis GTA IV), mais ce n\'est pas une confirmation officielle.'
+        : '<strong>Note:</strong> the engine isn\'t officially named by Rockstar — it\'s almost certainly an evolution of RAGE (in-house since GTA IV), but that\'s not an official confirmation.' ?></p>
 
     <h2>🔍 <?= $fr ? 'Détails repérés (à confirmer)' : 'Details spotted (to be confirmed)' ?></h2>
     <p class="muted"><?= $fr

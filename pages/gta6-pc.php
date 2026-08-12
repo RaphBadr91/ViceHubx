@@ -10,6 +10,13 @@ $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' :
 $base   = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'vicehubx.com');
 $self   = $base . '/gta6-pc';
 
+// Chaque langue est auto-canonique (FR = /gta6-pc, EN = /gta6-pc?lang=en) +
+// annonces hreflang réciproques → les 2 langues s'indexent (correctif panel SEO).
+$CANONICAL    = (lang() === 'en') ? $self . '?lang=en' : $self;
+$HREFLANG_ALT = ['fr' => $self, 'en' => $self . '?lang=en'];
+$pubDate = '2026-08-12'; // datePublished ; bumper $modDate à chaque mise à jour
+$modDate = '2026-08-12';
+
 $SEO_TITLE = $fr
     ? 'Date de sortie GTA 6 sur PC : tout ce qu\'on sait (2026)'
     : 'GTA 6 PC Release Date: When Is It Coming? (2026)';
@@ -48,6 +55,8 @@ $JSONLD = [
             'headline' => $SEO_TITLE,
             'description' => $SEO_DESC,
             'inLanguage' => lang(),
+            'datePublished' => $pubDate,
+            'dateModified'  => $modDate,
             'author'    => ['@id' => $base . '/#org'],
             'publisher' => ['@id' => $base . '/#org'],
             'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $self],
@@ -60,6 +69,7 @@ require ROOT_PATH . '/includes/header.php';
 <section class="section" style="max-width:900px">
     <span class="eyebrow">🖥️ GTA 6 · PC</span>
     <h1><?= $fr ? 'Date de sortie de GTA 6 sur PC' : 'GTA 6 PC Release Date' ?></h1>
+    <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
 
     <!-- Answer box : réponse directe en tête (vise le featured snippet / AI Overview) -->
     <div class="lore-block glass" style="margin:1rem 0 1.6rem;border-left:3px solid var(--blue)">
@@ -71,7 +81,7 @@ require ROOT_PATH . '/includes/header.php';
     <h2><?= $fr ? 'Ce qui est confirmé' : 'What\'s confirmed' ?></h2>
     <ul>
         <li><?= $fr ? '<strong>Sortie console :</strong> 19 novembre 2026, sur PS5 et Xbox Series X|S.' : '<strong>Console release:</strong> November 19, 2026, on PS5 and Xbox Series X|S.' ?></li>
-        <li><?= $fr ? '<strong>Éditions :</strong> Standard (79,99 $) et Ultimate (99,99 $).' : '<strong>Editions:</strong> Standard ($79.99) and Ultimate ($99.99).' ?></li>
+        <li><?= $fr ? '<strong>Éditions &amp; prix :</strong> non officiellement annoncés par Rockstar — les chiffres évoqués (~79,99 $ / 99,99 $) sont des estimations de la communauté, à confirmer.' : '<strong>Editions &amp; pricing:</strong> not officially announced by Rockstar — figures circulating (~$79.99 / $99.99) are community estimates, unconfirmed.' ?></li>
         <li><?= $fr ? '<strong>Version PC :</strong> non annoncée officiellement à ce jour.' : '<strong>PC version:</strong> not officially announced as of today.' ?></li>
     </ul>
 

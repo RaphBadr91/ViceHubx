@@ -35,7 +35,9 @@ parse_str((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_QUERY), $__
 foreach ($__noise as $__k) { unset($__q[$__k]); }
 $__qs       = $__q ? '?' . http_build_query($__q) : '';
 $canon_path = $path_only . $__qs;
-$canonical  = $site_base . $canon_path;
+// Une page peut imposer son URL canonique via $CANONICAL (ex. piliers bilingues
+// servis sur une même URL + ?lang= : chaque langue devient ainsi auto-canonique).
+$canonical  = !empty($CANONICAL) ? $CANONICAL : $site_base . $canon_path;
 $og_image_abs = (function ($img) use ($site_base) {
     return preg_match('#^https?://#', (string) $img) ? $img : $site_base . '/' . ltrim((string) $img, '/');
 })($SEO_OG_IMAGE);
