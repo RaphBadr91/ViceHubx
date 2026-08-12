@@ -85,6 +85,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // datetime-local -> ISO
             set_setting('release_date', str_replace(' ', 'T', $rd) . ':00');
         }
+        // --- Image de la page événement GTA 6 (upload prioritaire, sinon URL) ---
+        $evUp = handle_image_upload('event_image_file');
+        if ($evUp) {
+            set_setting('event_image', $evUp);
+        } else {
+            set_setting('event_image', trim((string) ($_POST['event_image'] ?? '')));
+        }
         // --- E-mail / Resend ---
         set_setting('mail_from', trim((string) ($_POST['mail_from'] ?? '')));
         set_setting('mail_from_name', trim((string) ($_POST['mail_from_name'] ?? '')));
@@ -154,13 +161,26 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
 
 <?php if ($flash): ?><div class="alert alert--<?= e($flash[0]) ?>"><?= e($flash[1]) ?></div><?php endif; ?>
 
-<form method="post" class="form glass" style="max-width:680px;padding:1.6rem;border-radius:18px">
+<form method="post" enctype="multipart/form-data" class="form glass" style="max-width:680px;padding:1.6rem;border-radius:18px">
     <?= csrf_field() ?>
 
     <div>
         <label>Date de sortie (compte à rebours)</label>
         <input type="datetime-local" name="release_date" value="<?= e($release_input) ?>">
         <small class="muted">Par défaut : 19 novembre 2026.</small>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">
+    <h2 style="font-size:1.1rem;margin:0 0 .2rem">🎬 Page événement GTA 6 <span class="muted" style="font-size:.85rem">(/gta6-extended-look)</span></h2>
+    <div>
+        <label>Image de l'événement — URL à coller</label>
+        <input type="text" name="event_image" value="<?= e((string) get_setting('event_image', '')) ?>" placeholder="https://… (image du gameplay Netflix) ou /public/assets/img/scenes/city.png">
+        <small class="muted">Clic droit sur une image → « Copier l'adresse de l'image » → colle ici. Affichée en haut de la page événement + en aperçu sur les réseaux. Vide = image par défaut. <strong>Utilise une image officielle/libre et cite la source.</strong></small>
+    </div>
+    <div>
+        <label>… ou uploader une image (JPG / PNG / WebP, max 3 Mo)</label>
+        <input type="file" name="event_image_file" accept="image/jpeg,image/png,image/webp">
+        <small class="muted">Si tu uploades, elle remplace l'URL ci-dessus.</small>
     </div>
 
     <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">

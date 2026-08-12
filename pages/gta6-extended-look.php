@@ -26,7 +26,13 @@ $SEO_TITLE = $fr
 $SEO_DESC = $fr
     ? 'Rockstar diffuse « GTA VI: An Extended Look » le 27 août 2026 : 21h en exclu Netflix, puis GRATUIT sur YouTube à 3h du matin. Horaires, durée et comment regarder.'
     : 'Rockstar airs "GTA VI: An Extended Look" on August 27, 2026: 9pm CEST Netflix-exclusive, then FREE on YouTube. Times, runtime and how to watch.';
-$SEO_OG_IMAGE = cdn_url('downtown.png');
+// Image de l'événement : réglable dans Admin → Réglages (URL à coller OU upload).
+// Repli sur une scène par défaut si rien n'est défini.
+$__evImg = trim((string) get_setting('event_image', ''));
+$eventImgSrc = $__evImg !== ''
+    ? (preg_match('#^https?://#', $__evImg) ? $__evImg : img_src($__evImg))
+    : (cdn_url('downtown.png') ?: asset('img/scenes/nightlife.png'));
+$SEO_OG_IMAGE = $eventImgSrc;
 
 $faq = $fr ? [
     ['Quand sort le gameplay de GTA 6 ?', 'Le 27 août 2026. « GTA VI: An Extended Look » est diffusé d\'abord en exclusivité sur Netflix à 21h00 (heure de Paris), puis gratuitement sur la chaîne YouTube de Rockstar et le site officiel GTA VI vers 3h00 du matin (nuit du 27 au 28 août).'],
@@ -71,6 +77,8 @@ require ROOT_PATH . '/includes/header.php';
     <span class="eyebrow" style="color:var(--pink)">🔴 <?= $fr ? 'ÉVÉNEMENT · GTA 6' : 'BREAKING · GTA 6' ?></span>
     <h1><?= $fr ? 'GTA 6 : gameplay en avant-première Netflix le 27 août' : 'GTA 6 Gameplay Reveal on Netflix — August 27' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+
+    <img src="<?= e($eventImgSrc) ?>" alt="<?= e($fr ? 'GTA 6 — gameplay en avant-première Netflix' : 'GTA 6 — gameplay premiere on Netflix') ?>" style="width:100%;border-radius:16px;margin:1.1rem 0 .4rem;aspect-ratio:16/9;object-fit:cover" loading="eager">
 
     <div class="lore-block glass" style="margin:1rem 0 1.4rem;border-left:3px solid var(--pink)">
         <p style="font-size:1.15rem;margin:0"><strong><?= $fr
