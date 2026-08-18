@@ -1,0 +1,50 @@
+design_id,titre,type,transparent,collection,download_url,utilise_sur
+D01,VICEHUB X Chrome Wordmark,front-text,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223714_8632fff8-9e82-4478-9d4f-e0e743777b83.png,P09;P29;P40;P50;P52
+D02,Outrun The Sunrise Slogan Stack,front-text,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223717_e1d1cfc6-4a9d-415e-aee7-6836b87a4355.png,P11
+D03,Two Of A Kind Chrome Wordmark,front-text,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223719_a03cbc72-eb6b-4509-9547-2aa245b6db27.png,P19
+D04,"High Score, Low Life Lockup",front-text,oui,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223722_73e44c5a-9ff7-42c2-982b-e2c83bdbad78.png,P27;P31
+D05,Getaway Season Neon Wordmark,front-text,oui,GETAWAY SEASON,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223724_e1b154fc-2379-4454-9c06-cf0196c969b1.png,P37;P39
+D06,Ride Or Die Stacked Slogan,front-text,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223727_9adbcb61-1195-4d05-b148-6dabffa8e4eb.png,P18
+D07,Golden Pistols Crest,front-emblem,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223730_b8572823-2d2d-43fb-b42b-be2e41c93334.png,P10
+D08,Neon Flamingo Badge,front-emblem,oui,NEON NOIR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223732_62d7bddd-11fd-4e35-9eb6-0cc30bcc1de8.png,P49;P51;P53
+D09,Wanted Star VHX Badge,front-emblem,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223735_8217c644-c32e-4db3-803f-760a7fc55fed.png,P12
+D10,Golden Ace Chip Badge,front-emblem,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223737_ecfa0401-6056-4740-8dcb-c33f6d175f21.png,P17;P20
+D11,Insert Coin Arcade Token,front-emblem,oui,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223740_22829182-6fe2-4106-9eb6-6240081d7872.png,P28;P30
+D12,Cassette Skyline Emblem,front-emblem,oui,GETAWAY SEASON,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223742_95ccedcf-b78e-4a2a-bc1f-4d4cced572b6.png,P38;P42
+D13,Two Outlaws Sunset — Hero Back,back-artwork,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223812_31486828-ae1b-4935-ad20-d66039fbeedf.png,P09;P10;P16
+D14,Golden Revolver & Roses — Back,back-artwork,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223814_f052c1be-49c7-4580-afdb-2338acacd2f0.png,P11;P12
+D15,Royal Flush / Dead Man's Hand — Back,back-artwork,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223817_1dc23c5b-0d7e-46aa-b60c-582412539db2.png,P19;P20;P26
+D16,Dual Outlaws Cards — Hero Back,back-artwork,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223820_ffacc1b8-5c5f-47ec-94a3-959c3d146de5.png,P17;P18
+D17,Arcade Boardwalk — Back,back-artwork,oui,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223822_4322051f-699d-432d-be49-c0aea474f7dd.png,P27;P30
+D18,Kill Screen Coupe (Continue?) — Back,back-artwork,oui,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223825_7c38b8ce-264e-49a2-9718-98c48f2161fe.png,P28;P29
+D19,Outrun Coupe Into The Sun — Back,back-artwork,oui,GETAWAY SEASON,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223827_889b234e-58ef-4453-bf63-03d38c5239db.png,P37;P38
+D20,Chrome Boulevard — Perspective Back,back-artwork,oui,GETAWAY SEASON,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223830_7c48bcf8-f516-46e7-b90e-2a8538790197.png,P39;P40;P42;P47
+D21,Flamingo Noir — Back,back-artwork,oui,NEON NOIR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223832_d1751f11-c8f4-4302-bf16-3ef8d21de257.png,P49;P52
+D22,Bay At Midnight Skyline — Back,back-artwork,oui,NEON NOIR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223835_29ce0d3c-b5bb-4068-80da-2875aabd88e3.png,P50;P51;P60
+D23,Neon Grid Sunset — All-Over,all-over,non,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223332_065496a0-c2ae-4390-b81b-f35ff1ac2756.png,P14;P32;P33;P48
+D24,Miami Skyline Wrap — All-Over,all-over,non,NEON NOIR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223332_851e2cba-6bd1-4eb6-8b0f-c86e80699124.png,P54;P58;P59
+D25,Chrome Palms — Seamless All-Over,all-over,non,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223356_32054502-a490-4039-8130-9f63a95ab5eb.png,P23
+D26,Sunset Stripe Gradient — All-Over,all-over,non,GETAWAY SEASON,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223356_c989db26-3a29-4952-86f9-ee8a55899bad.png,P43;P46
+D27,Vice Icons Toss — Seamless All-Over,all-over,non,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223356_e6a0abd1-6f52-40c8-9a81-01f7a7385254.png,P24;P45
+D28,Leaderboard Wrap — All-Over,all-over,non,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223356_80327398-4ece-4777-b1b4-f0e01d195aea.png,P34
+D29,Flamingo Flat — Embroidery,embroidery,oui,NEON NOIR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223837_752bc37e-bb75-442b-ba54-dd035692bccf.png,P55;P56
+D30,VHX Monogram — Flat Embroidery,embroidery,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223840_a0d3fd77-61e7-40f1-a241-85ce76e9d5a2.png,P21;P36;P41;P57
+D31,Palm Sunset Arc — Flat Embroidery,embroidery,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223843_5661ae3f-d7ca-458a-9fce-0eecbbd2c8ba.png,P13;P44
+D32,Wanted Star — Flat Embroidery,embroidery,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223845_a9237a92-b98b-4f38-b550-63493df4e1cb.png,P22
+D33,Neon Icons — Die-Cut Sticker Set,sticker-die-cut,oui,TWO OF A KIND,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223848_40731a4d-f59d-410d-b341-fb843c5e0f6d.png,P25
+D34,Golden Pistol — Die-Cut Sticker,sticker-die-cut,oui,GOLDEN HOUR,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223851_941b4fcf-2273-4b6e-8e4f-f8f95f624d03.png,P15
+D35,Neon Joystick — Die-Cut Sticker,sticker-die-cut,oui,HIGH SCORE CITY,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_223853_02b12410-e8b4-46ff-8e7b-88b852674391.png,P35
+AM-F1,After Midnight — VICEHUB X chrome wordmark,front-text,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215027_92f795da-0429-4f22-9c08-775102aba756.png,P01
+AM-F2,Property Of The Night — palm emblem,front-emblem,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215030_03eefea2-22a8-49d8-9efc-fe0e20690d14.png,P02
+AM-F3,NEON NEVER SLEEPS — slogan,front-text,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215043_b30f48de-5683-452c-8add-78ca8cc34c05.png,P03
+AM-F4,Static Paradise — VICEHUB/X cassette,front-text,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215033_c155598a-fc87-4b7d-be38-87ec3c0f70c7.png,P04
+AM-F5,Midnight Flamingo — badge,front-emblem,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215036_1189e116-6474-46c0-a25c-5da300014094.png,P05
+AM-F6,Sunset Strip — VICE/HUB/X vertical,front-text,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215459_1de7ebc0-72ea-471b-a91e-62a571fc9363.png,P06
+AM-F7,Vice Outrun — cap embroidery mark,embroidery,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215038_9dd4387c-8f61-455c-bfcc-54e4aebbfbbd.png,P07
+AM-F8,Miami Nights — flamingo (tote),front-emblem,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215041_cfbe430b-dbd1-4b5c-a9d4-f605f3d19869.png,P08
+AM-B1,AFTER MIDNIGHT — coupé + sunset (4K),back-artwork,non,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_214603_ccfd3282-3f08-4290-bd13-cb107ad28ba0.png,P01
+AM-B2,PROPERTY OF THE NIGHT — skyline (4K),back-artwork,non,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_214606_1819dd99-7847-42ef-9d69-3474210250e9.png,P02
+AM-B3,Sunset badge — haut de dos (transparent),back-artwork,oui,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_215212_9cfa996a-b92c-4d14-864a-85dddc5da11f.png,P03
+AM-B4,STATIC PARADISE — cassette (4K),back-artwork,non,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_214609_d5d81c3c-a465-4dd9-b168-7d73b9e8b866.png,P04
+AM-B5,Midnight Flamingo — hero (4K),back-artwork,non,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_214611_c0e70036-a865-4ec3-b013-44b39e47b75f.png,P05
+AM-B6,SUNSET STRIP — palmier + cabriolet (4K),back-artwork,non,AFTER MIDNIGHT,https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20260818_214614_2bdd7bbe-96e3-4feb-8d99-b0db72ec609e.png,P06
