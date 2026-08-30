@@ -50,6 +50,7 @@ if ($product['price'] !== null && $product['price'] !== '') {
         '@type'         => 'Offer',
         'price'         => number_format((float) $product['price'], 2, '.', ''),
         'priceCurrency' => $product['currency'] ?: active_currency(),
+        'priceValidUntil' => date('Y-12-31'),
         'availability'  => 'https://schema.org/InStock',
         'itemCondition' => 'https://schema.org/NewCondition',
         'url'           => $productUrl,

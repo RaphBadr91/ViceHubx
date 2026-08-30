@@ -46,7 +46,7 @@ if (in_array($article['lang'], array_keys(available_languages()), true) && $arti
 // Corps : on n'autorise qu'un HTML simple (sécurité)
 $safe_body = strip_tags(
     (string) $article['body'],
-    '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br>'
+    '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br><table><thead><tbody><tr><th><td><figure><figcaption>'
 );
 // Sécurité : retire tout marqueur IA résiduel (===FIN===…) — invisible pour le lecteur.
 $safe_body = clean_ai_markers($safe_body);
@@ -114,6 +114,14 @@ $OG_TYPE      = 'article';
 $OG_PUBLISHED = $pub_iso;
 $OG_SECTION   = $article['category_name'] ?? 'News';
 
+// Correspondance slug catégorie -> page réelle (évite les liens & breadcrumb 404 :
+// les catégories « leaks » et « trailers » sont servies par leaks-lab.php / trailer-lab.php).
+$__catMap  = ['leaks' => 'leaks-lab', 'trailers' => 'trailer-lab'];
+$__catSlug = $article['category_slug'] ?? 'news';
+$__catPage = $__catMap[$__catSlug] ?? $__catSlug;
+$__catRel  = url('pages/' . $__catPage . '.php');
+$__catAbs  = preg_match('#^https?://#', (string) $__catRel) ? $__catRel : $__base . '/' . ltrim((string) $__catRel, '/');
+
 $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
     [
         '@type'    => 'NewsArticle',
@@ -122,7 +130,7 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
         'description' => $article['excerpt'],
         'inLanguage'  => $article['lang'],
         'datePublished' => $pub_iso,
-        'dateModified'  => $pub_iso,
+        'dateModified'  => (($article['updated_at'] ?? '') !== '') ? date('c', strtotime((string) $article['updated_at'])) : $pub_iso,
         'articleSection' => $article['category_name'] ?? 'News',
         'image'     => [$img_abs],
         'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $art_url],
@@ -135,7 +143,7 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
         'itemListElement' => [
             ['@type' => 'ListItem', 'position' => 1, 'name' => 'Accueil', 'item' => $__base . '/'],
             ['@type' => 'ListItem', 'position' => 2, 'name' => $article['category_name'] ?? 'News',
-                'item' => $__base . '/' . ($article['category_slug'] ?? 'news')],
+                'item' => $__catAbs],
             ['@type' => 'ListItem', 'position' => 3, 'name' => $article['title']],
         ],
     ],
@@ -165,7 +173,7 @@ require ROOT_PATH . '/includes/header.php';
             <a href="<?= e(url('admin/articles.php')) ?>" style="color:#0d0018;text-decoration:underline">Retour à la gestion</a>
         </div>
     <?php endif; ?>
-    <a class="link-all" href="<?= e(with_lang(url('pages/' . ($article['category_slug'] ?? 'news') . '.php'))) ?>">← <?= e($article['category_name'] ?? t('nav_news')) ?></a>
+    <a class="link-all" href="<?= e(with_lang(url('pages/' . $__catPage . '.php'))) ?>">← <?= e($article['category_name'] ?? t('nav_news')) ?></a>
 
     <div style="margin:.8rem 0 1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
         <?= badge_html($article['badge']) ?>
@@ -188,6 +196,17 @@ require ROOT_PATH . '/includes/header.php';
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
+
+    <?php $__shareUrl = rawurlencode((string) $canonical); $__shareTxt = rawurlencode((string) $article['title']); ?>
+    <div class="article-share" style="margin-top:2rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+        <span class="muted" style="font-size:.85rem"><?= lang() === 'fr' ? 'Partager :' : 'Share:' ?></span>
+        <a class="btn btn--ghost" style="padding:.35rem .7rem" href="https://twitter.com/intent/tweet?url=<?= $__shareUrl ?>&amp;text=<?= $__shareTxt ?>" target="_blank" rel="noopener" aria-label="X">𝕏</a>
+        <a class="btn btn--ghost" style="padding:.35rem .7rem" href="https://www.facebook.com/sharer/sharer.php?u=<?= $__shareUrl ?>" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a>
+        <a class="btn btn--ghost" style="padding:.35rem .7rem" href="https://api.whatsapp.com/send?text=<?= $__shareTxt ?>%20<?= $__shareUrl ?>" target="_blank" rel="noopener" aria-label="WhatsApp">WhatsApp</a>
+        <a class="btn btn--ghost" style="padding:.35rem .7rem" href="https://www.reddit.com/submit?url=<?= $__shareUrl ?>&amp;title=<?= $__shareTxt ?>" target="_blank" rel="noopener" aria-label="Reddit">Reddit</a>
+        <button type="button" class="btn btn--ghost" style="padding:.35rem .7rem" onclick="vhxShare(this)" data-url="<?= e($canonical) ?>" data-title="<?= e($article['title']) ?>">🔗 <?= lang() === 'fr' ? 'Copier' : 'Copy' ?></button>
+    </div>
+    <script>function vhxShare(b){var u=b.getAttribute('data-url'),t=b.getAttribute('data-title');if(navigator.share){navigator.share({title:t,url:u}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(u);var o=b.innerHTML;b.textContent='✅';setTimeout(function(){b.innerHTML=o;},1500);}}</script>
 
     <?= article_shop_cta('inline') ?>
 

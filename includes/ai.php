@@ -806,7 +806,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
     $title   = trim((string) $json['titre']);
     $excerpt = clean_ai_markers(mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200));
     // Nettoie tout marqueur IA résiduel (===FIN===…) : le lecteur ne doit jamais le voir.
-    $body    = clean_ai_markers(strip_tags($bodyHtml, '<p><h2><h3><ul><ol><li><strong><em><blockquote><br>'));
+    $body    = clean_ai_markers(strip_tags($bodyHtml, '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br><table><thead><tbody><tr><th><td><figure><figcaption>'));
     $iprompt = trim((string) ($json['prompt_image'] ?? ''));
     $theme   = (string) ($json['theme_image'] ?? '');
     $cat     = (string) ($json['categorie'] ?? 'blog');

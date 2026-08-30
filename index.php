@@ -79,14 +79,8 @@ $SEO_TITLE = lang() === 'fr'
 $SEO_DESC = lang() === 'fr'
     ? 'Toute l\'actu de GTA VI : date de sortie (19 novembre 2026), trailers, carte de Leonida, Jason & Lucia, leaks vérifiés, guides et boutique. Le média fan n°1 sur Vice City.'
     : 'All the GTA VI news: release date (Nov 19, 2026), trailers, Leonida map, Jason & Lucia, verified leaks, guides and shop. The #1 fan media about Vice City.';
-$JSONLD = [
-    '@context' => 'https://schema.org',
-    '@type'    => 'WebSite',
-    'name'     => 'ViceHub X',
-    'description' => lang() === 'fr'
-        ? 'Média indépendant GTA VI : news, guides, leaks et analyses.'
-        : 'Independent GTA VI media: news, guides, leaks and analysis.',
-];
+// (JSON-LD WebSite retiré : header.php émet déjà un @graph Organization + WebSite complet
+//  avec @id + SearchAction — on évite le doublon d'entité WebSite sur l'accueil.)
 require __DIR__ . '/includes/header.php';
 ?>
 

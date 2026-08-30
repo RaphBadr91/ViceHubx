@@ -38,6 +38,22 @@ $canon_path = $path_only . $__qs;
 // Une page peut imposer son URL canonique via $CANONICAL (ex. piliers bilingues
 // servis sur une même URL + ?lang= : chaque langue devient ainsi auto-canonique).
 $canonical  = !empty($CANONICAL) ? $CANONICAL : $site_base . $canon_path;
+// i18n généralisé : les pages bilingues servies sur une MÊME URL via ?lang (accueil, /shop,
+// /news, /map…) deviennent AUTO-CANONIQUES par langue + hreflang appariés. Corrige les ~99
+// URLs ?lang=en qui se canonicalisaient vers le FR (mauvaise langue servie aux anglophones).
+// Les routes de détail (article/produit/sujet/membre/catégorie) gèrent leur propre i18n → exclues.
+$__isDetail = (bool) preg_match('#^/(article|produit|sujet|membre|categorie)/#', (string) $path_only);
+if (empty($CANONICAL) && empty($HREFLANG_ALT) && !$__isDetail
+    && stripos((string) ($ROBOTS ?? ''), 'noindex') === false) {
+    $__pq = $__q; unset($__pq['lang']);            // $__q a déjà le bruit (tracking) retiré
+    $__pathBase = $site_base . $path_only . ($__pq ? '?' . http_build_query($__pq) : '');
+    foreach (['fr', 'en'] as $__lc) {              // seules langues réellement traduites
+        $HREFLANG_ALT[$__lc] = $__lc === 'fr'
+            ? $__pathBase
+            : $__pathBase . (str_contains($__pathBase, '?') ? '&' : '?') . 'lang=' . $__lc;
+    }
+    $canonical = $HREFLANG_ALT[lang()] ?? $canonical; // EN -> auto-canonique .../x?lang=en
+}
 $og_image_abs = (function ($img) use ($site_base) {
     return preg_match('#^https?://#', (string) $img) ? $img : $site_base . '/' . ltrim((string) $img, '/');
 })($SEO_OG_IMAGE);

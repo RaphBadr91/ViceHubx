@@ -20,6 +20,10 @@ try {
     $who = $st->fetch(PDO::FETCH_ASSOC);
     if (!$who) {
         $msg = "Compte introuvable. Crée d'abord ton compte sur le site avec l'e-mail {$OWNER_EMAIL} (ou l'identifiant {$OWNER_USER}), puis relance cette page.";
+    } elseif (strtolower((string) $who['email']) !== strtolower($OWNER_EMAIL)) {
+        // Sécurité : ne promouvoir QUE si l'e-mail fondateur correspond (bloque le
+        // squat d'identifiant). Puis SUPPRIMER ce fichier.
+        $msg = "Ce compte ne peut pas être promu automatiquement. Supprimez make-admin.php.";
     } elseif ($who['role'] === 'admin') {
         $done = true;
         $msg = "Le compte « {$who['username']} » est déjà Administrateur. ✅";

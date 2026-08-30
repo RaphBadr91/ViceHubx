@@ -213,7 +213,9 @@ function clear_remember_cookie(): void
 /** Langues disponibles (code => libellé natif). Ajoutez une langue = un fichier lang/<code>.php. */
 function available_languages(): array
 {
-    return ['fr' => '🇫🇷 Français', 'en' => '🇬🇧 English', 'es' => '🇪🇸 Español', 'de' => '🇩🇪 Deutsch'];
+    // Seules les langues réellement traduites ET peuplées de contenu (articles, fiches).
+    // ES/DE réactivables ici dès qu'il y a du contenu, sinon elles afficheraient des pages vides.
+    return ['fr' => '🇫🇷 Français', 'en' => '🇬🇧 English'];
 }
 
 function resolve_language(): string
@@ -1827,9 +1829,32 @@ function vhx_auto_heartbeat(): void
  */
 function internal_autolink(string $html): string
 {
-    static $defs = null;
-    if ($defs === null) {
-        $defs = [
+    // Dictionnaire indexé par langue : sans jeu EN, aucun lien interne n'était injecté
+    // sur les articles anglais (clusters EN orphelins). Cache par langue (1 build/req).
+    static $cache = [];
+    $__lc = lang();
+    if (!isset($cache[$__lc])) {
+        $defs = $__lc === 'en' ? [
+            'Lucia Caminos'     => 'pages/characters.php',
+            'Jason Duval'       => 'pages/characters.php',
+            'Jason and Lucia'   => 'pages/characters.php',
+            'Mount Kalaga'      => 'pages/map.php',
+            'Port Gellhorn'     => 'pages/map.php',
+            'Leonida map'       => 'pages/map.php',
+            'state of Leonida'  => 'pages/map.php',
+            'Vintage Vice City' => 'pages/gta6.php',
+            'Ultimate edition'  => 'pages/gta6.php',
+            'Standard edition'  => 'pages/gta6.php',
+            'release date'      => 'pages/gta6.php',
+            'pre-order'         => 'pages/gta6.php',
+            'wallpapers'        => 'pages/fonds-ecran-gta6.php',
+            'GTA 5'             => 'pages/gta6-vs-gta5.php',
+            'GTA V'             => 'pages/gta6-vs-gta5.php',
+            'Leonida'           => 'pages/map.php',
+            'Vice City'         => 'pages/map.php',
+            'vehicles'          => 'pages/vehicles.php',
+            'shop'              => 'pages/shop.php',
+        ] : [
             'Lucia Caminos'     => 'pages/characters.php',
             'Jason Duval'       => 'pages/characters.php',
             'Jason et Lucia'    => 'pages/characters.php',
@@ -1852,7 +1877,9 @@ function internal_autolink(string $html): string
         ];
         // Plus longue expression d'abord (évite de capter « Leonida » avant « État de Leonida »).
         uksort($defs, static fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+        $cache[$__lc] = $defs;
     }
+    $defs = $cache[$__lc];
 
     $segments = preg_split('/(<[^>]+>)/u', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
     $store = [];
