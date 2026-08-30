@@ -1,0 +1,107 @@
+# DONNÉES SEARCH CONSOLE — vicehubx.com — 28 jours (31/07→27/08/2026)
+TOTAUX: 9744 impressions, 69 clics, CTR 0.71%, ~733 pages. Position moyenne ~14.
+Répartition impressions par position: 1-3=37, 4-6=61, 7-10=521, 11-20=316, 21+=738.
+=> BEAUCOUP de pages en page 1 (pos 7-10) mais CTR quasi nul: PROBLÈME TITRES/META, pas ranking.
+PAYS: USA 2416 impr (10clics), UK 917, France 703 (meilleur CTR 1.42%), Canada 559, Pays-Bas 489, Inde 408, Australie 319, Allemagne 235. => Trafic surtout INTERNATIONAL/EN.
+STRUCTUREL: www.vicehubx.com fuit encore 1067 impr/10 clics (301 pas déployé ou pas retraité). 99 URLs ?lang=en indexées. Rich snippets produits présents mais pos ~55 (129 impr, 0 clic).
+
+## TOP 20 PAGES par impressions (clics / CTR / position) — à retitrer:
+- 707impr 2clics 0.28% pos9.07 : gta-6-co-op-campaign-what-we-know-about-multiplayer-in-vice-city
+- 477impr 1clics 0.21% pos7.79 : gta-6-content-creators-streamers-youtubers-the-viral-wait
+- 398impr 2clics 0.5% pos7.96 : gta-6-co-op-what-we-actually-know-about-two-player-gameplay
+- 311impr 2clics 0.64% pos8.89 : nine1nine-vice-city-s-premier-nightclub-at-the-heart-of-gta-6-s-music-
+- 261impr 1clics 0.38% pos16.21 : gta-6-graphics-rage-engine-how-rockstar-pushes-visuals-to-the-limit
+- 241impr 6clics 2.49% pos19.37 : gta-6-supercars-identified-complete-breakdown-of-trailers-high-perform
+- 222impr 0clics 0% pos8.65 : gta-6-driving-physics-revealed-suspension-grip-rage-engine-mechanics
+- 205impr 1clics 0.49% pos9.49 : ps5-vs-xbox-series-x-for-gta-6-performance-load-times-technical-verdic
+- 142impr 0clics 0% pos9.13 : gta-6-on-game-pass-access-timeline-microsoft-s-2026-strategy
+- 141impr 0clics 0% pos9.6 : vice-city-in-gta-6-the-neon-queen-makes-her-return
+- 138impr 4clics 2.9% pos9.28 : gta-6-aircraft-guide-all-helicopters-jets-drones-of-leonida-explained
+- 134impr 0clics 0% pos8.4 : gta-6-heists-explained-what-rockstar-is-planning-for-jason-lucia
+- 129impr 0clics 0% pos61.95 : gta-6-edition-guide-standard-vs-ultimate-which-edition-delivers-real-v
+- 117impr 0clics 0% pos43.3 : gta-6-pc-release-date-when-why-rockstar-delays-the-computer-version
+- 115impr 0clics 0% pos9.06 : gta-6-mods-on-pc-what-might-be-possible-rumors
+- 112impr 1clics 0.89% pos9.28 : gta-6-customization-system-unlimited-clothes-tattoos-vehicle-tuning?la
+- 104impr 0clics 0% pos11.71 : gta-6-vehicle-guide-supercars-muscle-cars-boats-motorcycles-explained
+- 96impr 1clics 1.04% pos8.01 : gta-6-map-vs-gta-5-complete-size-density-analysis-leonida-vs-los-santo
+- 95impr 1clics 1.05% pos8.76 : multijoueur-cooperatif-gta-6-ce-qu-il-faut-savoir-sur-le-mode-coop
+- 91impr 1clics 1.1% pos15.05 : reconnaitre-un-vrai-leak-gta-6-d-une-intox
+
+## CANNIBALISATION co-op (8 URLs se battent, ~1300 impr total, ~2 clics):
+- 707impr 2clics pos9.07 : gta-6-co-op-campaign-what-we-know-about-multiplayer-in-vice-city
+- 398impr 2clics pos7.96 : gta-6-co-op-what-we-actually-know-about-two-player-gameplay
+- 95impr 1clics pos8.76 : multijoueur-cooperatif-gta-6-ce-qu-il-faut-savoir-sur-le-mode-coop
+- 79impr 0clics pos12.43 : gta-vi-multiplayer-cooperation-confirmed-features-limits-rumors-ex
+- 10impr 0clics pos15 : cooperation-multijoueur-gta-6-modes-limites-et-rumeurs-expliquees
+- 4impr 0clics pos8.25 : gta-vi-leak-could-a-co-op-campaign-launch-at-release
+- 1impr 0clics pos8 : story-co-op-mode-the-fan-dream-for-gta-vi-s-jason-lucia
+- 1impr 0clics pos95 : leak-mode-cooperatif-au-lancement
+
+## CLUSTER nine1nine / hypercar (requêtes, pos 8-12, ~0 clic):
+- 'nine1nine' 82impr 1clics pos8.95
+- 'gta 6 hypercar' 27impr 1clics pos25.22
+- 'gta 6 hypercar part 1' 19impr 1clics pos16
+- 'gta 6 hyper car leak' 7impr 1clics pos28.71
+- 'gta 6: nine1nine' 56impr 0clics pos10.04
+- 'gta 6: hypercar part 1' 55impr 0clics pos11.65
+- 'gta 6 nine1nine' 17impr 0clics pos9.88
+- 'nine1nine gta 6' 10impr 0clics pos7.8
+- 'gta6 hypercar' 10impr 0clics pos13
+- 'gta nine1nine' 8impr 0clics pos8.88
+- 'hypercar part 1 gta 6' 7impr 0clics pos8.57
+- 'hypercar gta 6' 6impr 0clics pos19.67
+- 'gta 6 new leak hypercar' 6impr 0clics pos24.67
+- 'gta vi hypercar' 5impr 0clics pos26.2
+- 'nine1nine gta' 4impr 0clics pos6.75
+- 'gta6 leak hypercar' 4impr 0clics pos12.25
+- 'gta 6 hyper car part 1' 4impr 0clics pos13.75
+- 'gta 6: hypercar' 3impr 0clics pos9
+- 'gta 6 new leaks hypercar' 3impr 0clics pos19.33
+- 'gta 6 leaks hypercar' 3impr 0clics pos30
+- 'gta 6 leak hypercar' 3impr 0clics pos44.33
+- 'gta 6 hypercar1' 2impr 0clics pos6.5
+- 'gta 6: hypercar part' 2impr 0clics pos7
+- 'nine1nine club' 2impr 0clics pos8.5
+- 'hyper car gta 6' 2impr 0clics pos12
+- 'hypercar gta 6 leak' 2impr 0clics pos55
+- 'gta 6: hypercar part 2' 2impr 0clics pos77
+- 'gta6 nine1nine' 1impr 0clics pos6
+- 'gta 6 leaks hyper car' 1impr 0clics pos10
+- 'gta vi nine1nine' 1impr 0clics pos10
+- 'hypercar gta vi' 1impr 0clics pos10
+- 'gta 6 hypercar 1' 1impr 0clics pos11
+- 'nine1nine gta vi' 1impr 0clics pos11
+- 'hypercar1.mp4 gta6' 1impr 0clics pos14
+- 'new gta 6 leak hypercar' 1impr 0clics pos14
+- 'gta vi hypercar leak' 1impr 0clics pos18
+- 'hypercar leak gta6' 1impr 0clics pos25
+- 'gta 6 new hypercar leak' 1impr 0clics pos26
+- 'gta vi hypercar part 1' 1impr 0clics pos26
+- 'hypercar1 gta 6' 1impr 0clics pos26
+- 'gta 6 hypercar part 2' 1impr 0clics pos41
+- 'gta 6 hypercar leak' 1impr 0clics pos45
+- 'hyper car gta 6 leak' 1impr 0clics pos60
+
+## REQUÊTES à fort potentiel (pos 5-15, 0-1 clic):
+- 'is neon in gta 6' 86impr pos9.5
+- 'nine1nine' 82impr pos8.9
+- 'gta 6: nine1nine' 56impr pos10.0
+- 'gta 6: hypercar part 1' 55impr pos11.7
+- 'gta 6 co op' 32impr pos7.8
+- 'gta 6 nine1nine' 17impr pos9.9
+- 'gta 6 engine' 17impr pos11.7
+- 'what streamers are in gta 6' 15impr pos9.7
+- 'vicehub' 14impr pos5.9
+- 'does gta 6 have co op campaign' 14impr pos7.4
+- 'pack vintage vice city' 14impr pos12.2
+- 'gta6 co op' 13impr pos7.1
+- 'is gta 6 co op campaign' 12impr pos9.7
+- 'vice hub' 11impr pos5.7
+- 'gta 6 coop' 11impr pos12.4
+- 'nine1nine gta 6' 10impr pos7.8
+- 'gta 5 vs gta 6' 10impr pos11.3
+- 'gta6 hypercar' 10impr pos13.0
+
+## REQUÊTES DE MARQUE (notoriété faible): 'vicehub' 14impr pos5.9 0clic, 'vice hub' 11impr pos5.7 0clic, 'vice x' pos10, 'vicehub x' — la marque n'est pas cliquée même bien classée.
+
+## PAGE FORTE (modèle à répliquer): /article/goodies-gta-6-guide-complet-du-merchandising... = CTR 14.71% pos 6.06 (5 clics/34impr) — le MERCH convertit déjà bien (pertinent: on lance la boutique).
