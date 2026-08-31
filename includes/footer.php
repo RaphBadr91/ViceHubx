@@ -120,7 +120,16 @@
   var v=null; try{v=localStorage.getItem('vhx_cookie');}catch(e){}
   if(v){hideBar();}else{showBar();}
   bar.querySelectorAll('[data-cookie]').forEach(function(b){
-    b.addEventListener('click',function(){try{localStorage.setItem('vhx_cookie',b.getAttribute('data-cookie'));}catch(e){}hideBar();});
+    b.addEventListener('click',function(){
+      var c=b.getAttribute('data-cookie');
+      try{localStorage.setItem('vhx_cookie',c);}catch(e){}
+      // Consent Mode v2 : met à jour le consentement en direct (GA démarre le
+      // suivi dès « Accepter », sans rechargement ; reste refusé sinon).
+      if(window.gtag){gtag('consent','update',c==='accept'
+        ? {ad_storage:'granted',analytics_storage:'granted',ad_user_data:'granted',ad_personalization:'granted'}
+        : {ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});}
+      hideBar();
+    });
   });
 }catch(e){}})();
 </script>

@@ -157,12 +157,18 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="msvalidate.01" content="<?= e($bsv) ?>">
     <?php endif; ?>
     <?php if ($ga = trim((string) get_setting('analytics_id', ''))): ?>
-    <!-- Google Analytics 4 — chargé uniquement APRÈS acceptation des cookies (RGPD) -->
-    <script>(function(){try{if(localStorage.getItem('vhx_cookie')!=='accept')return;
-    var id=<?= json_encode($ga) ?>;var s=document.createElement('script');s.async=true;
-    s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);document.head.appendChild(s);
+    <!-- Google Analytics 4 + Consent Mode v2 (RGPD/EEE). La balise se charge sur
+         chaque page (donc détectable par Google), mais le suivi est REFUSÉ PAR
+         DÉFAUT : aucun cookie de mesure n'est déposé tant que le visiteur n'a pas
+         cliqué « Accepter » (la bannière passe alors le consentement à « accordé »). -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=<?= e($ga) ?>"></script>
+    <script>
     window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;
-    gtag('js',new Date());gtag('config',id,{anonymize_ip:true});}catch(e){}})();</script>
+    gtag('consent','default',{ad_storage:'denied',analytics_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',wait_for_update:500});
+    try{if(localStorage.getItem('vhx_cookie')==='accept'){gtag('consent','update',{ad_storage:'granted',analytics_storage:'granted',ad_user_data:'granted',ad_personalization:'granted'});}}catch(e){}
+    gtag('js',new Date());
+    gtag('config',<?= json_encode($ga) ?>);
+    </script>
     <?php endif; ?>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
