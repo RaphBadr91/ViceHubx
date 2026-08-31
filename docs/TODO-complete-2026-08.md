@@ -75,7 +75,12 @@ Consolidation des **4 audits experts** (fonctionnalité/QA, SEO technique, conte
 
 ---
 
-## 🎨 SECTION 4 — IMAGES « 100 % GAMING » (à générer sur Higgsfield)
+## 🎨 SECTION 4 — IMAGES « 100 % GAMING » + ANTI-DOUBLON
+
+**⚠️ Doublons d'images (les articles/posts avaient tous la même image)**
+- ✅ **Garde-fou anti-doublon posé** (`ai_pick_image`) : le sélecteur ne repioche **plus jamais** une image de banque déjà utilisée par un autre article (tant que la banque n'est pas épuisée). Corrige AUSSI les posts Instagram/Facebook (ils réutilisent l'image de l'article).
+- 👤 **LE fix définitif « toujours une image unique »** : configurer la **clé Higgsfield serveur** — réglage `higgsfield_key` (format `KEY_ID:KEY_SECRET`, depuis platform.higgsfield.ai → API) dans **Admin → Réglages**. Alors : chaque NOUVEL article reçoit une image générée **unique** (nommée par slug), et le **backfill automatique** (`ai_generate_missing_images`) régénère des images uniques pour TOUS les articles existants en doublon (propagées à la version EN). Sans cette clé, on reste limité à la banque (~30 images) et les doublons finissent par réapparaître.
+- 🎨 (sans la clé) je peux **agrandir la banque** en générant 20-40 scènes uniques supplémentaires via mon accès Higgsfield → plus de variété immédiate.
 
 Aujourd'hui : **1 seule image (cover) par article**, banque limitée (~30 scènes datées juin 2026), **rien sur le gameplay du 27 août**. Plan :
 

@@ -83,16 +83,39 @@ function ai_image_bank(): array
     ];
 }
 
-/** Choisit une illustration de la banque selon le thème (ou le titre en repli). */
+/** Basenames de scènes déjà utilisées par un article (garde-fou anti-doublon d'image). */
+function ai_used_scene_images(): array
+{
+    static $used = null;
+    if ($used !== null) { return $used; }
+    $used = [];
+    try {
+        $rows = db()->query("SELECT image FROM articles WHERE image LIKE '%/scenes/%'")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($rows as $img) { $used[basename((string) $img)] = true; }
+    } catch (Throwable $e) { /* table indisponible → pas de dédup */ }
+    return $used;
+}
+
+/**
+ * Choisit une illustration de la banque selon le thème (repli titre), en évitant
+ * TOUTE image déjà utilisée par un autre article : garde-fou « jamais deux fois la
+ * même image » tant que la banque n'est pas épuisée. L'idéal reste une image
+ * générée sur-mesure (Higgsfield, nommée par slug) = unique par définition.
+ */
 function ai_pick_image(string $theme, string $title = ''): string
 {
-    $bank = ai_image_bank();
+    $bank  = ai_image_bank();
     $theme = strtolower(trim($theme));
-    if (isset($bank[$theme])) {
-        $opts = $bank[$theme];
-        return $opts[array_rand($opts)];
-    }
-    // Repli : déduction par mots-clés du titre.
+    $used  = ai_used_scene_images();
+    $all   = array_merge(...array_values($bank));
+    // Renvoie une image NON utilisée du pool donné, sinon '' (pool épuisé).
+    $free = static function (array $opts) use ($used) {
+        $f = array_values(array_filter($opts, static fn($x) => empty($used[$x])));
+        return $f ? $f[array_rand($f)] : '';
+    };
+    // 1) thème exact → image libre du thème
+    if (isset($bank[$theme]) && ($p = $free($bank[$theme])) !== '') { return $p; }
+    // 2) déduction par mots-clés du titre → image libre du thème déduit
     $t = mb_strtolower($title);
     $hints = [
         'nuit' => 'night', 'soir' => 'night', 'carte' => 'city', 'map' => 'city', 'ville' => 'city',
@@ -101,12 +124,12 @@ function ai_pick_image(string $theme, string $title = ''): string
         'orage' => 'storm', 'tempête' => 'storm', 'club' => 'nightlife', 'fête' => 'nightlife',
     ];
     foreach ($hints as $kw => $th) {
-        if (mb_strpos($t, $kw) !== false && isset($bank[$th])) {
-            return $bank[$th][array_rand($bank[$th])];
-        }
+        if (mb_strpos($t, $kw) !== false && isset($bank[$th]) && ($p = $free($bank[$th])) !== '') { return $p; }
     }
-    // Repli final : une scène au hasard.
-    $all = array_merge(...array_values($bank));
+    // 3) n'importe quelle image LIBRE de la banque (unicité prioritaire sur le thème)
+    if (($p = $free($all)) !== '') { return $p; }
+    // 4) banque épuisée : dernier recours au hasard (rare — configurez higgsfield_key pour
+    //    générer une image UNIQUE par article et ne jamais retomber ici).
     return $all[array_rand($all)];
 }
 
