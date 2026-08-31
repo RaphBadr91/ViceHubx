@@ -91,11 +91,15 @@ require ROOT_PATH . '/includes/header.php';
         ? 'Rockstar Games a fixé la sortie de <strong>GTA 6</strong> au <strong>19 novembre 2026</strong>, sur PlayStation 5 et Xbox Series X|S. Après un premier trailer dévoilé fin 2023 et un second en 2025, le studio a confirmé cette fenêtre d’automne — l’une des sorties les plus attendues de l’histoire du jeu vidéo. Notre compte à rebours en page d’accueil suit le décompte en temps réel.'
         : 'Rockstar Games set <strong>GTA 6</strong> for <strong>November 19, 2026</strong>, on PlayStation 5 and Xbox Series X|S. After a first trailer in late 2023 and a second in 2025, the studio confirmed this fall window — one of the most anticipated launches in gaming history. Our homepage countdown tracks it live.' ?></p>
 
+    <p style="margin:.2rem 0 0"><a href="<?= e(with_lang(url('pages/gta-6-date-de-sortie.php'))) ?>">→ <?= $fr ? 'Date de sortie de GTA 6 : compte à rebours et tout ce qui est confirmé' : 'GTA 6 release date: countdown and everything confirmed' ?></a></p>
+
     <!-- Prix & éditions -->
     <h2 id="editions">💸 <?= e($fr ? 'Prix & éditions : Standard ou Ultimate ?' : 'Price & editions: Standard or Ultimate?') ?></h2>
     <p><?= $fr
         ? 'GTA 6 se décline en <strong>deux éditions</strong> seulement. Voici le comparatif clair pour choisir.'
         : 'GTA 6 comes in <strong>two editions</strong> only. Here is the clear comparison to help you choose.' ?></p>
+
+    <p style="margin:.2rem 0 0"><a href="<?= e(with_lang(url('pages/gta-6-prix-editions.php'))) ?>">→ <?= $fr ? 'Prix de GTA 6 : comparatif complet des éditions et précommande' : 'GTA 6 price: full edition comparison and pre-order' ?></a></p>
 
     <div class="edi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1.1rem 0">
         <div class="glass" style="padding:1.4rem;border-radius:16px">
