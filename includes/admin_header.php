@@ -19,6 +19,7 @@ $admin_nav = [
     ['articles.php',  t('admin_articles')],
     ['article-create.php', t('admin_new')],
     ['ai-articles.php', '🤖 Articles IA'],
+    ['veille.php',    '🔭 Veille'],
     ['social.php',    '📣 Réseaux'],
     ['newsletter.php', '📧 Newsletter'],
     ['tiktok.php',    '🎵 TikTok'],
