@@ -54,7 +54,12 @@ if (($_POST['action'] ?? '') === 'send') {
                     $emails = db()->query($sql)->fetchAll(PDO::FETCH_COLUMN);
                     $sent = 0; $fail = 0;
                     foreach ($emails as $em) {
-                        if (resend_send((string) $em, $subject, $html)) { $sent++; } else { $fail++; }
+                        $em = trim((string) $em);
+                        if ($em === '') { continue; }
+                        // send_mail() : Resend si configuré, sinon repli mail(). On temporise
+                        // ~250 ms entre chaque envoi pour rester sous les limites de débit Resend.
+                        if (send_mail($em, $subject, $html)) { $sent++; } else { $fail++; }
+                        usleep(250000);
                     }
                     $flash = ['ok', "Campagne envoyée : {$sent} e-mail(s) partis" . ($fail ? ", {$fail} échec(s)" : '') . '.'];
                 } catch (Throwable $e) {

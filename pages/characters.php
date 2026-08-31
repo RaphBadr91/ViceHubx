@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_characters_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Personnages GTA 6 : Jason, Lucia et le casting' : 'GTA 6 Characters: Jason, Lucia & full cast') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Fiches personnages GTA VI : rôles, descriptions, théories et liens.'
     : 'GTA VI character sheets: roles, descriptions, theories and links.';

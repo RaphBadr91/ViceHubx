@@ -20,6 +20,14 @@ try {
 }
 if ($img === '') { http_response_code(404); exit; }
 
+// GD requis pour convertir en JPEG. S'il manque (rare sur O2Switch), on renvoie
+// l'image d'origine telle quelle plutôt qu'un 500 (les crawlers RS/og:image l'exigent).
+if (!function_exists('imagecreatefromstring') || !function_exists('imagejpeg')) {
+    if (preg_match('#^https?://#i', $img)) { header('Location: ' . $img, true, 302); }
+    else { header('Location: /' . ltrim($img, '/'), true, 302); }
+    exit;
+}
+
 // Récupère le binaire : fichier local, sinon URL distante (CDN).
 $data = false;
 if (preg_match('#^https?://#i', $img)) {

@@ -34,6 +34,26 @@ if ($active_collection !== '') {
     $products = array_values(array_filter($products, static fn($p) => ($p['badge'] ?? '') === $active_collection));
 }
 
+// Anti-doublon SEO : si un filtre passé en query est INVALIDE (donc réinitialisé
+// ci-dessus) ou superflu, on 301 vers l'URL propre en ne gardant QUE les filtres
+// valides. Empêche qu'une URL parasite (ex. /shop?cat=xyz) devienne une page
+// auto-canonique dupliquée de /shop. Le hreflang FR/EN auto (header) reste actif.
+$__rawFilters = array_filter([
+    'cat'        => trim((string) ($_GET['cat'] ?? '')),
+    'theme'      => trim((string) ($_GET['theme'] ?? '')),
+    'collection' => trim((string) ($_GET['collection'] ?? '')),
+], static fn($v) => $v !== '');
+$__validFilters = [];
+if ($active_cat !== 'all')                              { $__validFilters['cat'] = $active_cat; }
+if ($is_wallpaper && $active_theme !== 'all')           { $__validFilters['theme'] = $active_theme; }
+if ($active_collection !== '')                          { $__validFilters['collection'] = $active_collection; }
+if ($__rawFilters != $__validFilters) {
+    $__host = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/')
+        : (((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'vicehubx.com'));
+    header('Location: ' . $__host . '/shop' . ($__validFilters ? '?' . http_build_query($__validFilters) : ''), true, 301);
+    exit;
+}
+
 $theme_label = ($is_wallpaper && $active_theme !== 'all') ? trim((string) (explode(' ', $themes[$active_theme], 2)[1] ?? $themes[$active_theme])) : '';
 $SEO_TITLE = ($active_cat === 'all'
     ? t('page_shop_title')

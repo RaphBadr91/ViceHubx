@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_guides_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Guides GTA 6 : astuces, soluces et conseils' : 'GTA 6 Guides: tips, walkthroughs & tricks') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Guides GTA VI : prise en main, argent, conduite et astuces pour progresser vite.'
     : 'GTA VI guides: getting started, money, driving and tips to progress fast.';

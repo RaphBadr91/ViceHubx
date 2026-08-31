@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_vehicles_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Véhicules GTA 6 : voitures, motos et bateaux' : 'GTA 6 Vehicles: cars, bikes & boats') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Fiches véhicules GTA VI : type, vitesse estimée, utilité et rareté.'
     : 'GTA VI vehicle sheets: type, estimated speed, use and rarity.';

@@ -185,7 +185,13 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
         'name'          => APP_NAME,
         'alternateName' => ['ViceHubX', 'Vice Hub X', 'ViceHub X GTA6'],
         'url'           => $site_base . '/',
-        'logo'          => $og_image_abs,
+        // Logo ÉDITEUR fixe (identique sur toutes les URLs) — requis pour le logo
+        // dans Google Actualités / Top Stories et le Knowledge Panel. Ne jamais
+        // utiliser l'image de la page courante ici (entité incohérente sinon).
+        'logo'          => [
+            '@type' => 'ImageObject',
+            'url'   => cdn_url('brand-logo.png') ?: ($site_base . '/public/assets/img/brand/logo-square.png'),
+        ],
         'foundingDate'  => '2026',
         'knowsAbout'    => ['Grand Theft Auto VI', 'GTA 6', 'Vice City', 'Leonida', 'Rockstar Games'],
         'description'   => lang() === 'fr'
@@ -214,7 +220,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
                 'publisher'  => ['@id' => $site_base . '/#org'],
                 'potentialAction' => [
                     '@type'       => 'SearchAction',
-                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $site_base . '/pages/recherche.php?q={search_term_string}'],
+                    'target'      => ['@type' => 'EntryPoint', 'urlTemplate' => $site_base . '/recherche?q={search_term_string}'],
                     'query-input' => 'required name=search_term_string',
                 ],
             ],

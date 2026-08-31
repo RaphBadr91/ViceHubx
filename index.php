@@ -10,10 +10,12 @@ if (($_POST['action'] ?? '') === 'newsletter') {
     if (verify_csrf()) {
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         if ($email) {
-            $stmt = db()->prepare(
-                'INSERT IGNORE INTO newsletter_subscribers (email, lang) VALUES (?, ?)'
-            );
-            $stmt->execute([$email, lang()]);
+            try {
+                $stmt = db()->prepare(
+                    'INSERT IGNORE INTO newsletter_subscribers (email, lang) VALUES (?, ?)'
+                );
+                $stmt->execute([$email, lang()]);
+            } catch (Throwable $e) { /* jamais d'erreur SQL exposée sur une inscription */ }
             $newsletter_msg = ['ok', t('newsletter_ok')];
         } else {
             $newsletter_msg = ['err', 'E-mail invalide.'];
@@ -119,7 +121,10 @@ require __DIR__ . '/includes/header.php';
 
     <div class="hero__content">
         <span class="hero__kicker">✦ <?= e(t('hero_badge')) ?></span>
-        <h1 class="hero__wm"><span>ViceHub</span><b class="grad">X</b></h1>
+        <h1 class="hero__wm">
+            <span class="hero__wm-tag"><?= e(lang() === 'fr' ? 'GTA 6 · News, date de sortie & leaks' : 'GTA 6 · News, release date & leaks') ?></span>
+            <span>ViceHub</span><b class="grad">X</b>
+        </h1>
         <p class="hero__release"><b>GTA VI</b> — <?= e(release_human()) ?></p>
         <p class="hero__sub"><?= e(lang() === 'fr' ? APP_SLOGAN_FR : APP_SLOGAN_EN) ?></p>
 

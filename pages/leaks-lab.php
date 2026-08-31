@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_leaks_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Leaks GTA 6 : fuites vérifiées et classées' : 'GTA 6 Leaks: verified rumors, ranked') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Leaks GTA VI classés par fiabilité : confirmé, probable, rumeur, analyse ou faux.'
     : 'GTA VI leaks ranked by reliability: confirmed, likely, rumor, analysis or fake.';

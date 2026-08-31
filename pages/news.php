@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_news_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'GTA 6 : actualités et news en continu' : 'GTA 6 News: latest updates & rumors') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Toute l’actualité GTA VI : annonces, analyses et infos en continu sur ViceHub X.'
     : 'All the GTA VI news: announcements, analysis and continuous coverage on ViceHub X.';

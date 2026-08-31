@@ -16,6 +16,13 @@ echo "Disallow: /admin/\n";
 echo "Disallow: /config/\n";
 echo "Disallow: /includes/\n";
 echo "Disallow: /scripts/\n";
+// On autorise l'INDEXATION des IMAGES sous /uploads/ (fan-arts, héros uploadés)
+// pour Google Images / Discover, tout en gardant le reste du dossier privé.
+echo "Allow: /uploads/*.jpg$\n";
+echo "Allow: /uploads/*.jpeg$\n";
+echo "Allow: /uploads/*.png$\n";
+echo "Allow: /uploads/*.webp$\n";
+echo "Allow: /uploads/*.gif$\n";
 echo "Disallow: /uploads/\n";
 echo "Disallow: /checkout.php\n";
 echo "Disallow: /stripe-webhook.php\n";

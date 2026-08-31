@@ -65,6 +65,52 @@ function veille_is_gta6(string $text): bool
     return (bool) preg_match('/\bgta\s?6\b|\bgta\s?vi\b|grand\s+theft\s+auto\s+(6|vi|six)|vice\s+city/i', $text);
 }
 
+/**
+ * L'hôte est-il sûr à contacter côté serveur ? (anti-SSRF). Refuse loopback, IP
+ * privées/réservées, link-local (169.254) et endpoints de métadonnées cloud — y
+ * compris APRÈS résolution DNS, pour bloquer un domaine qui pointerait en interne.
+ */
+function veille_host_is_safe(string $host): bool
+{
+    $host = strtolower(trim($host));
+    if ($host === '') { return false; }
+    if (in_array($host, ['localhost', 'metadata', 'metadata.google.internal'], true)) { return false; }
+    $ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : gethostbyname($host);
+    if (filter_var($ip, FILTER_VALIDATE_IP)
+        && filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        return false; // IP privée (10./127./192.168./172.16-31.) ou réservée (169.254., ::1…)
+    }
+    return true;
+}
+
+/**
+ * GET HTTP durci pour la veille : ne suit PAS les redirections en aveugle. Il
+ * revalide l'hôte à CHAQUE saut (anti-SSRF par redirection) et borne la taille.
+ */
+function veille_http_get(string $url, int $maxRedirects = 4): ?string
+{
+    if (!function_exists('curl_init')) { return null; }
+    for ($i = 0; $i <= $maxRedirects; $i++) {
+        if (!veille_host_is_safe((string) parse_url($url, PHP_URL_HOST))) { return null; }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => false,          // on gère la redirection nous-mêmes
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_MAXFILESIZE    => 8 * 1024 * 1024,
+            CURLOPT_USERAGENT      => 'ViceHubX-Veille/1.0 (+https://vicehubx.com)',
+        ]);
+        $body = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $next = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+        curl_close($ch);
+        if ($code >= 300 && $code < 400 && $next !== '') { $url = $next; continue; }
+        return ($body !== false && $code < 400) ? (string) $body : null;
+    }
+    return null; // trop de redirections
+}
+
 function veille_add_source(string $name, string $url, string $type, string $lang = 'en'): bool
 {
     veille_ensure_tables();
@@ -72,13 +118,8 @@ function veille_add_source(string $name, string $url, string $type, string $lang
     $type = in_array($type, ['rss', 'sitemap'], true) ? $type : 'rss';
     $lang = in_array($lang, ['fr', 'en'], true) ? $lang : 'en';
     if ($name === '' || !preg_match('#^https?://#i', $url)) { return false; }
-    // Anti-SSRF (léger) : refuse les hôtes internes/loopback même côté admin.
-    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
-    if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', 'metadata.google.internal'], true)
-        || preg_match('/^(10|127)\./', $host) || preg_match('/^192\.168\./', $host)
-        || preg_match('/^172\.(1[6-9]|2\d|3[01])\./', $host)) {
-        return false;
-    }
+    // Anti-SSRF : refuse les hôtes internes/loopback/métadonnées (même côté admin).
+    if (!veille_host_is_safe((string) parse_url($url, PHP_URL_HOST))) { return false; }
     try {
         db()->prepare('INSERT INTO competitor_sources (name, url, type, lang) VALUES (?, ?, ?, ?)')->execute([$name, $url, $type, $lang]);
         return true;
@@ -195,11 +236,11 @@ function veille_parse_sitemap(string $xml): array
 function veille_fetch_source(array $src): int
 {
     veille_ensure_tables();
-    $body = http_get((string) $src['url']);
+    $body = veille_http_get((string) $src['url']);
     if ($body === null || $body === '') { return 0; }
     $items = ($src['type'] === 'sitemap') ? veille_parse_sitemap($body) : veille_parse_feed($body);
     if (!$items) { return 0; }
-    $lang = in_array($src['lang'] ?? 'en', ['fr', 'en'], true) ? $src['lang'] : 'en';
+    $lang = in_array($src['lang'] ?? 'en', ['fr', 'en'], true) ? ($src['lang'] ?? 'en') : 'en';
     $ins = db()->prepare(
         'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang, image_url) VALUES (?, ?, ?, ?, ?, ?)'
     );
@@ -301,7 +342,7 @@ function veille_auto_generate(int $max = 3): int
         $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
         $q->execute();
         foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $it) {
-            $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? $it['lang'] : 'en';
+            $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? ($it['lang'] ?? 'en') : 'en';
             $topic = $lang === 'fr'
                 ? $it['title'] . ' — actu GTA 6, réécrite à notre manière (angle ViceHub X), 100% originale'
                 : $it['title'] . ' — GTA 6 news, rewritten our way (ViceHub X angle), 100% original';

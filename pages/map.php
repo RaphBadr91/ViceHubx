@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_map_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Carte GTA 6 (Leonida / Vice City) interactive' : 'GTA 6 Map (Leonida / Vice City) interactive') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Carte interactive stylisée non officielle de Vice City : quartiers et zones cliquables.'
     : 'Stylised unofficial interactive map of Vice City: clickable districts and zones.';

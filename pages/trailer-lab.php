@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/config.php';
-$SEO_TITLE = t('page_trailer_title') . ' — ' . APP_NAME;
+$SEO_TITLE = (lang() === 'fr' ? 'Trailer GTA 6 : analyse des bandes-annonces' : 'GTA 6 Trailer: frame-by-frame breakdown') . ' — ' . APP_NAME;
 $SEO_DESC  = lang() === 'fr'
     ? 'Analyse image par image des trailers GTA VI : timecodes, indices et importance.'
     : 'Frame-by-frame GTA VI trailer analysis: timecodes, clues and importance.';
