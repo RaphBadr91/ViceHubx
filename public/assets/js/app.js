@@ -486,12 +486,20 @@
     if (!bodyRows.length) {
       bodyRows = Array.prototype.filter.call(table.querySelectorAll('tr'), function (r) { return r !== headRow; });
     }
+    // Colonne "GTA 6" = la star de la comparaison → on la met en avant.
+    var heroIdx = -1;
+    labels.forEach(function (l, i) { if (i > 0 && /\bgta\s*6\b|\bgta\s*vi\b/i.test(l)) { heroIdx = i; } });
     bodyRows.forEach(function (tr) {
       Array.prototype.forEach.call(tr.querySelectorAll('th,td'), function (cell, i) {
         if (i === 0) { cell.classList.add('vhx-rowhead'); }
         else if (!cell.hasAttribute('data-label')) { cell.setAttribute('data-label', labels[i] || ''); }
+        if (i === heroIdx) { cell.classList.add('vhx-hero'); }
       });
     });
+    if (heroIdx >= 0) {
+      var hcells = headRow.querySelectorAll('th,td');
+      if (hcells[heroIdx]) { hcells[heroIdx].classList.add('vhx-hero'); }
+    }
   }
   function run() {
     Array.prototype.forEach.call(document.querySelectorAll('.article-body table'), enhance);
