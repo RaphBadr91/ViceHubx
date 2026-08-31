@@ -1804,6 +1804,11 @@ function vhx_auto_heartbeat(): void
         try {
             if (defined('ROOT_PATH')) {
                 if (is_file(ROOT_PATH . '/includes/ai.php'))     { require_once ROOT_PATH . '/includes/ai.php'; }
+                // GÉNÈRE les articles en file (réécritures veille manuelles + auto) : sans
+                // ceci, les briefs restent bloqués en file si shell_exec ET le cron sont
+                // absents (hébergement mutualisé) → les articles semblent « perdus ». Le
+                // trafic du site suffit désormais à les générer (verrou anti-double + budget).
+                if (function_exists('ai_drain_queue')) { ai_drain_queue($budget); }
                 if (is_file(ROOT_PATH . '/includes/social.php')) { require_once ROOT_PATH . '/includes/social.php'; }
                 if (function_exists('social_any_ready') && social_any_ready()) { social_drain($budget); }
                 if (is_file(ROOT_PATH . '/includes/tiktok.php')) {

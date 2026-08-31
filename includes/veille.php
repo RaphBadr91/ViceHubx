@@ -284,7 +284,11 @@ function veille_item(int $id): ?array
 {
     veille_ensure_tables();
     try {
-        $q = db()->prepare('SELECT * FROM competitor_items WHERE id = ?');
+        $q = db()->prepare(
+            'SELECT i.*, s.name AS source_name FROM competitor_items i
+             LEFT JOIN competitor_sources s ON s.id = i.source_id
+             WHERE i.id = ?'
+        );
         $q->execute([$id]);
         return $q->fetch(PDO::FETCH_ASSOC) ?: null;
     } catch (Throwable $e) { return null; }

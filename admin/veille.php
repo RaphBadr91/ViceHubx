@@ -8,6 +8,12 @@ require __DIR__ . '/../includes/admin_header.php';
 require_once dirname(__DIR__) . '/includes/veille.php';
 require_once dirname(__DIR__) . '/includes/ai.php';
 
+// Sujet de réécriture (angle GTA VI, 100% original) + libellé de statut lisible.
+$vhxTopic = static fn(array $it, string $lang): string => $lang === 'en'
+    ? $it['title'] . ' — original ViceHub X angle for GTA 6, rewritten our way, 100% original'
+    : $it['title'] . ' — angle original ViceHub X pour GTA 6, réécrit à notre manière, 100% original';
+$vhxStatusLabel = static fn(string $s): string => $s === 'published' ? 'publication directe' : ($s === 'pending' ? 'programmation' : 'brouillon');
+
 $flash = null;
 $act = $_POST['action'] ?? '';
 if ($act !== '' && !verify_csrf()) { $flash = ['err', 'Jeton CSRF invalide.']; $act = ''; }
@@ -27,17 +33,32 @@ if ($act === 'add_source') {
 } elseif ($act === 'write') {
     $it = veille_item((int) ($_POST['id'] ?? 0));
     if ($it) {
-        $lang  = in_array($_POST['lang'] ?? 'fr', ['fr', 'en'], true) ? $_POST['lang'] : 'fr';
-        $topic = $lang === 'en'
-            ? $it['title'] . ' — original ViceHub X angle for GTA 6, rewritten our way, 100% original'
-            : $it['title'] . ' — angle original ViceHub X pour GTA 6, réécrit à notre manière, 100% original';
-        ai_brief_add([$topic], 'draft', $lang);   // brouillon : on relit avant publication
-        ai_spawn_worker();                         // lance la génération en arrière-plan
+        $lang   = in_array($_POST['lang'] ?? 'fr', ['fr', 'en'], true) ? $_POST['lang'] : 'fr';
+        $status = in_array($_POST['status'] ?? 'draft', ['draft', 'pending', 'published'], true) ? $_POST['status'] : 'draft';
+        // Réécriture RICHE : garde l'image de la source (créditée), comme le mode auto.
+        ai_brief_add_rich($vhxTopic($it, $lang), $status, $lang, (string) ($it['image_url'] ?? ''), (string) ($it['source_name'] ?? ''));
+        ai_spawn_worker();                         // tente une génération immédiate (si dispo)
         veille_set_item_status((int) $it['id'], 'written');
-        $flash = ['ok', 'Article lancé (brouillon, en génération). Retrouve-le dans « Articles ».'];
+        $flash = ['ok', 'Article lancé en réécriture (' . $vhxStatusLabel($status) . '). Il apparaîtra dans « Articles » dès sa génération (arrière-plan).'];
     } else {
         $flash = ['err', 'Sujet introuvable.'];
     }
+} elseif ($act === 'write_bulk') {
+    $ids    = array_values(array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])), static fn($v) => $v > 0));
+    $lang   = in_array($_POST['bulk_lang'] ?? 'fr', ['fr', 'en'], true) ? $_POST['bulk_lang'] : 'fr';
+    $status = in_array($_POST['bulk_status'] ?? 'pending', ['draft', 'pending', 'published'], true) ? $_POST['bulk_status'] : 'pending';
+    $n = 0;
+    foreach ($ids as $id) {
+        $it = veille_item($id);
+        if (!$it) { continue; }
+        ai_brief_add_rich($vhxTopic($it, $lang), $status, $lang, (string) ($it['image_url'] ?? ''), (string) ($it['source_name'] ?? ''));
+        veille_set_item_status($id, 'written');
+        $n++;
+    }
+    if ($n > 0) { ai_spawn_worker(); }
+    $flash = $n > 0
+        ? ['ok', "{$n} article(s) lancé(s) en réécriture (" . $vhxStatusLabel($status) . "). Ils apparaîtront dans « Articles » au fil de leur génération — plus aucun ne se perd."]
+        : ['err', 'Aucun sujet sélectionné.'];
 } elseif ($act === 'toggle_auto') {
     set_setting('veille_auto', ($_POST['veille_auto'] ?? '') === '1' ? '1' : '0');
     $flash = ['ok', veille_is_auto()
@@ -48,6 +69,7 @@ if ($act === 'add_source') {
 $sources = veille_sources(false);
 $items   = veille_items('new', 80);
 $counts  = veille_counts();
+$pending = count(json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: []); // articles en file de génération
 ?>
 <div class="admin-bar">
     <h1>🔭 Veille concurrents</h1>
@@ -104,12 +126,36 @@ $counts  = veille_counts();
 <h2 style="font-size:1.05rem">Sujets détectés (<?= count($items) ?>)</h2>
 <p class="muted" style="font-size:.85rem;margin-top:0">On ne reprend QUE l'idée de sujet — l'article est écrit à notre manière, sous l'angle GTA VI, 100% original.</p>
 
+<?php if ($pending > 0): ?>
+    <p class="muted" style="font-size:.85rem;margin:.2rem 0 .6rem;color:var(--blue)">🕒 <strong><?= (int) $pending ?></strong> article(s) en file de génération — ils se créent en arrière-plan (déclenché par le trafic du site) et remontent dans « Articles » au fur et à mesure. Aucun n'est perdu.</p>
+<?php endif; ?>
+
+<?php if ($items): ?>
+<div class="glass" style="padding:.8rem 1rem;border-radius:12px;margin-bottom:.8rem;display:flex;gap:.7rem;align-items:center;flex-wrap:wrap">
+    <label style="display:flex;gap:.4rem;align-items:center;margin:0;cursor:pointer"><input type="checkbox" id="vselAll"> <strong>Tout sélectionner</strong></label>
+    <span class="muted" style="font-size:.85rem"><span id="vselCount">0</span> sélectionné(s)</span>
+    <span style="flex:1;min-width:10px"></span>
+    <form method="post" id="veilleBulk" style="margin:0;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap" onsubmit="return vhxBulkConfirm(this)">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="write_bulk">
+        <select name="bulk_lang" style="padding:.35rem" title="Langue des articles"><option value="fr">FR</option><option value="en">EN</option></select>
+        <select name="bulk_status" style="padding:.35rem" title="Que faire des articles réécrits">
+            <option value="pending">📅 Réécrire + programmer</option>
+            <option value="published">🚀 Réécrire + publier direct</option>
+            <option value="draft">📝 Réécrire en brouillon</option>
+        </select>
+        <button class="btn btn--primary" type="submit">✍️ Réécrire la sélection</button>
+    </form>
+</div>
+<?php endif; ?>
+
 <?php if (!$items): ?>
     <p class="muted">Rien pour l'instant. Ajoute des sources puis clique « Rafraîchir la veille ».</p>
 <?php else: ?>
 <div style="display:flex;flex-direction:column;gap:.5rem">
     <?php foreach ($items as $it): ?>
         <div class="glass" style="padding:.7rem 1rem;border-radius:12px;display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap">
+            <input type="checkbox" name="ids[]" value="<?= (int) $it['id'] ?>" form="veilleBulk" class="vsel" onchange="vhxBulkCount()" title="Sélectionner pour réécriture groupée" style="width:18px;height:18px;flex:0 0 auto">
             <div style="min-width:220px;flex:1">
                 <a href="<?= e($it['url']) ?>" target="_blank" rel="noopener nofollow" style="font-weight:600"><?= e($it['title']) ?></a>
                 <div class="muted" style="font-size:.78rem"><?= e($it['source_name'] ?? '—') ?> · <?= e($it['published_at'] ? fmt_date($it['published_at']) : '') ?></div>
@@ -129,4 +175,17 @@ $counts  = veille_counts();
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
+<script>
+function vhxBulkCount(){var n=document.querySelectorAll('.vsel:checked').length;var c=document.getElementById('vselCount');if(c)c.textContent=n;}
+(function(){var all=document.getElementById('vselAll');if(all){all.addEventListener('change',function(){document.querySelectorAll('.vsel').forEach(function(cb){cb.checked=all.checked;});vhxBulkCount();});}})();
+function vhxBulkConfirm(f){
+  var n=document.querySelectorAll('.vsel:checked').length;
+  if(n===0){alert('Sélectionne au moins un sujet.');return false;}
+  var st=f.bulk_status.value;
+  var msg=st==='published'
+    ? 'Réécrire ET PUBLIER directement '+n+' article(s) ? Ils partent en ligne dès leur génération.'
+    : (st==='pending' ? 'Réécrire et programmer '+n+' article(s) ? Ils se publieront de façon espacée.' : 'Réécrire '+n+' article(s) en brouillon (à relire avant publication) ?');
+  return confirm(msg);
+}
+</script>
 <?php require __DIR__ . '/../includes/admin_footer.php'; ?>
