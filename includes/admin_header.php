@@ -20,6 +20,7 @@ $admin_nav = [
     ['article-create.php', t('admin_new')],
     ['ai-articles.php', '🤖 Articles IA'],
     ['social.php',    '📣 Réseaux'],
+    ['newsletter.php', '📧 Newsletter'],
     ['tiktok.php',    '🎵 TikTok'],
     ['products.php',  'Boutique'],
     ['orders.php',    'Commandes'],

@@ -15,11 +15,24 @@ if (!$is_wallpaper || !isset($themes[$active_theme])) {
     $active_theme = 'all';
 }
 
+// Filtre par COLLECTION (badge merch : AFTER MIDNIGHT, GOLDEN HOUR…).
+$VHX_COLLECTIONS = ['AFTER MIDNIGHT', 'GOLDEN HOUR', 'TWO OF A KIND', 'HIGH SCORE CITY', 'GETAWAY SEASON', 'NEON NOIR'];
+$active_collection = isset($_GET['collection']) ? trim((string) $_GET['collection']) : '';
+if ($active_collection !== '' && !in_array($active_collection, $VHX_COLLECTIONS, true)) { $active_collection = ''; }
+$present_collections = [];
+try {
+    $present_collections = db()->query("SELECT DISTINCT badge FROM products WHERE active = 1 AND badge <> ''")->fetchAll(PDO::FETCH_COLUMN);
+} catch (Throwable $e) { /* table indisponible */ }
+$collection_chips = array_values(array_intersect($VHX_COLLECTIONS, $present_collections));
+
 $products = get_products(
     $active_cat === 'all' ? null : $active_cat,
     null,
     $is_wallpaper && $active_theme !== 'all' ? $active_theme : null
 );
+if ($active_collection !== '') {
+    $products = array_values(array_filter($products, static fn($p) => ($p['badge'] ?? '') === $active_collection));
+}
 
 $theme_label = ($is_wallpaper && $active_theme !== 'all') ? trim((string) (explode(' ', $themes[$active_theme], 2)[1] ?? $themes[$active_theme])) : '';
 $SEO_TITLE = ($active_cat === 'all'
@@ -32,6 +45,10 @@ $SEO_DESC  = $is_wallpaper
     : (lang() === 'fr'
         ? 'Boutique ViceHub X : wallpapers et affiches GTA VI générés par IA, jeux, consoles, vêtements et goodies. Sélection de fans.'
         : 'ViceHub X shop: AI-generated GTA VI wallpapers and posters, games, consoles, apparel and goodies. Fan picks.');
+
+if ($active_collection !== '') {
+    $SEO_TITLE = 'ViceHub X — ' . $active_collection . ' | ' . t('page_shop_title');
+}
 
 $cat_emoji = ['poster' => '🖼️', 'wallpaper' => '🖥️', 'game' => '🎮', 'console' => '🕹️', 'apparel' => '👕', 'accessory' => '🎧', 'collectible' => '🏆'];
 
@@ -83,6 +100,15 @@ require ROOT_PATH . '/includes/header.php';
             </a>
         <?php endforeach; ?>
     </div>
+
+    <?php if ($collection_chips): ?>
+    <div class="shop-filters" role="tablist" aria-label="Collections" style="margin-top:.5rem">
+        <a class="chip<?= $active_collection === '' ? ' chip--on' : '' ?>" href="<?= e(with_lang(url('pages/shop.php'))) ?>">✨ <?= lang() === 'fr' ? 'Toutes collections' : 'All collections' ?></a>
+        <?php foreach ($collection_chips as $col): ?>
+            <a class="chip<?= $active_collection === $col ? ' chip--on' : '' ?>" href="<?= e(with_lang(url('pages/shop.php?collection=' . urlencode($col)))) ?>"><?= e($col) ?></a>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
 
     <?php if ($is_wallpaper): ?>
     <!-- Bandeau wallpapers + sous-thèmes (Voiture / Avion / Ville / Nuit / Fille) -->

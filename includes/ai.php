@@ -765,8 +765,8 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
             . "- ABSOLUTE RELIABILITY: state only VERIFIED facts. Any unofficial info = framed as rumor/leak (\"according to rumors…\", \"unconfirmed\"). Never invent a date, price, name or feature.\n"
             . "- 100% UNIQUE TITLE and META DESCRIPTION: never the same as another article. Each article targets DIFFERENT keywords/angle to capture maximum Google searches (long tail).\n"
             . "- ~2000 words, rich, no filler, SEO-optimized (natural keywords: GTA 6, GTA VI, Vice City, Leonida).\n"
-            . "- Structure: strong hook, then 5-7 <h2> sections (with <h3> if useful), <ul>/<ol> lists, and a final <h2>FAQ</h2> section with 3-4 questions as <h3>Question?</h3><p>Answer</p> (ideal for Google AI Overview).\n"
-            . "- ALLOWED tags only: <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. NO <a>, NO <h1>, NO markdown.\n"
+            . "- PREMIUM structure: (1) strong 2-3 sentence hook; (2) a <ul> 'Key takeaways' TL;DR of 4-5 bullets right after the hook (wins featured snippet & AI Overview); (3) 5-7 DENSE <h2> sections (with <h3>/<h4>), full of facts, numbers and concrete examples, NO filler; (4) AT LEAST ONE comparison <table> (with <thead>/<tbody>/<tr>/<th>/<td>) whenever the topic allows (editions/prices, PS5 vs Xbox, GTA 6 vs GTA 5, specs); (5) for any date/trailer/timeline topic, ONE chronological <ol> timeline; (6) a <blockquote> for each uncertain claim, starting with 'Confirmed:' or 'Rumor / unconfirmed:'; (7) a final <h2>Sources & official</h2> with a short <ul> of where to verify (Rockstar Newswire, official channels) as PLAIN TEXT; (8) a final <h2>FAQ</h2> with 3-4 <h3>Question?</h3><p>Answer</p>.\n"
+            . "- ALLOWED tags only: <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td> <figure> <figcaption>. NO <a>, NO <h1>, NO markdown.\n"
             . "- Write like a PASSIONATE HUMAN: NEVER say you are an AI, add NO technical marker. Do NOT end with \"===END===\" or any separator: the last FAQ <p> ends the article.\n"
             . $avoid . "\n"
             . "STRICT RESPONSE FORMAT (nothing else):\n"
@@ -800,9 +800,8 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
             . "- FIABILITÉ ABSOLUE : n'affirme que des faits VÉRIFIÉS. Toute info non officielle = présentée comme rumeur/fuite (« selon des rumeurs… », « non confirmé »). Jamais d'invention de date, prix, nom ou fonctionnalité.\n"
             . "- TITRE et META DESCRIPTION 100% UNIQUES : jamais le même titre ni la même meta qu'un autre article du site. Chaque article vise des mots-clés/angle DIFFÉRENTS pour capter un maximum de recherches Google (longue traîne).\n"
             . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
-            . "- Structure : accroche forte, puis 5 à 7 sections <h2> (avec des <h3> si utile), des listes <ul>/<ol>, "
-            . "et une section finale <h2>FAQ</h2> avec 3-4 questions au format <h3>Question ?</h3><p>Réponse</p> (idéal Google AI Overview).\n"
-            . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <ul> <ol> <li> <strong> <em> <blockquote>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
+            . "- Structure PREMIUM : (1) accroche forte 2-3 phrases ; (2) un <ul> « L'essentiel » (TL;DR) de 4-5 puces juste après l'accroche (capte le featured snippet & l'AI Overview) ; (3) 5 à 7 sections <h2> DENSES (avec <h3>/<h4>), pleines de faits, chiffres et exemples concrets, SANS remplissage ; (4) AU MOINS UN <table> comparatif (avec <thead>/<tbody>/<tr>/<th>/<td>) dès que le sujet s'y prête (éditions/prix, PS5 vs Xbox, GTA 6 vs GTA 5, config) ; (5) pour tout sujet date/trailer/chronologie, UNE frise chronologique <ol> ; (6) un <blockquote> pour chaque info incertaine, commençant par « Confirmé : » ou « Rumeur / non confirmé : » ; (7) une section finale <h2>Sources & officiel</h2> avec un court <ul> d'où vérifier (Rockstar Newswire, comptes officiels) en TEXTE ; (8) une section finale <h2>FAQ</h2> avec 3-4 <h3>Question ?</h3><p>Réponse</p>.\n"
+            . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td> <figure> <figcaption>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
             . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
             . $avoid . "\n"
             . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
@@ -811,7 +810,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
             . "PUIS = le corps de l'article en HTML (~2000 mots).";
     }
 
-    $raw = anthropic_complete($system, $user, 5200);
+    $raw = anthropic_complete($system, $user, 6500);
 
     // Sépare l'en-tête JSON du corps HTML (robuste pour les longs contenus).
     $bpos = strpos($raw, '===CORPS===');
