@@ -1810,6 +1810,12 @@ function vhx_auto_heartbeat(): void
                     require_once ROOT_PATH . '/includes/tiktok.php';
                     if (function_exists('tiktok_ready') && tiktok_ready()) { tiktok_drain($budget); }
                 }
+                // Veille concurrents : récupère les nouveaux articles GTA 6 et (si activé)
+                // lance automatiquement NOTRE version. Auto-throttlé (~30 min).
+                if (is_file(ROOT_PATH . '/includes/veille.php')) {
+                    require_once ROOT_PATH . '/includes/veille.php';
+                    if (function_exists('veille_auto_tick')) { veille_auto_tick(); }
+                }
             }
         } catch (Throwable $e) {
             // silencieux : ne jamais casser une page publique

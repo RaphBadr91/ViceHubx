@@ -13,7 +13,7 @@ $act = $_POST['action'] ?? '';
 if ($act !== '' && !verify_csrf()) { $flash = ['err', 'Jeton CSRF invalide.']; $act = ''; }
 
 if ($act === 'add_source') {
-    $ok = veille_add_source((string) ($_POST['name'] ?? ''), (string) ($_POST['url'] ?? ''), (string) ($_POST['type'] ?? 'rss'));
+    $ok = veille_add_source((string) ($_POST['name'] ?? ''), (string) ($_POST['url'] ?? ''), (string) ($_POST['type'] ?? 'rss'), (string) ($_POST['lang'] ?? 'en'));
     $flash = $ok ? ['ok', 'Source ajoutée.'] : ['err', 'Nom manquant ou URL invalide (http/https).'];
 } elseif ($act === 'del_source') {
     veille_delete_source((int) ($_POST['id'] ?? 0));
@@ -38,6 +38,11 @@ if ($act === 'add_source') {
     } else {
         $flash = ['err', 'Sujet introuvable.'];
     }
+} elseif ($act === 'toggle_auto') {
+    set_setting('veille_auto', ($_POST['veille_auto'] ?? '') === '1' ? '1' : '0');
+    $flash = ['ok', veille_is_auto()
+        ? '🟢 Auto-publication ACTIVÉE : les nouveaux sujets GTA 6 sont réécrits à notre plume et publiés automatiquement (max 3 / 30 min).'
+        : '⚪ Auto-publication désactivée (mode manuel).'];
 }
 
 $sources = veille_sources(false);
@@ -54,15 +59,27 @@ $counts  = veille_counts();
 <div class="glass" style="padding:1.2rem;border-radius:16px;margin-bottom:1.2rem">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap">
         <h2 style="margin:0;font-size:1.05rem">Sources surveillées (<?= count($sources) ?>)</h2>
-        <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="refresh">
-            <button class="btn btn--primary" type="submit">🔄 Rafraîchir la veille</button>
-        </form>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <form method="post" style="margin:0"><?= csrf_field() ?>
+                <input type="hidden" name="action" value="toggle_auto">
+                <input type="hidden" name="veille_auto" value="<?= veille_is_auto() ? '0' : '1' ?>">
+                <button class="btn <?= veille_is_auto() ? 'btn--ghost' : 'btn--primary' ?>" type="submit">
+                    <?= veille_is_auto() ? '🟢 Auto ON — cliquer pour couper' : '⚪ Activer l\'auto-publication' ?>
+                </button>
+            </form>
+            <form method="post" style="margin:0"><?= csrf_field() ?><input type="hidden" name="action" value="refresh">
+                <button class="btn btn--primary" type="submit">🔄 Rafraîchir</button>
+            </form>
+        </div>
     </div>
+    <?php if (veille_is_auto()): ?>
+        <p class="muted" style="font-size:.82rem;margin:.4rem 0 0">⚠️ En mode auto, les nouveaux sujets GTA 6 sont <strong>réécrits et PUBLIÉS automatiquement</strong> (max 3 toutes les 30 min, déclenché par le trafic). Surveille « Articles ».</p>
+    <?php endif; ?>
     <?php if ($sources): ?>
     <div style="margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem">
         <?php foreach ($sources as $s): ?>
             <div style="display:flex;gap:.6rem;align-items:center;justify-content:space-between;border-bottom:1px solid var(--glass-brd,rgba(255,255,255,.08));padding:.35rem 0">
-                <span><strong><?= e($s['name']) ?></strong> <span class="muted">— <?= e($s['type']) ?></span><br><span class="muted" style="font-size:.8rem"><?= e($s['url']) ?></span></span>
+                <span><strong><?= e($s['name']) ?></strong> <span class="muted">— <?= e(strtoupper((string) ($s['lang'] ?? 'en'))) ?> · <?= e($s['type']) ?></span><br><span class="muted" style="font-size:.8rem"><?= e($s['url']) ?></span></span>
                 <form method="post" style="margin:0" onsubmit="return confirm('Supprimer cette source ?')"><?= csrf_field() ?>
                     <input type="hidden" name="action" value="del_source"><input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
                     <button class="btn btn--ghost" style="padding:.3rem .6rem" type="submit">✕</button>
@@ -74,10 +91,11 @@ $counts  = veille_counts();
         <p class="muted" style="margin-top:.6rem">Aucune source. Ajoute le flux RSS (ex. <code>https://site-concurrent.com/feed</code>) ou le sitemap d'un concurrent GTA/gaming.</p>
     <?php endif; ?>
 
-    <form method="post" style="margin-top:1rem;display:grid;grid-template-columns:1fr 2fr auto auto;gap:.6rem;align-items:end">
+    <form method="post" style="margin-top:1rem;display:grid;grid-template-columns:1fr 2fr auto auto auto;gap:.6rem;align-items:end">
         <?= csrf_field() ?><input type="hidden" name="action" value="add_source">
         <div><label>Nom</label><input type="text" name="name" required maxlength="120" placeholder="Concurrent X"></div>
         <div><label>URL du flux RSS / sitemap</label><input type="url" name="url" required maxlength="500" placeholder="https://…/feed"></div>
+        <div><label>Langue</label><select name="lang"><option value="en">EN</option><option value="fr">FR</option></select></div>
         <div><label>Type</label><select name="type"><option value="rss">RSS/Atom</option><option value="sitemap">Sitemap</option></select></div>
         <button class="btn btn--primary" type="submit">Ajouter</button>
     </form>

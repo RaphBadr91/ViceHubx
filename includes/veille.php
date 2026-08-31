@@ -23,6 +23,7 @@ function veille_ensure_tables(): void
                 name       VARCHAR(120) NOT NULL,
                 url        VARCHAR(500) NOT NULL,
                 type       ENUM('rss','sitemap') NOT NULL DEFAULT 'rss',
+                lang       ENUM('fr','en') NOT NULL DEFAULT 'en',
                 active     TINYINT(1) NOT NULL DEFAULT 1,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB"
@@ -35,6 +36,7 @@ function veille_ensure_tables(): void
                 url          VARCHAR(500) NOT NULL UNIQUE,
                 published_at DATETIME NULL,
                 status       ENUM('new','ignored','written') NOT NULL DEFAULT 'new',
+                lang         ENUM('fr','en') NOT NULL DEFAULT 'en',
                 seen_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_status (status)
             ) ENGINE=InnoDB"
@@ -52,11 +54,18 @@ function veille_sources(bool $activeOnly = false): array
     } catch (Throwable $e) { return []; }
 }
 
-function veille_add_source(string $name, string $url, string $type): bool
+/** Le titre parle-t-il de GTA 6 ? (filtre : on ne garde QUE les sujets GTA 6). */
+function veille_is_gta6(string $text): bool
+{
+    return (bool) preg_match('/\bgta\s?6\b|\bgta\s?vi\b|grand\s+theft\s+auto\s+(6|vi|six)|vice\s+city/i', $text);
+}
+
+function veille_add_source(string $name, string $url, string $type, string $lang = 'en'): bool
 {
     veille_ensure_tables();
     $name = trim($name); $url = trim($url);
     $type = in_array($type, ['rss', 'sitemap'], true) ? $type : 'rss';
+    $lang = in_array($lang, ['fr', 'en'], true) ? $lang : 'en';
     if ($name === '' || !preg_match('#^https?://#i', $url)) { return false; }
     // Anti-SSRF (léger) : refuse les hôtes internes/loopback même côté admin.
     $host = strtolower((string) parse_url($url, PHP_URL_HOST));
@@ -66,7 +75,7 @@ function veille_add_source(string $name, string $url, string $type): bool
         return false;
     }
     try {
-        db()->prepare('INSERT INTO competitor_sources (name, url, type) VALUES (?, ?, ?)')->execute([$name, $url, $type]);
+        db()->prepare('INSERT INTO competitor_sources (name, url, type, lang) VALUES (?, ?, ?, ?)')->execute([$name, $url, $type, $lang]);
         return true;
     } catch (Throwable $e) { return false; }
 }
@@ -150,13 +159,15 @@ function veille_fetch_source(array $src): int
     if ($body === null || $body === '') { return 0; }
     $items = ($src['type'] === 'sitemap') ? veille_parse_sitemap($body) : veille_parse_feed($body);
     if (!$items) { return 0; }
+    $lang = in_array($src['lang'] ?? 'en', ['fr', 'en'], true) ? $src['lang'] : 'en';
     $ins = db()->prepare(
-        'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at) VALUES (?, ?, ?, ?)'
+        'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang) VALUES (?, ?, ?, ?, ?)'
     );
     $new = 0;
-    foreach (array_slice($items, 0, 60) as [$title, $url, $date]) {
+    foreach (array_slice($items, 0, 80) as [$title, $url, $date]) {
+        if (!veille_is_gta6($title)) { continue; }   // ne conserve QUE les sujets GTA 6
         try {
-            $ins->execute([(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date]);
+            $ins->execute([(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date, $lang]);
             if ($ins->rowCount() > 0) { $new++; }
         } catch (Throwable $e) { /* url trop longue / doublon */ }
     }
@@ -215,4 +226,63 @@ function veille_counts(): array
         }
     } catch (Throwable $e) {}
     return $c;
+}
+
+/** L'auto-publication de la veille est-elle activée ? */
+function veille_is_auto(): bool
+{
+    return get_setting('veille_auto', '0') === '1';
+}
+
+/**
+ * Lance NOTRE version des $max sujets « new » les plus récents (publication directe
+ * pour être premier). Plafonné pour ne pas inonder la file ni exploser les coûts IA.
+ * Retourne le nombre d'articles mis en génération.
+ */
+function veille_auto_generate(int $max = 3): int
+{
+    veille_ensure_tables();
+    if (!function_exists('ai_brief_add')) {
+        if (defined('ROOT_PATH') && is_file(ROOT_PATH . '/includes/ai.php')) { require_once ROOT_PATH . '/includes/ai.php'; }
+    }
+    if (!function_exists('ai_brief_add')) { return 0; }
+    $done = 0;
+    try {
+        // Fraîcheur : on ne réécrit que l'actu RÉCENTE (évite d'inonder avec un vieux backlog).
+        $q = db()->prepare(
+            "SELECT id, title, lang FROM competitor_items
+             WHERE status = 'new'
+               AND (published_at >= NOW() - INTERVAL 3 DAY
+                    OR (published_at IS NULL AND seen_at >= NOW() - INTERVAL 1 DAY))
+             ORDER BY published_at DESC, id DESC LIMIT ?"
+        );
+        $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
+        $q->execute();
+        foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $it) {
+            $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? $it['lang'] : 'en';
+            $topic = $lang === 'fr'
+                ? $it['title'] . ' — actu GTA 6, réécrite à notre manière (angle ViceHub X), 100% originale'
+                : $it['title'] . ' — GTA 6 news, rewritten our way (ViceHub X angle), 100% original';
+            ai_brief_add([$topic], 'published', $lang);   // publication directe = on est premier
+            veille_set_item_status((int) $it['id'], 'written');
+            $done++;
+        }
+        if ($done > 0 && function_exists('ai_spawn_worker')) { ai_spawn_worker(); }
+    } catch (Throwable $e) { /* silencieux */ }
+    return $done;
+}
+
+/**
+ * Tick appelé par le heartbeat public : récupère les nouveaux sujets GTA 6 et, si
+ * l'auto-publication est activée, lance NOTRE version. Auto-throttlé (~30 min).
+ */
+function veille_auto_tick(): void
+{
+    try {
+        $last = (int) get_setting('veille_hb', '0');
+        if (time() - $last < 1800) { return; }        // au plus une fois toutes les 30 min
+        set_setting('veille_hb', (string) time());
+    } catch (Throwable $e) { return; }
+    veille_fetch_all();
+    if (veille_is_auto()) { veille_auto_generate(3); } // max 3 articles auto par cycle
 }
