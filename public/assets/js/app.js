@@ -464,3 +464,38 @@
       .catch(function () { f.submit(); }); // en cas d'échec : soumission classique (jamais bloqué)
   });
 })();
+
+/* Tableaux d'article responsives : enrobe pour le scroll horizontal (desktop) et
+   injecte le libellé de chaque colonne sur les cellules pour la vue "cartes" mobile.
+   Aucune modif du contenu ; s'applique aux comparatifs générés dans les articles. */
+(function () {
+  function enhance(table) {
+    var p = table.parentElement;
+    if (!p || !p.classList.contains('table-wrap')) {
+      var wrap = document.createElement('div');
+      wrap.className = 'table-wrap';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    }
+    var headRow = table.querySelector('thead tr') || table.querySelector('tr');
+    if (!headRow) { return; }
+    var labels = Array.prototype.map.call(headRow.querySelectorAll('th,td'), function (c) {
+      return c.textContent.trim();
+    });
+    var bodyRows = Array.prototype.slice.call(table.querySelectorAll('tbody tr'));
+    if (!bodyRows.length) {
+      bodyRows = Array.prototype.filter.call(table.querySelectorAll('tr'), function (r) { return r !== headRow; });
+    }
+    bodyRows.forEach(function (tr) {
+      Array.prototype.forEach.call(tr.querySelectorAll('th,td'), function (cell, i) {
+        if (i === 0) { cell.classList.add('vhx-rowhead'); }
+        else if (!cell.hasAttribute('data-label')) { cell.setAttribute('data-label', labels[i] || ''); }
+      });
+    });
+  }
+  function run() {
+    Array.prototype.forEach.call(document.querySelectorAll('.article-body table'), enhance);
+  }
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', run); }
+  else { run(); }
+})();
