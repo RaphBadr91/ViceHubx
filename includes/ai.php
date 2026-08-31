@@ -649,8 +649,27 @@ function ai_topics(): array
 /** Catégorie (slug) → id. */
 function ai_cat_id(string $slug): int
 {
-    $map = ['news' => 1, 'guides' => 2, 'leaks' => 3, 'trailers' => 4, 'blog' => 5];
-    return $map[strtolower($slug)] ?? 5;
+    static $cache = [];
+    $slug = strtolower(trim($slug));
+    if (!in_array($slug, ['news', 'guides', 'leaks', 'trailers', 'blog'], true)) { $slug = 'blog'; }
+    if (isset($cache[$slug])) { return $cache[$slug]; }
+    // Vraie recherche par slug (robuste si les ids diffèrent), repli sur 'blog' puis map figée.
+    $id = 0;
+    try {
+        $q = db()->prepare('SELECT id FROM categories WHERE slug = ? LIMIT 1');
+        $q->execute([$slug]);
+        $id = (int) ($q->fetchColumn() ?: 0);
+    } catch (Throwable $e) { $id = 0; }
+    if ($id === 0 && $slug !== 'blog') {
+        try {
+            $id = (int) (db()->query("SELECT id FROM categories WHERE slug='blog' LIMIT 1")->fetchColumn() ?: 0);
+        } catch (Throwable $e) { $id = 0; }
+    }
+    if ($id === 0) {
+        $map = ['news' => 1, 'guides' => 2, 'leaks' => 3, 'trailers' => 4, 'blog' => 5];
+        $id  = $map[$slug] ?? 5;
+    }
+    return $cache[$slug] = $id;
 }
 
 /** ID réel de la catégorie « Blog » (les articles IA y sont TOUS rangés). */
