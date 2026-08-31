@@ -78,7 +78,12 @@ $SEO_TITLE = $__mt !== ''
     : ($article['title'] . (mb_strlen((string) $article['title']) <= 52 ? ' — ' . APP_NAME : ''));
 $__md = trim((string) ($article['meta_description'] ?? ''));
 $SEO_DESC = $__md !== '' ? $__md : ($article['excerpt'] ?: APP_NAME);
-$SEO_OG_IMAGE = !empty($article['image']) ? img_src($article['image']) : (cdn_url('brand-cover.png') ?: asset('img/og-default.svg'));
+// Partage réseaux sociaux (WhatsApp, Facebook, Messenger…) : ces plateformes n'affichent
+// PAS le WebP en aperçu. On sert donc la PHOTO DE L'ARTICLE via social-img.php, qui la
+// convertit à la volée en JPEG aplati (compatible partout). Repli marque si pas d'image.
+$SEO_OG_IMAGE = !empty($article['image'])
+    ? 'social-img.php?id=' . (int) $article['id']
+    : (cdn_url('brand-cover.png') ?: asset('img/og-default.svg'));
 
 // URL absolue de l'article (pour og:type=article + schema enrichi)
 $__base  = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/')

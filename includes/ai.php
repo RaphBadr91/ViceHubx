@@ -895,22 +895,31 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
         if ($gen) { $data['image'] = $gen; }
     }
 
-    // Colonne source_credit auto-créée (best-effort) → pas de dépendance à une migration.
-    static $__srcColOk = false;
-    if (!$__srcColOk) {
-        try { db()->exec("ALTER TABLE articles ADD COLUMN IF NOT EXISTS source_credit VARCHAR(120) DEFAULT NULL"); } catch (Throwable $e) {}
-        $__srcColOk = true;
-    }
-
     $lang = (($data['lang'] ?? 'fr') === 'en') ? 'en' : 'fr';
-    $st = db()->prepare(
-        'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, source_credit, author_id, status, published_at, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
-    );
-    $st->execute([
-        ai_cat_id((string) ($data['category'] ?? 'blog')), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
-        $data['image'], $data['image_prompt'], ($data['source_credit'] ?? null), $authorId, $status, $pub,
-    ]);
+
+    // La colonne source_credit n'est PAS garantie (migration best-effort). On ne la met
+    // dans l'INSERT que si elle existe RÉELLEMENT : ainsi un droit DDL manquant ou un
+    // MySQL sans "IF NOT EXISTS" ne casse jamais TOUTE la génération (et évite un coût
+    // API qui tournerait en boucle à chaque heartbeat sur un INSERT invalide).
+    if (ai_has_source_credit_col()) {
+        $st = db()->prepare(
+            'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, source_credit, author_id, status, published_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        );
+        $st->execute([
+            ai_cat_id((string) ($data['category'] ?? 'blog')), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
+            $data['image'], $data['image_prompt'], ($data['source_credit'] ?? null), $authorId, $status, $pub,
+        ]);
+    } else {
+        $st = db()->prepare(
+            'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, author_id, status, published_at, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        );
+        $st->execute([
+            ai_cat_id((string) ($data['category'] ?? 'blog')), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
+            $data['image'], $data['image_prompt'], $authorId, $status, $pub,
+        ]);
+    }
     return (int) db()->lastInsertId();
 }
 
@@ -1220,6 +1229,33 @@ function ai_ensure_source_col(): void
     } catch (Throwable $e) {
         // Colonne déjà présente ou droits DDL limités : on continue sans bloquer.
     }
+}
+
+/**
+ * La colonne `source_credit` existe-t-elle sur `articles` ? (crédit « Source : … »
+ * des articles issus de la veille concurrents). Best-effort : on tente de la créer
+ * si absente, mais on ne renvoie true que si elle est RÉELLEMENT présente — l'INSERT
+ * ne l'inclut alors que dans ce cas, donc aucun risque de panne si l'ALTER échoue
+ * (droits DDL restreints, ou MySQL qui ne connaît pas « ADD COLUMN IF NOT EXISTS »).
+ */
+function ai_has_source_credit_col(): bool
+{
+    static $has = null;
+    if ($has !== null) { return $has; }
+    $has = false;
+    try {
+        $has = ((int) db()->query(
+            "SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'articles' AND COLUMN_NAME = 'source_credit'"
+        )->fetchColumn()) > 0;
+        if (!$has) {
+            try { db()->exec('ALTER TABLE articles ADD COLUMN source_credit VARCHAR(120) DEFAULT NULL'); $has = true; }
+            catch (Throwable $e) { /* droits DDL limités : on insérera sans cette colonne */ }
+        }
+    } catch (Throwable $e) {
+        $has = false;
+    }
+    return $has;
 }
 
 /** Génère un slug UNIQUE (ajoute -2, -3… en cas de collision). URL anglaise propre. */
