@@ -41,7 +41,7 @@ if ($act === 'add_source') {
 } elseif ($act === 'toggle_auto') {
     set_setting('veille_auto', ($_POST['veille_auto'] ?? '') === '1' ? '1' : '0');
     $flash = ['ok', veille_is_auto()
-        ? '🟢 Auto-publication ACTIVÉE : les nouveaux sujets GTA 6 sont réécrits à notre plume et publiés automatiquement (max 3 / 30 min).'
+        ? '🟢 Auto-publication ACTIVÉE : les meilleurs sujets GTA 6 récents sont réécrits à notre plume et publiés automatiquement (2-3 par jour max).'
         : '⚪ Auto-publication désactivée (mode manuel).'];
 }
 
@@ -73,7 +73,7 @@ $counts  = veille_counts();
         </div>
     </div>
     <?php if (veille_is_auto()): ?>
-        <p class="muted" style="font-size:.82rem;margin:.4rem 0 0">⚠️ En mode auto, les nouveaux sujets GTA 6 sont <strong>réécrits et PUBLIÉS automatiquement</strong> (max 3 toutes les 30 min, déclenché par le trafic). Surveille « Articles ».</p>
+        <p class="muted" style="font-size:.82rem;margin:.4rem 0 0">⚠️ En mode auto, les <strong>2-3 meilleurs sujets GTA 6</strong> du jour sont réécrits (notre plume) et <strong>PUBLIÉS automatiquement</strong>, déclenché par le trafic. L'article reprend l'<strong>image de la source</strong> avec le crédit « Source : … » en bas. <em>Réutiliser l'image d'un concurrent peut poser un souci de droits d'auteur — le crédit atténue, mais surveille et remplace si besoin.</em></p>
     <?php endif; ?>
     <?php if ($sources): ?>
     <div style="margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem">

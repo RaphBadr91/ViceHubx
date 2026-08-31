@@ -867,20 +867,30 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
         ? date('Y-m-d H:i:s')
         : ($status === 'pending' ? ai_next_slot($interval) : null);
 
-    // Illustration IA sur-mesure (Higgsfield) générée à la création, si activée.
-    if (ai_img_enabled() && !empty($data['image_prompt'])) {
+    // Visuel : si un IMAGE SOURCE est fourni (veille concurrents), on le garde (crédité) et
+    // on NE génère PAS d'illustration. Sinon illustration IA sur-mesure (Higgsfield) si activée.
+    if (!empty($data['source_image'])) {
+        $data['image'] = (string) $data['source_image'];
+    } elseif (ai_img_enabled() && !empty($data['image_prompt'])) {
         $gen = ai_generate_image((string) $data['image_prompt'], $slug);
         if ($gen) { $data['image'] = $gen; }
     }
 
+    // Colonne source_credit auto-créée (best-effort) → pas de dépendance à une migration.
+    static $__srcColOk = false;
+    if (!$__srcColOk) {
+        try { db()->exec("ALTER TABLE articles ADD COLUMN IF NOT EXISTS source_credit VARCHAR(120) DEFAULT NULL"); } catch (Throwable $e) {}
+        $__srcColOk = true;
+    }
+
     $lang = (($data['lang'] ?? 'fr') === 'en') ? 'en' : 'fr';
     $st = db()->prepare(
-        'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, author_id, status, published_at, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
+        'INSERT INTO articles (category_id, lang, title, slug, excerpt, body, image, image_prompt, source_credit, author_id, status, published_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())'
     );
     $st->execute([
-        ai_blog_cat_id(), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
-        $data['image'], $data['image_prompt'], $authorId, $status, $pub,
+        ai_cat_id((string) ($data['category'] ?? 'blog')), $lang, $data['title'], $slug, $data['excerpt'], $data['body'],
+        $data['image'], $data['image_prompt'], ($data['source_credit'] ?? null), $authorId, $status, $pub,
     ]);
     return (int) db()->lastInsertId();
 }
@@ -956,6 +966,20 @@ function ai_brief_add(array $briefs, string $status = 'published', string $lang 
     return $added;
 }
 
+/** Ajoute UN brief ENRICHI (image source + crédit) — utilisé par la veille concurrents. */
+function ai_brief_add_rich(string $topic, string $status = 'published', string $lang = 'fr', string $img = '', string $src = ''): int
+{
+    $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'published';
+    $lang   = in_array($lang, ['fr', 'en'], true) ? $lang : 'fr';
+    $topic  = trim($topic);
+    if ($topic === '') { return 0; }
+    $q = json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: [];
+    $q[] = ['t' => mb_substr($topic, 0, 400), 's' => $status, 'l' => $lang,
+            'img' => mb_substr($img, 0, 500), 'src' => mb_substr($src, 0, 120)];
+    set_setting('ai_brief_queue', json_encode(array_slice($q, 0, 100), JSON_UNESCAPED_UNICODE));
+    return 1;
+}
+
 /** Nombre de briefs en attente. */
 function ai_brief_count(): int
 {
@@ -993,6 +1017,8 @@ function ai_drain_queue(int $budgetSeconds = 0): int
             $bStatus = in_array(($item['s'] ?? 'published'), ['draft', 'pending', 'published'], true) ? $item['s'] : 'published';
             $bLang   = in_array(($item['l'] ?? 'fr'), ['fr', 'en'], true) ? $item['l'] : 'fr';
             $art = ai_generate_article((string) ($item['t'] ?? ''), ai_resolve_tone($toneSel, $done), $bLang);
+            if (!empty($item['img'])) { $art['source_image'] = (string) $item['img']; }   // visuel de la source (crédité)
+            if (!empty($item['src'])) { $art['source_credit'] = (string) $item['src']; }
             ai_save_article($art, $bStatus, $authorId);
             $done++;
         } catch (Throwable $e) {

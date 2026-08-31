@@ -37,10 +37,15 @@ function veille_ensure_tables(): void
                 published_at DATETIME NULL,
                 status       ENUM('new','ignored','written') NOT NULL DEFAULT 'new',
                 lang         ENUM('fr','en') NOT NULL DEFAULT 'en',
+                image_url    VARCHAR(500) DEFAULT NULL,
                 seen_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_status (status)
             ) ENGINE=InnoDB"
         );
+        // Self-healing pour les installations antérieures (best-effort).
+        try { db()->exec("ALTER TABLE competitor_sources ADD COLUMN IF NOT EXISTS lang ENUM('fr','en') NOT NULL DEFAULT 'en'"); } catch (Throwable $e) {}
+        try { db()->exec("ALTER TABLE competitor_items ADD COLUMN IF NOT EXISTS lang ENUM('fr','en') NOT NULL DEFAULT 'en'"); } catch (Throwable $e) {}
+        try { db()->exec("ALTER TABLE competitor_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(500) DEFAULT NULL"); } catch (Throwable $e) {}
     } catch (Throwable $e) { /* droits DDL limités */ }
 }
 
@@ -96,7 +101,42 @@ function veille_title_from_url(string $url): string
     return ucfirst(trim($slug)) ?: $url;
 }
 
-/** Parse un flux RSS 2.0 ou Atom → [ [title, url, date|null], ... ]. */
+/** Extrait l'URL de l'image d'un item de flux (enclosure, media:*, ou <img> du contenu). */
+function veille_item_image(SimpleXMLElement $it): string
+{
+    // <enclosure url="..." type="image/...">
+    if (isset($it->enclosure)) {
+        $u = (string) $it->enclosure['url']; $t = (string) $it->enclosure['type'];
+        if ($u !== '' && (stripos($t, 'image') !== false || preg_match('#\.(jpe?g|png|webp)#i', $u))) { return $u; }
+    }
+    // Atom : <link rel="enclosure" href="..." type="image/...">
+    if (isset($it->link)) {
+        foreach ($it->link as $l) {
+            if ((string) $l['rel'] === 'enclosure' && stripos((string) $l['type'], 'image') !== false) {
+                $u = (string) $l['href']; if ($u !== '') { return $u; }
+            }
+        }
+    }
+    // media:content / media:thumbnail (namespace MRSS)
+    $media = $it->children('http://search.yahoo.com/mrss/');
+    if ($media) {
+        foreach (['content', 'thumbnail'] as $tag) {
+            if (isset($media->$tag)) {
+                $u = (string) $media->$tag->attributes()->url;
+                if ($u !== '') { return $u; }
+            }
+        }
+    }
+    // <img src> dans description / content:encoded / content (Atom)
+    $html = (string) ($it->description ?? '');
+    $content = $it->children('http://purl.org/rss/1.0/modules/content/');
+    if ($content && isset($content->encoded)) { $html .= (string) $content->encoded; }
+    if (isset($it->content)) { $html .= (string) $it->content; }
+    if ($html !== '' && preg_match('#<img[^>]+src=["\\\']([^"\\\']+)["\\\']#i', $html, $m)) { return $m[1]; }
+    return '';
+}
+
+/** Parse un flux RSS 2.0 ou Atom → [ [title, url, date|null, image], ... ]. */
 function veille_parse_feed(string $xml): array
 {
     $out = [];
@@ -111,7 +151,7 @@ function veille_parse_feed(string $xml): array
             $link  = trim((string) $it->link);
             $date  = trim((string) $it->pubDate);
             if ($title !== '' && $link !== '') {
-                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null];
+                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($it)];
             }
         }
         return $out;
@@ -127,7 +167,7 @@ function veille_parse_feed(string $xml): array
             }
             $date = trim((string) ($e->updated ?? $e->published ?? ''));
             if ($title !== '' && $link !== '') {
-                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null];
+                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($e)];
             }
         }
     }
@@ -146,7 +186,7 @@ function veille_parse_sitemap(string $xml): array
         $loc = trim((string) $u->loc);
         if ($loc === '') { continue; }
         $mod = trim((string) $u->lastmod);
-        $out[] = [veille_title_from_url($loc), $loc, $mod !== '' ? date('Y-m-d H:i:s', strtotime($mod) ?: time()) : null];
+        $out[] = [veille_title_from_url($loc), $loc, $mod !== '' ? date('Y-m-d H:i:s', strtotime($mod) ?: time()) : null, ''];
     }
     return $out;
 }
@@ -161,13 +201,13 @@ function veille_fetch_source(array $src): int
     if (!$items) { return 0; }
     $lang = in_array($src['lang'] ?? 'en', ['fr', 'en'], true) ? $src['lang'] : 'en';
     $ins = db()->prepare(
-        'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang) VALUES (?, ?, ?, ?, ?)'
+        'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang, image_url) VALUES (?, ?, ?, ?, ?, ?)'
     );
     $new = 0;
-    foreach (array_slice($items, 0, 80) as [$title, $url, $date]) {
+    foreach (array_slice($items, 0, 80) as [$title, $url, $date, $img]) {
         if (!veille_is_gta6($title)) { continue; }   // ne conserve QUE les sujets GTA 6
         try {
-            $ins->execute([(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date, $lang]);
+            $ins->execute([(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date, $lang, ($img !== '' ? mb_substr((string) $img, 0, 500) : null)]);
             if ($ins->rowCount() > 0) { $new++; }
         } catch (Throwable $e) { /* url trop longue / doublon */ }
     }
@@ -248,13 +288,15 @@ function veille_auto_generate(int $max = 3): int
     if (!function_exists('ai_brief_add')) { return 0; }
     $done = 0;
     try {
-        // Fraîcheur : on ne réécrit que l'actu RÉCENTE (évite d'inonder avec un vieux backlog).
+        // Fraîcheur : on ne réécrit que l'actu RÉCENTE (les plus frais = « meilleurs »
+        // pour être premier), et on récupère l'image + le nom de la source.
         $q = db()->prepare(
-            "SELECT id, title, lang FROM competitor_items
-             WHERE status = 'new'
-               AND (published_at >= NOW() - INTERVAL 3 DAY
-                    OR (published_at IS NULL AND seen_at >= NOW() - INTERVAL 1 DAY))
-             ORDER BY published_at DESC, id DESC LIMIT ?"
+            "SELECT i.id, i.title, i.lang, i.image_url, s.name AS source_name
+             FROM competitor_items i LEFT JOIN competitor_sources s ON s.id = i.source_id
+             WHERE i.status = 'new'
+               AND (i.published_at >= NOW() - INTERVAL 3 DAY
+                    OR (i.published_at IS NULL AND i.seen_at >= NOW() - INTERVAL 1 DAY))
+             ORDER BY i.published_at DESC, i.id DESC LIMIT ?"
         );
         $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
         $q->execute();
@@ -263,7 +305,13 @@ function veille_auto_generate(int $max = 3): int
             $topic = $lang === 'fr'
                 ? $it['title'] . ' — actu GTA 6, réécrite à notre manière (angle ViceHub X), 100% originale'
                 : $it['title'] . ' — GTA 6 news, rewritten our way (ViceHub X angle), 100% original';
-            ai_brief_add([$topic], 'published', $lang);   // publication directe = on est premier
+            $img = (string) ($it['image_url'] ?? '');
+            $src = (string) ($it['source_name'] ?? '');
+            if (function_exists('ai_brief_add_rich')) {
+                ai_brief_add_rich($topic, 'published', $lang, $img, $src);   // image source + crédit
+            } else {
+                ai_brief_add([$topic], 'published', $lang);
+            }
             veille_set_item_status((int) $it['id'], 'written');
             $done++;
         }
@@ -284,5 +332,17 @@ function veille_auto_tick(): void
         set_setting('veille_hb', (string) time());
     } catch (Throwable $e) { return; }
     veille_fetch_all();
-    if (veille_is_auto()) { veille_auto_generate(3); } // max 3 articles auto par cycle
+    if (!veille_is_auto()) { return; }
+    // Plafond QUOTIDIEN : 2-3 articles auto max par jour (réglage veille_auto_max, défaut 3).
+    // 1 par cycle (30 min) → étalé dans la journée ; on prend les plus frais (« meilleurs »).
+    $today = date('Y-m-d');
+    if (get_setting('veille_pub_day', '') !== $today) {
+        set_setting('veille_pub_day', $today);
+        set_setting('veille_pub_count', '0');
+    }
+    $count = (int) get_setting('veille_pub_count', '0');
+    $max   = max(1, min(10, (int) (get_setting('veille_auto_max', '3') ?: 3)));
+    if ($count >= $max) { return; }                    // quota du jour atteint
+    $gen = veille_auto_generate(1);                     // 1 article par cycle
+    if ($gen > 0) { set_setting('veille_pub_count', (string) ($count + $gen)); }
 }

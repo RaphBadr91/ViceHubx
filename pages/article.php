@@ -183,8 +183,13 @@ require ROOT_PATH . '/includes/header.php';
     <h1 style="font-size:clamp(1.9rem,5vw,3rem);margin:0 0 1rem;text-transform:none"><?= e($article['title']) ?></h1>
     <p class="muted" style="font-size:1.1rem;margin-bottom:1.6rem"><?= e($article['excerpt']) ?></p>
 
-    <?php if (!empty($article['image'])): ?>
-        <img src="<?= e(img_src($article['image'])) ?>" alt="<?= e($article['title']) ?>" width="1280" height="720" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:18px;margin-bottom:1.6rem">
+    <?php if (!empty($article['image'])): $__srcCredit = trim((string) ($article['source_credit'] ?? '')); ?>
+        <figure style="position:relative;margin:0 0 1.6rem">
+            <img src="<?= e(img_src($article['image'])) ?>" alt="<?= e($article['title']) ?>" width="1280" height="720" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:18px;display:block">
+            <?php if ($__srcCredit !== ''): ?>
+                <figcaption style="position:absolute;left:0;right:0;bottom:0;padding:.5rem .9rem;background:linear-gradient(transparent,rgba(0,0,0,.78));color:#fff;font-size:.78rem;border-radius:0 0 18px 18px;text-align:right">Source : <?= e($__srcCredit) ?></figcaption>
+            <?php endif; ?>
+        </figure>
     <?php endif; ?>
 
     <div class="article-body"><?= $safe_body ?></div>
