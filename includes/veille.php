@@ -58,6 +58,13 @@ function veille_add_source(string $name, string $url, string $type): bool
     $name = trim($name); $url = trim($url);
     $type = in_array($type, ['rss', 'sitemap'], true) ? $type : 'rss';
     if ($name === '' || !preg_match('#^https?://#i', $url)) { return false; }
+    // Anti-SSRF (léger) : refuse les hôtes internes/loopback même côté admin.
+    $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+    if ($host === '' || in_array($host, ['localhost', '127.0.0.1', '0.0.0.0', '::1', '169.254.169.254', 'metadata.google.internal'], true)
+        || preg_match('/^(10|127)\./', $host) || preg_match('/^192\.168\./', $host)
+        || preg_match('/^172\.(1[6-9]|2\d|3[01])\./', $host)) {
+        return false;
+    }
     try {
         db()->prepare('INSERT INTO competitor_sources (name, url, type) VALUES (?, ?, ?)')->execute([$name, $url, $type]);
         return true;
