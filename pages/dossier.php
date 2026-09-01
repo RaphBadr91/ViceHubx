@@ -41,7 +41,7 @@ foreach ($dossier_cols as [$slug, $label]) {
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section dossier">
-    <span class="eyebrow">📂 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('folder') ?> ViceHub X</span>
     <h1><?= $fr ? 'Le Dossier Vice City' : 'The Vice City Files' ?></h1>
     <p class="muted" style="max-width:760px"><?= $fr
         ? 'L’encyclopédie non officielle de GTA VI : tout ce qu’un amoureux de Vice City doit savoir, réuni au même endroit. Rumeurs et théories signalées comme telles.'

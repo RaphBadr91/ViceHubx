@@ -58,7 +58,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
-    <span class="eyebrow">🎬 GTA 6 · Trailer 2</span>
+    <span class="eyebrow"><?= vhx_icon('play') ?> GTA 6 · Trailer 2</span>
     <h1><?= $fr ? 'GTA 6 Trailer 2 : confirmé vs rumeur' : 'GTA 6 Trailer 2: Confirmed vs Rumor' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
 

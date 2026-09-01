@@ -71,7 +71,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
-    <span class="eyebrow">💸 GTA 6 · <?= $fr ? 'Prix &amp; éditions' : 'Price &amp; editions' ?></span>
+    <span class="eyebrow"><?= vhx_icon('price') ?> GTA 6 · <?= $fr ? 'Prix &amp; éditions' : 'Price &amp; editions' ?></span>
     <h1><?= $fr ? 'Prix de GTA 6 et éditions' : 'GTA 6 Price &amp; Editions' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
 

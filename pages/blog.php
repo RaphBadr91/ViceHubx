@@ -8,7 +8,7 @@ $SEO_DESC  = lang() === 'fr'
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">📝 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('pen') ?> ViceHub X</span>
     <h1><?= lang() === 'fr' ? 'Le Blog' : 'The Blog' ?></h1>
     <p class="muted" style="max-width:680px"><?= lang() === 'fr'
         ? 'Dossiers, analyses et coulisses autour de GTA VI. Tout notre contenu éditorial au même endroit.'

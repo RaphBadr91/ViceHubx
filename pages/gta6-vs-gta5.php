@@ -38,7 +38,7 @@ $rows = $fr ? [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">
-    <span class="eyebrow">⚔️ <?= e($fr ? 'Le comparatif' : 'The comparison') ?></span>
+    <span class="eyebrow"><?= vhx_icon('versus') ?> <?= e($fr ? 'Le comparatif' : 'The comparison') ?></span>
     <h1>GTA 6 vs GTA 5</h1>
     <p class="lede" style="max-width:70ch;font-size:1.1rem;color:var(--muted,#b9b3c9);margin:.6rem 0 0">
         <?= $fr

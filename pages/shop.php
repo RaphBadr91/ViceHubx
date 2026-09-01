@@ -108,7 +108,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🛍️ ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('bag') ?> ViceHub X</span>
     <h1><?= e(t('page_shop_title')) ?></h1>
     <p class="muted" style="max-width:720px"><?= e(t('shop_intro')) ?></p>
 
@@ -134,7 +134,7 @@ require ROOT_PATH . '/includes/header.php';
     <!-- Bandeau wallpapers + sous-thèmes (Voiture / Avion / Ville / Nuit / Fille) -->
     <div class="wp-hero glass reveal">
         <div class="wp-hero__txt">
-            <span class="eyebrow">🖥️ <?= lang() === 'fr' ? 'Collection Wallpapers HD' : 'HD Wallpapers Collection' ?></span>
+            <span class="eyebrow"><?= vhx_icon('monitor') ?> <?= lang() === 'fr' ? 'Collection Wallpapers HD' : 'HD Wallpapers Collection' ?></span>
             <h2><?= lang() === 'fr' ? 'Des fonds d’écran magnifiques de Vice City' : 'Gorgeous Vice City wallpapers' ?></h2>
             <p class="muted"><?= lang() === 'fr'
                 ? 'Générés par IA, qualité haute définition. Aperçu filigrané — après achat, vous recevez le fichier propre par e-mail en PNG, JPEG et PDF.'

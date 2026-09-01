@@ -1080,6 +1080,12 @@ body.is-home .site-header.scrolled {
     filter: drop-shadow(0 0 7px rgba(43,214,255,.65));
     transform: translateY(-1px);
 }
+/* Icônes de section (eyebrows) — jeu SVG néon cohérent, hérite de la teinte du texte */
+.vhx-ico {
+    width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -.16em; margin-right: .45em;
+    fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 6px rgba(43,214,255,.35));
+}
 .cart-badge {
     position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px;
     display: grid; place-items: center; font-size: .68rem; font-weight: 800; color: #fff;

@@ -71,7 +71,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
-    <span class="eyebrow">📅 GTA 6 · <?= $fr ? 'Date de sortie' : 'Release date' ?></span>
+    <span class="eyebrow"><?= vhx_icon('calendar') ?> GTA 6 · <?= $fr ? 'Date de sortie' : 'Release date' ?></span>
     <h1><?= $fr ? 'Date de sortie de GTA 6' : 'GTA 6 Release Date' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
 

@@ -9,7 +9,7 @@ $SEO_OG_IMAGE = cdn_url('night.png');
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:820px">
-    <span class="eyebrow">🎰 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('dice') ?> ViceHub X</span>
     <h1><?= $fr ? 'Codes de triche' : 'Cheat codes' ?></h1>
     <p class="muted"><?= $fr
         ? 'Hommage aux codes cultes de GTA. Tape un code dans la console et regarde Vice City réagir. 🌴 (Astuce : tu peux aussi taper le code directement au clavier n’importe où sur le site.)'

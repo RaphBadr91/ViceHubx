@@ -9,7 +9,7 @@ $SEO_OG_IMAGE = cdn_url('nightlife.png');
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:760px">
-    <span class="eyebrow">🎮 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('controller') ?> ViceHub X</span>
     <h1><?= $fr ? 'Quel personnage de Vice City es-tu ?' : 'Which Vice City character are you?' ?></h1>
     <p class="muted"><?= $fr ? '5 questions, 1 minute. Branche Vice FM et c’est parti. 🌴' : '5 questions, 1 minute.' ?></p>
 

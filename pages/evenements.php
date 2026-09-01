@@ -10,7 +10,7 @@ $SEO_OG_IMAGE = cdn_url('downtown.png');
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">📅 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('calendar') ?> ViceHub X</span>
     <h1><?= $fr ? 'Événements & comptes à rebours' : 'Events & countdowns' ?></h1>
     <p class="muted" style="max-width:720px"><?= $fr
         ? 'Tous les rendez-vous à ne pas manquer avant et après la sortie de GTA VI.'

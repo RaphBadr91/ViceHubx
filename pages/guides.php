@@ -8,7 +8,7 @@ $articles = get_articles(['category' => 'guides', 'lang' => lang()]);
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">📘 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('book') ?> ViceHub X</span>
     <h1><?= e(t('page_guides_title')) ?></h1>
     <?php if ($articles): ?>
     <div class="cards" style="margin-top:1.5rem">

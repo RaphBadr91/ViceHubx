@@ -10,7 +10,7 @@ require ROOT_PATH . '/includes/header.php';
 <section class="section">
     <div class="section-head">
         <div>
-            <span class="eyebrow">💬 ViceHub X</span>
+            <span class="eyebrow"><?= vhx_icon('chat') ?> ViceHub X</span>
             <h1><?= lang() === 'fr' ? 'Forum communautaire' : 'Community forum' ?></h1>
         </div>
         <?php if (is_logged_in()): ?>

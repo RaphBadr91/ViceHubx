@@ -8,7 +8,7 @@ $chars = get_characters();
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🎭 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('user') ?> ViceHub X</span>
     <h1><?= e(t('page_characters_title')) ?></h1>
     <div class="cards" style="margin-top:1.5rem">
         <?php foreach ($chars as $c): ?>

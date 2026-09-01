@@ -8,7 +8,7 @@ $deals = get_deals();
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🎮 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('tag') ?> ViceHub X</span>
     <h1><?= e(t('page_deals_title')) ?></h1>
     <p class="muted" style="max-width:680px">
         <?= lang() === 'fr'

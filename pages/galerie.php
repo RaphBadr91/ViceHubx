@@ -44,7 +44,7 @@ require ROOT_PATH . '/includes/header.php';
 <section class="section">
     <div class="section-head">
         <div>
-            <span class="eyebrow">🎨 ViceHub X</span>
+            <span class="eyebrow"><?= vhx_icon('image') ?> ViceHub X</span>
             <h1><?= $fr ? 'Galerie de fan-arts' : 'Fan-art gallery' ?></h1>
         </div>
         <a class="link-all" href="#partager"><?= $fr ? 'Partager mon œuvre' : 'Share yours' ?> →</a>

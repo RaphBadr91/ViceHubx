@@ -16,7 +16,7 @@ $SEO_OG_IMAGE = cdn_url('downtown.png');
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
-    <span class="eyebrow">🤝 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('megaphone') ?> ViceHub X</span>
     <h1><?= $fr ? 'Presse & Partenariats' : 'Press & Partnerships' ?></h1>
     <p class="muted" style="max-width:720px"><?= $fr
         ? 'ViceHub X est un média indépendant 100% dédié à GTA VI et Vice City, avec une communauté active et une expérience immersive premium. Travaillons ensemble.'

@@ -8,7 +8,7 @@ $rows = get_trailer_analyses();
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🎬 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('play') ?> ViceHub X</span>
     <h1><?= e(t('page_trailer_title')) ?></h1>
     <p class="muted" style="max-width:680px"><?= e(t('page_trailer_intro')) ?></p>
 

@@ -65,7 +65,7 @@ $has_voted = $poll && !empty($_SESSION['voted_poll_' . $poll['id']]);
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">💬 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('chat') ?> ViceHub X</span>
     <h1><?= e(t('page_community_title')) ?></h1>
 
     <?php if ($flash): ?>

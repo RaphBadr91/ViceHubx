@@ -9,7 +9,7 @@ $SEO_DESC  = $fr
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🏆 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('trophy') ?> ViceHub X</span>
     <h1><?= $fr ? 'Classement des membres' : 'Members leaderboard' ?></h1>
     <p class="muted" style="max-width:720px"><?= $fr
         ? 'Plus tu participes au forum, plus tu gagnes d’XP et grimpes les rangs. Objectif : devenir une Légende de Leonida. ⭐'

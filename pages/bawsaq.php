@@ -25,7 +25,7 @@ require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section bawsaq">
     <div class="bawsaq__head">
-        <span class="eyebrow">📈 <?= $fr ? 'Concept fan · Vision 2026' : 'Fan concept · 2026 vision' ?></span>
+        <span class="eyebrow"><?= vhx_icon('chart') ?> <?= $fr ? 'Concept fan · Vision 2026' : 'Fan concept · 2026 vision' ?></span>
         <h1 class="bawsaq__logo">BAWSAQ<span>26</span></h1>
         <p class="muted bawsaq__tag"><?= $fr
             ? 'Et si la bourse de GTA VI ressemblait à ça ? Voici notre vision animée du BAWSAQ nouvelle génération — cours en direct, indice VICE 50 et folie de Vice City.'

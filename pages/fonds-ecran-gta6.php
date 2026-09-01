@@ -68,7 +68,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">
-    <span class="eyebrow">🖥️ <?= e($fr ? 'Téléchargement immédiat · sans filigrane' : 'Instant download · watermark-free') ?></span>
+    <span class="eyebrow"><?= vhx_icon('monitor') ?> <?= e($fr ? 'Téléchargement immédiat · sans filigrane' : 'Instant download · watermark-free') ?></span>
     <h1><?= e($fr ? 'Fonds d’écran GTA 6 & Vice City' : 'GTA 6 & Vice City wallpapers') ?></h1>
     <p class="lede" style="max-width:70ch;font-size:1.1rem;color:var(--muted,#b9b3c9);margin:.6rem 0 0">
         <?= $fr

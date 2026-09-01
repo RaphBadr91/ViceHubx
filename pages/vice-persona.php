@@ -90,7 +90,7 @@ $shareTxt = $p ? ('Je suis ' . $p['alias'] . ', ' . $p['role'] . ' de Vice City 
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:760px;margin:0 auto">
-    <span class="eyebrow">🌴 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('palm') ?> ViceHub X</span>
     <h1 style="font-size:clamp(1.9rem,5vw,3rem);margin:.2rem 0 .4rem">Ton perso Vice City</h1>
     <p class="muted" style="font-size:1.05rem">Entre ton prénom → découvre ton <strong>alias de gangster</strong>, ton <strong>avatar</strong> et tes stats dans l’univers de <strong>GTA 6</strong>. À partager sans modération 🔥</p>
 

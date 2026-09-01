@@ -11,7 +11,7 @@ $rarity_labels = lang() === 'fr'
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🚗 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('car') ?> ViceHub X</span>
     <h1><?= e(t('page_vehicles_title')) ?></h1>
     <div class="cards" style="margin-top:1.5rem">
         <?php foreach ($vehicles as $v): ?>

@@ -62,7 +62,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
-    <span class="eyebrow">🌴 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('palm') ?> ViceHub X</span>
     <h1><?= $fr ? 'À propos de ViceHub X' : 'About ViceHub X' ?></h1>
 
     <p style="font-size:1.12rem;max-width:720px">

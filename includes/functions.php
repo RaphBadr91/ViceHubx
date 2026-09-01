@@ -2076,6 +2076,47 @@ function cdn_url(string $filename): string
 }
 
 /**
+ * Icône SVG néon de section (remplace les emojis d'« eyebrow » par un jeu cohérent
+ * façon synthwave/GTA). Hérite de la couleur du texte (currentColor) → s'accorde à
+ * la teinte de l'eyebrow. Usage : <?= vhx_icon('map') ?>
+ */
+function vhx_icon(string $name, string $class = ''): string
+{
+    static $p = null;
+    if ($p === null) {
+        $p = [
+            'controller' => '<rect x="3" y="8" width="18" height="9" rx="4.2"/><line x1="7.2" y1="12.5" x2="9.2" y2="12.5"/><line x1="8.2" y1="11.5" x2="8.2" y2="13.5"/><circle cx="15.4" cy="12" r=".9"/><circle cx="17.4" cy="14" r=".9"/>',
+            'palm'       => '<path d="M12 21c0-5 .2-8 .3-9"/><path d="M12.3 12C10 8.5 6 8.3 3.5 10.3 7 9 10 10 12.3 12Zm0 0C14.6 8.5 18.6 8.3 21 10.3 17.6 9 14.6 10 12.3 12Zm0 0C11 8.4 12.6 4.7 15.8 3.6 13.4 5.6 12.6 9 12.3 12Zm0 0C11 8.4 9.4 4.7 6.2 3.6 8.6 5.6 11.4 9 12.3 12Z"/>',
+            'news'       => '<path d="M4 6h12v13H6a2 2 0 0 1-2-2Z"/><path d="M16 9h4v8a2 2 0 0 1-2 2"/><line x1="7" y1="9.5" x2="13" y2="9.5"/><line x1="7" y1="13" x2="13" y2="13"/><line x1="7" y1="16" x2="10.5" y2="16"/>',
+            'book'       => '<path d="M5 4.5h9a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2Z"/><path d="M16 6.5h3V20H7"/>',
+            'flask'      => '<path d="M10 3h4"/><path d="M11 3.5v5.5l-4.6 7.4A2 2 0 0 0 8.1 19h7.8a2 2 0 0 0 1.7-2.6L13 9V3.5"/><line x1="8.8" y1="14" x2="15.2" y2="14"/>',
+            'play'       => '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.2 15 12l-5 2.8Z"/>',
+            'map'        => '<path d="m9 4-5 2v14l5-2 6 2 5-2V4l-5 2-6-2Z"/><line x1="9" y1="4" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="20"/>',
+            'user'       => '<circle cx="12" cy="8" r="3.6"/><path d="M5 20a7 7 0 0 1 14 0"/>',
+            'car'        => '<path d="M4 13 6 8a3 3 0 0 1 2.8-2h6.4A3 3 0 0 1 18 8l2 5"/><path d="M3.5 13h17v4h-17z"/><circle cx="7.5" cy="17.5" r="1.6"/><circle cx="16.5" cy="17.5" r="1.6"/>',
+            'bag'        => '<path d="M6.5 8h11l-1 11.5H7.5Z"/><path d="M9.2 8a2.8 2.8 0 0 1 5.6 0"/>',
+            'monitor'    => '<rect x="3" y="4.5" width="18" height="12" rx="2.2"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="16.5" x2="12" y2="20"/>',
+            'chat'       => '<path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2Z"/>',
+            'pen'        => '<path d="M4 20h4L18.5 9.5 14.5 5.5 4 16Z"/><line x1="13.5" y1="6.5" x2="17.5" y2="10.5"/>',
+            'image'      => '<rect x="3.5" y="5" width="17" height="14" rx="2.2"/><circle cx="9" cy="10" r="1.6"/><path d="m5 18 5-4.5 3.5 3 2.5-2 4 3.5"/>',
+            'trophy'     => '<path d="M7 4.5h10v3.5a5 5 0 0 1-10 0Z"/><path d="M7 6.5H4v1a3 3 0 0 0 3 3M17 6.5h3v1a3 3 0 0 1-3 3"/><line x1="12" y1="13" x2="12" y2="16.5"/><path d="M8.5 19.5h7"/>',
+            'folder'     => '<path d="M3.5 6.5h5.5l2 2h9.5v10h-17Z"/>',
+            'tag'        => '<path d="M4 12.5 12 4.5h6.5V11l-8 8Z"/><circle cx="15" cy="9" r="1.3"/>',
+            'dice'       => '<rect x="4.5" y="4.5" width="15" height="15" rx="3.2"/><circle cx="9" cy="9" r="1.1"/><circle cx="15" cy="15" r="1.1"/><circle cx="12" cy="12" r="1.1"/>',
+            'calendar'   => '<rect x="3.5" y="5.5" width="17" height="15" rx="2.2"/><line x1="3.5" y1="9.5" x2="20.5" y2="9.5"/><line x1="8" y1="3.5" x2="8" y2="6.5"/><line x1="16" y1="3.5" x2="16" y2="6.5"/>',
+            'megaphone'  => '<path d="M4 10v4l11 4V6Z"/><path d="M15 8.5a4 4 0 0 1 0 7"/><path d="M6 14v3.5a1.5 1.5 0 0 0 3 0V15"/>',
+            'chart'      => '<path d="M4 4v16h16"/><path d="m7 15 3.5-4 3 2.5 5-6"/>',
+            'versus'     => '<path d="M4 5l6 6"/><path d="M10 13 4 19"/><path d="M20 5l-6 6"/><path d="m14 13 6 6"/>',
+            'price'      => '<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.6A4.2 4.2 0 0 0 8 12a4.2 4.2 0 0 0 7.5 3.4"/><line x1="6.5" y1="11" x2="12.5" y2="11"/>',
+            'live'       => '<circle cx="12" cy="12" r="3.2"/><path d="M6.5 6.5a8 8 0 0 0 0 11M17.5 6.5a8 8 0 0 1 0 11"/>',
+        ];
+    }
+    $inner = $p[$name] ?? $p['news'];
+    $cls = 'vhx-ico' . ($class !== '' ? ' ' . $class : '');
+    return '<svg class="' . $cls . '" viewBox="0 0 24 24" aria-hidden="true">' . $inner . '</svg>';
+}
+
+/**
  * Source d'une image, en privilégiant une variante WebP STATIQUE locale (légère,
  * servie directement par le serveur web → ultra-rapide, sans PHP par image).
  * Ordre : WebP local → original local → variante _min.webp du CDN → original.

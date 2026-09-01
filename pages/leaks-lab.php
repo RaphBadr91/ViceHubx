@@ -8,7 +8,7 @@ $leaks = get_articles(['category' => 'leaks', 'lang' => lang()]);
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
-    <span class="eyebrow">🔬 ViceHub X</span>
+    <span class="eyebrow"><?= vhx_icon('flask') ?> ViceHub X</span>
     <h1><?= e(t('page_leaks_title')) ?></h1>
     <p class="muted" style="max-width:680px"><?= e(t('page_leaks_intro')) ?></p>
 

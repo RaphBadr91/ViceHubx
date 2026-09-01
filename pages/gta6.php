@@ -69,7 +69,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">
-    <span class="eyebrow">🌴 <?= e($fr ? 'Le guide complet' : 'The complete guide') ?></span>
+    <span class="eyebrow"><?= vhx_icon('palm') ?> <?= e($fr ? 'Le guide complet' : 'The complete guide') ?></span>
     <h1><?= e($fr ? 'GTA 6 : tout ce qu’il faut savoir' : 'GTA 6: everything you need to know') ?></h1>
     <p class="lede" style="max-width:70ch;font-size:1.1rem;color:var(--muted,#b9b3c9);margin:.6rem 0 0">
         <?= $fr

@@ -159,7 +159,7 @@ require __DIR__ . '/includes/header.php';
     <a class="banner glass reveal vh-pillar-cta" href="<?= e(with_lang(url('pages/gta6.php'))) ?>"
        style="display:flex;align-items:center;justify-content:space-between;gap:1.2rem;flex-wrap:wrap;text-align:left">
         <span>
-            <span class="eyebrow">🎮 <?= lang() === 'fr' ? 'Le guide complet' : 'The complete guide' ?></span>
+            <span class="eyebrow"><?= vhx_icon('controller') ?> <?= lang() === 'fr' ? 'Le guide complet' : 'The complete guide' ?></span>
             <h2 style="margin:.25rem 0 .1rem"><?= lang() === 'fr' ? 'GTA 6 : tout savoir' : 'GTA 6: everything you need to know' ?></h2>
             <p class="muted" style="margin:0"><?= lang() === 'fr'
                 ? 'Date, prix &amp; éditions, plateformes, carte de Leonida, Jason &amp; Lucia, version PC…'
@@ -239,7 +239,7 @@ require __DIR__ . '/includes/header.php';
 <section class="section fanzone">
     <div class="section-head">
         <div>
-            <span class="eyebrow">🌴 <?= lang() === 'fr' ? 'Rien que pour les fans' : 'Just for fans' ?></span>
+            <span class="eyebrow"><?= vhx_icon('palm') ?> <?= lang() === 'fr' ? 'Rien que pour les fans' : 'Just for fans' ?></span>
             <h2><?= lang() === 'fr' ? 'L’espace des amoureux de GTA VI' : 'The GTA VI fan zone' ?></h2>
         </div>
     </div>
