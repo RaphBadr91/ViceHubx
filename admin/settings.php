@@ -108,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         set_setting('bing_site_verification', $bv);
         set_setting('analytics_id', trim((string) ($_POST['analytics_id'] ?? '')));
         set_setting('amazon_tag', trim((string) ($_POST['amazon_tag'] ?? '')));
+        set_setting('trailer_url', trim((string) ($_POST['trailer_url'] ?? '')));
         // --- Profils sociaux publics (sameAs = entité claire pour l'IA Google) ---
         foreach (['instagram', 'tiktok', 'youtube', 'x', 'facebook', 'discord'] as $__sp) {
             set_setting('profile_' . $__sp, trim((string) ($_POST['profile_' . $__sp] ?? '')));
@@ -131,6 +132,7 @@ $gverify = (string) get_setting('google_site_verification', '');
 $bverify = (string) get_setting('bing_site_verification', '');
 $ga_id   = (string) get_setting('analytics_id', '');
 $amztag  = (string) get_setting('amazon_tag', '');
+$trailer_v = (string) get_setting('trailer_url', '');
 $fgmin   = (int) get_setting('forum_gap_min_h', '2');
 $fgmax   = (int) get_setting('forum_gap_max_h', '12');
 $fnew    = (int) get_setting('forum_new_chance', '6');
@@ -201,6 +203,12 @@ $release_input = substr(str_replace(' ', 'T', $release), 0, 16);
         <label>Google Analytics 4 — ID de mesure</label>
         <input type="text" name="analytics_id" value="<?= e($ga_id) ?>" placeholder="G-XXXXXXXXXX">
         <small class="muted">Statistiques de visites. Ne se charge <strong>qu'après acceptation des cookies</strong> (conforme RGPD).</small>
+    </div>
+
+    <div>
+        <label>🎬 Vidéo trailer (accueil) — lien YouTube</label>
+        <input type="url" name="trailer_url" value="<?= e($trailer_v) ?>" placeholder="https://www.youtube.com/watch?v=...">
+        <small class="muted">La bande-annonce affichée sur l'accueil (section « Trailer Lab »). Colle n'importe quel lien YouTube (<code>watch?v=</code>, <code>youtu.be</code> ou <code>embed</code>) — l'ID est détecté automatiquement. Laisse vide pour la vidéo par défaut.</small>
     </div>
 
     <hr style="border:none;border-top:1px solid var(--glass-brd);margin:1.4rem 0 .4rem">

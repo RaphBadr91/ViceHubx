@@ -180,8 +180,9 @@ require __DIR__ . '/includes/header.php';
     </div>
     <?php
     $trailer_url = trim((string) get_setting('trailer_url', ''));
-    // ID YouTube depuis le réglage admin, sinon trailer officiel par défaut
-    $yt_id = 'VQRLujxTm3c';
+    // ID YouTube depuis le réglage admin (Admin → Réglages → « Vidéo trailer »),
+    // sinon la vidéo par défaut ci-dessous.
+    $yt_id = 'tJbzMqJGH4k';
     if ($trailer_url !== '' && preg_match('~(?:youtu\.be/|v=|embed/)([A-Za-z0-9_-]{11})~', $trailer_url, $m)) {
         $yt_id = $m[1];
     }

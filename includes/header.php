@@ -357,16 +357,18 @@ setTimeout(hide,2200);})();</script>
         </nav>
 
         <div class="header-actions">
-            <a class="cart-link" href="<?= e(with_lang(url('pages/recherche.php'))) ?>" aria-label="<?= lang() === 'fr' ? 'Rechercher' : 'Search' ?>">🔍</a>
+            <a class="cart-link" href="<?= e(with_lang(url('pages/recherche.php'))) ?>" aria-label="<?= lang() === 'fr' ? 'Rechercher' : 'Search' ?>">
+                <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+            </a>
             <a class="cart-link" href="<?= e(with_lang(url('pages/cart.php'))) ?>" aria-label="<?= e(t('cart_title')) ?>">
-                🛒<?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
+                <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2.5 3.5h2.2l2.1 11.4a1.6 1.6 0 0 0 1.6 1.3h8.2a1.6 1.6 0 0 0 1.6-1.3L20.5 7H6"/></svg><?php $cc = cart_count(); if ($cc > 0): ?><span class="cart-badge"><?= $cc ?></span><?php endif; ?>
             </a>
             <?php if (is_logged_in()): $unread = unread_count((int) current_user()['id']); $umsg = unread_messages_count((int) current_user()['id']); ?>
             <a class="cart-link notif-link" href="<?= e(with_lang(url('pages/messages.php'))) ?>" aria-label="Messages">
-                💌<?php if ($umsg > 0): ?><span class="cart-badge"><?= $umsg > 9 ? '9+' : $umsg ?></span><?php endif; ?>
+                <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7.5 8 5 8-5"/></svg><?php if ($umsg > 0): ?><span class="cart-badge"><?= $umsg > 9 ? '9+' : $umsg ?></span><?php endif; ?>
             </a>
             <a class="cart-link notif-link" href="<?= e(with_lang(url('pages/notifications.php'))) ?>" aria-label="Notifications">
-                🔔<?php if ($unread > 0): ?><span class="cart-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
+                <svg class="nav-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 4.5 1.8 5.8 2 6H4c.2-.2 2-1.5 2-6Z"/><path d="M10 19.5a2 2 0 0 0 4 0"/></svg><?php if ($unread > 0): ?><span class="cart-badge"><?= $unread > 9 ? '9+' : $unread ?></span><?php endif; ?>
             </a>
             <?php endif; ?>
             <select class="lang-switch" onchange="if(this.value)location.href=this.value" aria-label="Langue / Language">

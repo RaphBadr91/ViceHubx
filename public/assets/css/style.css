@@ -1069,6 +1069,17 @@ body.is-home .site-header.scrolled {
    ============================================================ */
 .cart-link { position: relative; font-size: 1.2rem; padding: .35rem .5rem; border-radius: 10px; line-height: 1; text-decoration: none; }
 .cart-link:hover { background: rgba(255,255,255,.06); }
+/* Icônes de navigation en SVG néon (search, panier, messages, cloche) */
+.header-actions .cart-link .nav-ico {
+    width: 22px; height: 22px; display: block;
+    fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+    color: #cfc8ee; transition: color .18s ease, filter .18s ease, transform .18s ease;
+}
+.header-actions .cart-link:hover .nav-ico {
+    color: var(--blue, #2bd6ff);
+    filter: drop-shadow(0 0 7px rgba(43,214,255,.65));
+    transform: translateY(-1px);
+}
 .cart-badge {
     position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px;
     display: grid; place-items: center; font-size: .68rem; font-weight: 800; color: #fff;
