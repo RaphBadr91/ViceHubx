@@ -32,6 +32,9 @@ AddDefaultCharset UTF-8
     RewriteRule ^robots\.txt$ robots.php [L]
     RewriteRule ^sitemap\.xml$ sitemap.php [L]
     RewriteRule ^news-sitemap\.xml$ news-sitemap.php [L]
+    # Flux RSS (syndication + auto-post réseaux) et clé de vérification IndexNow.
+    RewriteRule ^feed\.xml$ feed.php [L,QSA]
+    RewriteRule ^([a-f0-9]{32})\.txt$ indexnow-key.php?k=$1 [L]
 
     # ======================================================================
     #  URL PROPRES (sans /pages/ ni .php)

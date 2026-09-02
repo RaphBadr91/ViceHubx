@@ -2007,6 +2007,50 @@ function importance_label(int $level): string
 /*  Médias de carte (vraie image + repli)                             */
 /* ================================================================== */
 
+/**
+ * Clé IndexNow (générée une fois, stockée en base). Sert à prévenir Bing/Yandex
+ * instantanément quand un article est publié → indexation en minutes, pas en jours.
+ */
+function indexnow_key(): string
+{
+    $k = (string) get_setting('indexnow_key', '');
+    if (!preg_match('/^[a-f0-9]{32}$/', $k)) {
+        $k = bin2hex(random_bytes(16));
+        set_setting('indexnow_key', $k);
+    }
+    return $k;
+}
+
+/**
+ * Prévient les moteurs (IndexNow : Bing, Yandex, DuckDuckGo, Ecosia…) qu'une ou
+ * plusieurs URLs viennent d'être publiées/mises à jour. Best-effort, non bloquant.
+ */
+function indexnow_ping(array $urls): void
+{
+    $urls = array_values(array_filter(array_map('strval', $urls), static fn($u) => $u !== ''));
+    if (!$urls || !function_exists('curl_init')) { return; }
+    $base = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : '';
+    $host = (string) parse_url($base, PHP_URL_HOST);
+    if ($base === '' || $host === '') { return; }
+    $key = indexnow_key();
+    $payload = json_encode([
+        'host'        => $host,
+        'key'         => $key,
+        'keyLocation' => $base . '/' . $key . '.txt',
+        'urlList'     => array_slice($urls, 0, 100),
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    $ch = curl_init('https://api.indexnow.org/indexnow');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 6,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json; charset=utf-8'],
+        CURLOPT_POSTFIELDS     => $payload,
+    ]);
+    @curl_exec($ch);
+    @curl_close($ch);
+}
+
 /** Petit GET HTTP (curl si dispo, sinon file_get_contents). */
 function http_get(string $url): ?string
 {

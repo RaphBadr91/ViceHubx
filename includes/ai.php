@@ -920,7 +920,13 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
             $data['image'], $data['image_prompt'], $authorId, $status, $pub,
         ]);
     }
-    return (int) db()->lastInsertId();
+    $newId = (int) db()->lastInsertId();
+    // Indexation INSTANTANÉE (IndexNow → Bing/Yandex…) dès qu'un article est publié.
+    if ($status === 'published' && $newId > 0 && function_exists('indexnow_ping')) {
+        $base = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : '';
+        if ($base !== '') { indexnow_ping([$base . '/article/' . rawurlencode($slug)]); }
+    }
+    return $newId;
 }
 
 /**

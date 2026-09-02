@@ -118,6 +118,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="ViceHub X">
     <link rel="canonical" href="<?= e($canonical) ?>">
+    <link rel="alternate" type="application/rss+xml" title="ViceHub X — GTA 6" href="<?= e($site_base . '/feed.xml') ?>">
     <!-- Versions linguistiques (hreflang) — UNIQUEMENT des paires RÉELLES (ex. article
          FR ↔ VO anglaise), chacune auto-canonique. On n'émet plus d'alternates ?lang=
          factices : leur cible se canonicalisait ailleurs → Google ignorait tout le bloc.
