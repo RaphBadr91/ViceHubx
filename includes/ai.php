@@ -23,7 +23,7 @@ function ai_enabled(): bool
 /** Modèle par défaut (réglable). */
 function ai_model(): string
 {
-    return get_setting('ai_model', '') ?: 'claude-haiku-4-5-20251001';
+    return get_setting('ai_model', '') ?: 'claude-haiku-4-5';
 }
 
 /** Appel minimal à l'API Anthropic Messages — renvoie le texte, lève en cas d'erreur. */

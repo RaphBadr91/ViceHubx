@@ -610,7 +610,16 @@ $imgStyle    = (string) (get_setting('ai_img_style', '') ?: ai_img_default_style
                 <small class="muted">Laisse vide pour conserver la clé actuelle si déjà saisie. Tu peux aussi définir la variable d’environnement <code>ANTHROPIC_API_KEY</code>.</small>
             </label>
             <label>Modèle
-                <input type="text" name="ai_model" placeholder="claude-haiku-4-5-20251001" value="<?= e(get_setting('ai_model', '')) ?>" style="display:block;margin-top:.3rem">
+                <?php $__m = get_setting('ai_model', '') ?: 'claude-haiku-4-5'; ?>
+                <select name="ai_model" style="display:block;margin-top:.3rem">
+                    <option value="claude-haiku-4-5"<?= in_array($__m, ['claude-haiku-4-5', 'claude-haiku-4-5-20251001'], true) ? ' selected' : '' ?>>Haiku 4.5 — le moins cher 💸 (recommandé)</option>
+                    <option value="claude-sonnet-5"<?= $__m === 'claude-sonnet-5' ? ' selected' : '' ?>>Sonnet 5 — intermédiaire</option>
+                    <option value="claude-opus-4-8"<?= $__m === 'claude-opus-4-8' ? ' selected' : '' ?>>Opus 4.8 — le plus puissant (cher)</option>
+                    <?php if (!in_array($__m, ['claude-haiku-4-5', 'claude-haiku-4-5-20251001', 'claude-sonnet-5', 'claude-opus-4-8'], true)): ?>
+                        <option value="<?= e($__m) ?>" selected><?= e($__m) ?> (actuel)</option>
+                    <?php endif; ?>
+                </select>
+                <small class="muted">Haiku 4.5 = le tarif le plus bas (~5× moins cher qu'Opus en sortie), largement suffisant pour les articles. Change seulement si tu veux plus de finesse (plus cher).</small>
             </label>
             <button class="btn btn--ghost" type="submit">Enregistrer</button>
         </form>
