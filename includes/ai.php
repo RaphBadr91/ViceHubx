@@ -789,7 +789,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
             . "- Write like a PASSIONATE HUMAN: NEVER say you are an AI, add NO technical marker. Do NOT end with \"===END===\" or any separator: the last FAQ <p> ends the article.\n"
             . $avoid . "\n"
             . "STRICT RESPONSE FORMAT (nothing else):\n"
-            . 'LINE 1 = compact JSON: {"categorie":"news|guides|leaks|blog|trailers","titre":"unique catchy title <=90 chars with the main keyword (IN ENGLISH)","extrait":"meta description <=180 chars (IN ENGLISH)","theme_image":"one word among: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"ENGLISH prompt for a photorealistic Higgsfield illustration, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . 'LINE 1 = compact JSON: {"categorie":"news|guides|leaks|blog|trailers","titre":"UNIQUE SEO title <=62 chars IN ENGLISH: MAIN KEYWORD FIRST, + the year 2026 and/or a number when relevant, + one power word (Confirmed, Revealed, Guide, Everything We Know)","extrait":"meta description 150-160 chars IN ENGLISH: main keyword within the first 100 chars, include a number or date, and a mini call-to-action (Here is, We break it down)","theme_image":"one word among: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"ENGLISH prompt for a photorealistic Higgsfield illustration, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
             . "LINE 2 = exactly: ===CORPS===\n"
             . "THEN = the article body in HTML (~2000 words, IN ENGLISH).";
     } else {
@@ -1314,7 +1314,7 @@ function ai_translate_article(array $fr): array
         . 'technical marker and NO separator like "===END===".';
     $user = "Translate this French article into ENGLISH.\n\n"
         . "STRICT RESPONSE FORMAT (nothing else):\n"
-        . 'LINE 1 = compact JSON: {"titre":"unique English title <=90 chars, catchy, SEO, keeps the main keyword","extrait":"English meta description <=180 chars"}' . "\n"
+        . 'LINE 1 = compact JSON: {"titre":"UNIQUE English SEO title <=62 chars: MAIN KEYWORD FIRST, add the year 2026 and/or a number when relevant, plus one power word (Confirmed, Revealed, Guide)","extrait":"English meta description 150-160 chars: main keyword in the first 100 chars, a number or date, and a mini call-to-action"}' . "\n"
         . "LINE 2 = exactly: ===CORPS===\n"
         . "THEN = the article body translated into English HTML (keep ALL tags identical, only translate text).\n\n"
         . "FRENCH TITLE: {$title}\n"
