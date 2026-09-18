@@ -143,6 +143,7 @@ require ROOT_PATH . '/includes/header.php';
     <p class="muted"><?= $fr
         ? 'On ne vend pas le jeu (on est un média fan indépendant), mais notre boutique propose du merch et des wallpapers HD à l\'esprit Vice City.'
         : 'We don\'t sell the game (we\'re an independent fan media), but our shop has Vice City-inspired merch and HD wallpapers.' ?>
+        <a href="<?= e(with_lang(url('pages/deals.php'))) ?>"><?= $fr ? 'Où acheter GTA 6 &amp; bons plans' : 'Where to buy GTA 6 &amp; deals' ?></a> ·
         <a href="<?= e(with_lang(url('pages/shop.php'))) ?>"><?= $fr ? 'Voir la boutique' : 'Browse the shop' ?></a> ·
         <a href="<?= e(with_lang(url('pages/gta-6-date-de-sortie.php'))) ?>"><?= $fr ? 'Date de sortie' : 'Release date' ?></a> ·
         <a href="<?= e(with_lang(url('pages/gta6.php'))) ?>"><?= $fr ? 'Le dossier GTA 6 complet' : 'The full GTA 6 hub' ?></a>.

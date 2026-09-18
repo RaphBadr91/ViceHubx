@@ -17,7 +17,7 @@ require ROOT_PATH . '/includes/header.php';
     </p>
     <div class="cards" style="margin-top:1.5rem">
         <?php foreach ($deals as $d): ?>
-            <a class="deal glass reveal" href="<?= e($d['url']) ?>" rel="sponsored nofollow" target="_blank">
+            <a class="deal glass reveal" href="<?= e(amazon_url($d['url'])) ?>" rel="sponsored nofollow" target="_blank">
                 <span class="tag"><?= e($d['platform']) ?> · <?= e($d['badge']) ?></span>
                 <h3><?= e($d['title']) ?></h3>
                 <p class="muted"><?= e($d['description']) ?></p>
