@@ -44,6 +44,7 @@
 
         <nav class="footer-links" aria-label="Univers">
             <h4><?= lang() === 'fr' ? 'Univers' : 'Universe' ?></h4>
+            <a href="<?= e(with_lang(url('pages/gta6.php'))) ?>"><?= lang() === 'fr' ? 'GTA 6 : tout savoir' : 'GTA 6: everything' ?></a>
             <a href="<?= e(with_lang(url('pages/dossier.php'))) ?>"><?= lang() === 'fr' ? 'Le Dossier' : 'The Files' ?></a>
             <a href="<?= e(with_lang(url('pages/gta-6-date-de-sortie.php'))) ?>"><?= lang() === 'fr' ? 'Date de sortie' : 'Release date' ?></a>
             <a href="<?= e(with_lang(url('pages/gta-6-prix-editions.php'))) ?>"><?= lang() === 'fr' ? 'Prix & éditions' : 'Price & editions' ?></a>

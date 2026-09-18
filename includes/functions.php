@@ -1393,9 +1393,31 @@ function article_blog_cta(array $article): string
  * Insère 3 à 6 PUBS INTERNES variées (Boutique / Forum / Blog) réparties dans le
  * corps de l'article (~2000 mots), en rapport avec le sujet pour rester cohérent.
  */
+/** Encart « Dossier complet GTA 6 » — maillage interne fort (ancre mot-clé) vers
+ *  le hub /gta6 depuis chaque article, pour le faire monter vers le top 5. */
+function article_hub_cta(): string
+{
+    $fr    = lang() === 'fr';
+    $href  = e(with_lang(url('pages/gta6.php')));
+    $tag   = $fr ? '📌 À lire aussi' : '📌 Read next';
+    $label = $fr
+        ? 'GTA 6 : tout savoir — date de sortie, prix, map, personnages'
+        : 'GTA 6: everything you need to know — release date, price, map, characters';
+    return '<aside class="art-cta art-cta--hub">'
+        . '<span class="art-cta__tag">' . $tag . '</span>'
+        . '<a class="art-hub-link" href="' . $href . '">' . e($label) . ' →</a>'
+        . '</aside>';
+}
+
 function inject_internal_ads(string $html, array $article): string
 {
     $paraCount = substr_count($html, '</p>');
+    // Dossier GTA 6 (hub) tôt dans CHAQUE article → maillage interne fort vers /gta6
+    // (ancre mot-clé). L'encart ne contient pas de </p> : $paraCount reste valide.
+    $hub = article_hub_cta();
+    if ($hub !== '' && $paraCount >= 1) {
+        $html = inject_after_paragraph($html, min(1, $paraCount - 1), $hub);
+    }
     if ($paraCount < 4) {
         return $html . article_shop_cta('full');
     }

@@ -54,16 +54,31 @@ $faq = $fr ? [
      'No. As of now, no physical collector’s edition has been announced. The Standard edition exists as a box, but in some regions it contains a download code rather than a disc.'],
 ];
 
+$__base = (defined('BASE_URL') && BASE_URL !== '') ? rtrim(BASE_URL, '/') : 'https://vicehubx.com';
+$__self = $__base . '/gta6' . (lang() === 'en' ? '?lang=en' : '');
+$__mod  = date('Y-m-d'); // hub evergreen, mis à jour au fil de l'actu GTA 6
 $JSONLD = [
-    '@context'   => 'https://schema.org',
-    '@type'      => 'FAQPage',
-    'mainEntity' => array_map(static function ($qa) {
-        return [
-            '@type'          => 'Question',
-            'name'           => $qa[0],
-            'acceptedAnswer' => ['@type' => 'Answer', 'text' => $qa[1]],
-        ];
-    }, $faq),
+    '@context' => 'https://schema.org',
+    '@graph'   => [
+        [
+            '@type'      => 'FAQPage',
+            '@id'        => $__self . '#faq',
+            'mainEntity' => array_map(static function ($qa) {
+                return ['@type' => 'Question', 'name' => $qa[0], 'acceptedAnswer' => ['@type' => 'Answer', 'text' => $qa[1]]];
+            }, $faq),
+        ],
+        [
+            '@type'            => 'Article',
+            '@id'              => $__self . '#article',
+            'headline'         => $fr ? 'GTA 6 : tout ce qu’il faut savoir' : 'GTA 6: everything you need to know',
+            'inLanguage'       => lang(),
+            'datePublished'    => '2026-06-01',
+            'dateModified'     => $__mod,
+            'author'           => ['@id' => $__base . '/#org'],
+            'publisher'        => ['@id' => $__base . '/#org'],
+            'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $__self],
+        ],
+    ],
 ];
 
 require ROOT_PATH . '/includes/header.php';
@@ -76,6 +91,7 @@ require ROOT_PATH . '/includes/header.php';
             ? 'Date de sortie, prix et éditions, plateformes, carte de Leonida, Jason &amp; Lucia, version PC et précommande : on a réuni tout ce que l’on sait de <strong>Grand Theft Auto VI</strong>, vérifié et mis à jour. Bienvenue à Vice City.'
             : 'Release date, price and editions, platforms, the Leonida map, Jason &amp; Lucia, PC version and pre-order: everything we know about <strong>Grand Theft Auto VI</strong>, verified and updated. Welcome to Vice City.' ?>
     </p>
+    <p class="muted" style="margin:.55rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y')) ?> · ViceHub X</p>
 
     <!-- Faits rapides -->
     <div class="refband" style="margin:1.6rem 0 .5rem">

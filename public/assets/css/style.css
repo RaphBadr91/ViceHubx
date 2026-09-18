@@ -1080,6 +1080,22 @@ body.is-home .site-header.scrolled {
     filter: drop-shadow(0 0 7px rgba(43,214,255,.65));
     transform: translateY(-1px);
 }
+/* Encart « Dossier GTA 6 » (hub) injecté dans les articles — maillage interne */
+.art-cta--hub {
+    display: block; margin: 1.5rem 0; padding: .9rem 1.15rem; border-radius: 12px;
+    background: linear-gradient(180deg, rgba(43,214,255,.09), rgba(255,255,255,.02));
+    border: 1px solid var(--glass-brd, rgba(255,255,255,.1)); border-left: 3px solid var(--blue, #2bd6ff);
+}
+.art-cta--hub .art-cta__tag {
+    display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .12em;
+    color: var(--muted, #a49dc4); margin-bottom: .25rem;
+}
+.art-cta--hub .art-hub-link {
+    font-family: var(--font-display, inherit); font-weight: 700; color: #fff;
+    text-decoration: none; font-size: 1.02rem; line-height: 1.3;
+}
+.art-cta--hub .art-hub-link:hover { color: var(--blue, #2bd6ff); }
+
 /* Icônes de section (eyebrows) — jeu SVG néon cohérent, hérite de la teinte du texte */
 .vhx-ico {
     width: 1.05em; height: 1.05em; display: inline-block; vertical-align: -.16em; margin-right: .45em;
