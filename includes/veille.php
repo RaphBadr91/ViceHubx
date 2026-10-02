@@ -97,6 +97,7 @@ function veille_http_get(string $url, int $maxRedirects = 4): ?string
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => false,          // on gère la redirection nous-mêmes
             CURLOPT_TIMEOUT        => 20,
+            CURLOPT_CONNECTTIMEOUT => 8,               // échoue vite sur une source morte (charge mutualisé)
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_MAXFILESIZE    => 8 * 1024 * 1024,
             CURLOPT_USERAGENT      => 'ViceHubX-Veille/1.0 (+https://vicehubx.com)',
@@ -263,6 +264,28 @@ function veille_fetch_all(): int
     return $total;
 }
 
+/**
+ * Comme veille_fetch_all mais ne traite que N sources par appel (rotation via un
+ * curseur persistant). Utilisé par le heartbeat auto → charge LÉGÈRE sur
+ * hébergement mutualisé (évite 50 fetchs d'un coup qui pourraient faire tomber le
+ * site / sortir du crawl Google). Toutes les sources sont couvertes en quelques cycles.
+ */
+function veille_fetch_batch(int $limit = 6): int
+{
+    $sources = veille_sources(true);
+    if (!$sources) { return 0; }
+    $n = count($sources);
+    $limit = max(1, min($limit, $n));
+    $cur = (int) get_setting('veille_src_cursor', '0');
+    if ($cur < 0 || $cur >= $n) { $cur = 0; }
+    $total = 0;
+    for ($i = 0; $i < $limit; $i++) {
+        $total += veille_fetch_source($sources[($cur + $i) % $n]);
+    }
+    set_setting('veille_src_cursor', (string) (($cur + $limit) % $n));
+    return $total;
+}
+
 /** Items de veille (par statut), plus récents d'abord. */
 function veille_items(string $status = 'new', int $limit = 80): array
 {
@@ -376,7 +399,7 @@ function veille_auto_tick(): void
         if (time() - $last < 1800) { return; }        // au plus une fois toutes les 30 min
         set_setting('veille_hb', (string) time());
     } catch (Throwable $e) { return; }
-    veille_fetch_all();
+    veille_fetch_batch(6); // charge légère : 6 sources par cycle (rotation), pas 50
     if (!veille_is_auto()) { return; }
     // Plafond QUOTIDIEN : 2-3 articles auto max par jour (réglage veille_auto_max, défaut 3).
     // 1 par cycle (30 min) → étalé dans la journée ; on prend les plus frais (« meilleurs »).
