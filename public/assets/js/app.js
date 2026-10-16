@@ -507,3 +507,25 @@
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', run); }
   else { run(); }
 })();
+
+/* ADMIN mobile : transforme chaque tableau .data-table en CARTES empilées.
+   On copie l'intitulé de colonne sur chaque cellule (data-label) ; le CSS
+   (<=680px) affiche alors "Intitulé : valeur" ligne par ligne, sans aucun
+   défilement latéral — tout est visible sur téléphone. */
+(function () {
+  if (!document.querySelector('.admin-shell')) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.data-table'), function (t) {
+    var head = t.querySelector('thead tr');
+    if (!head) return;
+    var labels = Array.prototype.map.call(head.children, function (th) {
+      return (th.textContent || '').trim();
+    });
+    Array.prototype.forEach.call(t.querySelectorAll('tbody tr'), function (tr) {
+      if (tr.children.length < 2) return; // ligne d'état ("aucune donnée") : pas de libellés
+      Array.prototype.forEach.call(tr.children, function (td, i) {
+        var l = labels[i] || '';
+        if (l && !td.hasAttribute('data-label')) { td.setAttribute('data-label', l); }
+      });
+    });
+  });
+})();

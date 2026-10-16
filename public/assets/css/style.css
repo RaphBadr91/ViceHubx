@@ -365,17 +365,41 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0.02em; line-
 .admin-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.6rem; flex-wrap: wrap; }
 
 /* ---------- Admin : adaptation mobile (anti-débordement) ----------
-   Sur téléphone, un tableau large défile horizontalement DANS sa carte au lieu
-   de pousser toute la page hors de l'écran. Corrige « ça sort du téléphone ».
-   Astuce : table en display:block + overflow-x = conteneur de défilement propre,
-   l'alignement des colonnes reste géré par le moteur de tableau interne. */
+   Sur téléphone, chaque tableau admin devient une pile de CARTES : une ligne =
+   une fiche, chaque cellule affiche « Intitulé : valeur » (le libellé vient de
+   data-label, injecté par app.js). Résultat : tout est visible sans jamais
+   glisser de côté — corrige « on ne voit pas tout sur le tel ». */
 @media (max-width: 680px) {
     .admin-shell { padding-left: 1rem; padding-right: 1rem; }
-    .data-table {
-        display: block; width: 100%; min-width: 100%;
-        overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap;
+
+    .data-table { display: block; width: 100%; border: 0; }
+    .data-table thead { display: none; }            /* en-têtes repris par data-label */
+    .data-table tbody { display: block; width: 100%; }
+    .data-table tr {
+        display: block; width: 100%;
+        margin: 0 0 .85rem; padding: .25rem .15rem;
+        border: 1px solid var(--glass-brd); border-radius: 14px;
+        background: rgba(255,255,255,.025);
     }
-    .data-table th, .data-table td { padding: .55rem .7rem; font-size: .88rem; }
+    .data-table td {
+        display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+        padding: .6rem .8rem; border: 0; border-bottom: 1px solid var(--glass-brd);
+        white-space: normal; text-align: right; font-size: .95rem; word-break: break-word;
+    }
+    .data-table tr td:last-child { border-bottom: 0; }
+    .data-table td::before {
+        content: attr(data-label);
+        flex: 0 0 38%; text-align: left;
+        font-weight: 700; color: var(--muted);
+        text-transform: uppercase; font-size: .68rem; letter-spacing: .05em; padding-top: .15rem;
+    }
+    /* Cellules sans intitulé (ex. colonne d'action « Modifier ») : pas de libellé,
+       lien pleine largeur et bien visible pour le doigt. */
+    .data-table td:not([data-label]) { justify-content: flex-end; }
+    .data-table td:not([data-label])::before { content: none; }
+    .data-table td .link-all,
+    .data-table td .btn { font-weight: 700; }
+
     .stat-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: .7rem; }
     .admin-bar { margin-bottom: 1.1rem; }
     .admin-bar h1 { font-size: 1.45rem; }
