@@ -177,6 +177,20 @@ function social_http_post(string $url, array $params): array
     return [$code, is_array($json) ? $json : ['raw' => $raw]];
 }
 
+/** GET HTTP simple (Graph API) → [int status, array body]. */
+function social_graph_get(string $url): array
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 10]);
+    $raw  = curl_exec($ch);
+    $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+    if ($raw === false) { return [0, ['error' => ['message' => 'cURL : ' . $err]]]; }
+    $json = json_decode((string) $raw, true);
+    return [$code, is_array($json) ? $json : ['raw' => $raw]];
+}
+
 /** Extrait un message d'erreur lisible d'une réponse Graph. */
 function social_err(array $body): string
 {
@@ -498,6 +512,88 @@ function social_test(string $platform): array
     return $ok
         ? ['ok' => true, 'msg' => '✅ Posté sur ' . ucfirst($platform) . ' (id ' . $res . ').']
         : ['ok' => false, 'msg' => '❌ ' . ucfirst($platform) . ' : ' . $res];
+}
+
+/**
+ * Diagnostic Instagram : dit EXACTEMENT pourquoi plus rien ne part.
+ * Vérifie, dans l'ordre : activation, identifiants, VALIDITÉ du jeton Meta (avec
+ * sa date d'expiration), présence d'articles ANGLAIS récents (Instagram ne poste
+ * que l'EN), pause anti-throttle, plafond du jour et dernières erreurs en file.
+ * @return array{lines: string[], token_ok: bool}
+ */
+function social_diagnose(): array
+{
+    social_ensure_table();
+    $ver = social_graph_ver();
+    $lines = [];
+
+    $auto = (int) get_setting('social_auto', '0') === 1;
+    $igEn = (int) get_setting('social_ig_enabled', '0') === 1;
+    $ig   = social_ig_user();
+    $tok  = social_fb_token();
+
+    $lines[] = ($auto ? '✅' : '❌') . ' Auto-publication globale : ' . ($auto ? 'activée' : 'DÉSACTIVÉE — coche « Auto-publier chaque nouvel article ».');
+    $lines[] = ($igEn ? '✅' : '❌') . ' Instagram activé : ' . ($igEn ? 'oui' : 'NON — coche « Activer Instagram ».');
+    $lines[] = ($ig !== '' ? '✅' : '❌') . ' ID compte Instagram Business : ' . ($ig !== '' ? $ig : 'MANQUANT.');
+    $lines[] = ($tok !== '' ? '✅' : '❌') . ' Jeton de Page Meta : ' . ($tok !== '' ? 'présent' : 'MANQUANT.');
+
+    $tokenOk = false;
+    if ($tok !== '' && $ig !== '') {
+        // Test d'accès réel : on interroge le compte IG avec le jeton.
+        [$c, $b] = social_graph_get("https://graph.facebook.com/{$ver}/" . rawurlencode($ig) . '?fields=username,name&access_token=' . urlencode($tok));
+        if ($c === 200 && (!empty($b['username']) || !empty($b['name']))) {
+            $tokenOk = true;
+            $lines[] = '✅ Jeton VALIDE — compte Instagram accessible : @' . ($b['username'] ?? $b['name']);
+        } else {
+            $msg = social_err($b);
+            $expired = (bool) preg_match('/expir|session has expired|oauth|validating access token|code\D*190|invalidated|not authoriz|malformed|permission/i', $msg);
+            $lines[] = ($expired ? '❌ Jeton EXPIRÉ ou INVALIDE (c\'est la cause la plus probable)' : '❌ Accès refusé par Meta') . ' — ' . $msg;
+        }
+        // Date d'expiration (best-effort — ne bloque jamais le diagnostic).
+        [$dc, $dbd] = social_graph_get("https://graph.facebook.com/{$ver}/debug_token?input_token=" . urlencode($tok) . '&access_token=' . urlencode($tok));
+        if ($dc === 200 && !empty($dbd['data']) && is_array($dbd['data'])) {
+            $d   = $dbd['data'];
+            $exp = (int) ($d['expires_at'] ?? 0);
+            if (isset($d['is_valid'])) {
+                $lines[] = ($d['is_valid'] ? '✅' : '❌') . ' Contrôle Meta (debug_token) : is_valid = ' . ($d['is_valid'] ? 'true' : 'false');
+            }
+            if ($exp > 0) {
+                $lines[] = ($exp < time() ? '❌ Jeton EXPIRÉ le ' : '🗓️ Jeton valable jusqu\'au ') . date('d/m/Y à H:i', $exp)
+                         . ($exp < time() ? ' → À RENOUVELER.' : '');
+            } elseif (!empty($d['is_valid'])) {
+                $lines[] = '♾️ Jeton sans date d\'expiration (permanent) — bon signe.';
+            }
+        }
+    }
+
+    // Instagram ne poste QUE l'anglais : s'il n'y a pas d'article EN récent, rien à poster.
+    try {
+        $enRecent = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='published' AND lang='en' AND published_at >= (NOW() - INTERVAL 4 DAY)")->fetchColumn();
+        $enTotal  = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='published' AND lang='en'")->fetchColumn();
+    } catch (Throwable $e) { $enRecent = $enTotal = 0; }
+    if ($enRecent > 0) {
+        $lines[] = "✅ Articles ANGLAIS récents (≤ 4 j) prêts à partir : {$enRecent} (total EN publiés : {$enTotal}).";
+    } elseif ($enTotal > 0) {
+        $lines[] = "⚠️ 0 article ANGLAIS récent (≤ 4 j). Instagram ne poste QUE l'EN : si la traduction auto s'est arrêtée, le flux IG se tarit. (total EN : {$enTotal}) → vérifie « Traduire automatiquement » dans Admin → Articles IA.";
+    } else {
+        $lines[] = "❌ AUCUN article anglais publié. Instagram ne poste QUE l'EN → active « Traduire automatiquement » (Admin → Articles IA) pour alimenter Instagram.";
+    }
+
+    // Pause anti-throttle + plafond du jour.
+    $cd = (int) get_setting('social_cooldown_instagram', '0');
+    if ($cd > time()) {
+        $lines[] = '⏳ Instagram en pause anti-throttle Meta jusqu\'à ' . date('H:i', $cd) . ' — repartira seul.';
+    }
+    $cap = max(1, (int) get_setting('social_daily_max', '10'));
+    $lines[] = 'ℹ️ Posté sur Instagram aujourd\'hui : ' . social_posted_today('instagram') . ' / plafond ' . $cap . '.';
+
+    // Dernières erreurs IG en file.
+    try {
+        $errs = db()->query("SELECT article_id, LEFT(error,180) e FROM social_queue WHERE platform='instagram' AND status='error' ORDER BY id DESC LIMIT 3")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($errs as $er) { $lines[] = '🛑 Dernier échec IG (article #' . (int) $er['article_id'] . ') : ' . (string) $er['e']; }
+    } catch (Throwable $e) { /* table peut-être vide */ }
+
+    return ['lines' => $lines, 'token_ok' => $tokenOk];
 }
 
 /** Nombre de posts déjà publiés AUJOURD'HUI sur une plateforme (plafond quotidien). */

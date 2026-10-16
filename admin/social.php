@@ -78,6 +78,13 @@ if ($act === 'retry_errors') {
     db()->exec("UPDATE social_queue SET status='pending', error=NULL WHERE status='error'");
     $flash = ['ok', '🔁 Publications en erreur remises en file.'];
 }
+// --- Diagnostic Instagram (pourquoi plus rien ne part) ---
+$diag = null;
+if ($act === 'diagnose') {
+    @set_time_limit(0);
+    try { $diag = social_diagnose(); }
+    catch (Throwable $e) { $flash = ['err', 'Diagnostic impossible : ' . $e->getMessage()]; }
+}
 
 $fbEnabled = (int) get_setting('social_fb_enabled', '0') === 1;
 $igEnabled = (int) get_setting('social_ig_enabled', '0') === 1;
@@ -98,6 +105,29 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
 ?>
 <div class="admin-bar"><h1>📣 Réseaux sociaux</h1></div>
 <?php if ($flash): ?><div class="alert alert--<?= e($flash[0]) ?>" style="margin:1rem 0"><?= e($flash[1]) ?></div><?php endif; ?>
+
+<!-- Diagnostic Instagram : 1 clic → cause exacte -->
+<div class="glass" style="padding:.9rem 1.1rem;border-radius:12px;margin:.6rem 0;border:1px solid rgba(255,46,136,.3)">
+    <form method="post" style="margin:0;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
+        <?= csrf_field() ?><input type="hidden" name="action" value="diagnose">
+        <strong>📸 Instagram ne poste plus ?</strong>
+        <button class="btn btn--primary" type="submit">🔎 Diagnostic Instagram</button>
+        <span class="muted" style="font-size:.85rem">Vérifie le jeton (+ sa date d'expiration), les articles EN, les erreurs… et dit quoi faire.</span>
+    </form>
+</div>
+<?php if ($diag): ?>
+<div class="glass" style="padding:1rem 1.2rem;border-radius:14px;margin:.6rem 0;border:1px solid rgba(43,214,255,.3)">
+    <h2 style="margin:0 0 .6rem;font-size:1.05rem">🔎 Résultat du diagnostic Instagram</h2>
+    <ul style="margin:0;padding-left:1.1rem;line-height:1.7;font-size:.92rem">
+        <?php foreach ($diag['lines'] as $ln): ?><li><?= e($ln) ?></li><?php endforeach; ?>
+    </ul>
+    <?php if (!$diag['token_ok']): ?>
+        <p class="muted" style="margin:.8rem 0 0;font-size:.86rem;border-top:1px solid var(--glass-brd);padding-top:.7rem">
+            👉 Si le jeton est <strong>expiré/invalide</strong> : génère un nouveau <strong>Page Access Token longue durée</strong> (Meta → Graph API Explorer → permissions <code>pages_manage_posts</code>, <code>instagram_basic</code>, <code>instagram_content_publish</code> → échange en jeton longue durée → copie le jeton de la Page), puis colle-le dans « Jeton d'accès de Page » ci-dessous et enregistre. Ensuite relance « 🔎 Diagnostic ».
+        </p>
+    <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <p class="muted" style="max-width:820px">Publie <strong>automatiquement</strong> chaque nouvel article sur ta <strong>Page Facebook</strong> et ton <strong>compte Instagram</strong>, avec une légende courte + accrocheuse + hashtags générée par l'IA. Reste inactif tant que les jetons ne sont pas renseignés.</p>
 <div class="glass" style="padding:.8rem 1rem;border-radius:12px;margin:.6rem 0;border:1px solid rgba(43,214,255,.25);font-size:.9rem">
