@@ -45,6 +45,9 @@ $ADMIN_TITLE = $ADMIN_TITLE ?? (APP_NAME . ' — Admin');
 <header class="site-header glass">
     <div class="header-inner">
         <a class="logo" href="<?= e(url('admin/dashboard.php')) ?>">Vice<span class="logo-accent">Hub</span><span class="logo-x">X</span> · Admin</a>
+        <button class="nav-toggle" aria-label="Menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
         <nav class="site-nav">
             <?php foreach ($admin_nav as [$href, $label]): ?>
                 <a href="<?= e(url('admin/' . $href)) ?>"><?= e($label) ?></a>
