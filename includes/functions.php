@@ -1832,6 +1832,8 @@ function vhx_auto_heartbeat(): void
                 // trafic du site suffit désormais à les générer (verrou anti-double + budget).
                 if (function_exists('ai_drain_queue')) { ai_drain_queue($budget); }
                 if (is_file(ROOT_PATH . '/includes/social.php')) { require_once ROOT_PATH . '/includes/social.php'; }
+                // Garde le jeton Meta en vie tout seul (ré-étend avant expiration).
+                if (function_exists('social_token_autorenew')) { social_token_autorenew(); }
                 if (function_exists('social_any_ready') && social_any_ready()) { social_drain($budget); }
                 if (is_file(ROOT_PATH . '/includes/tiktok.php')) {
                     require_once ROOT_PATH . '/includes/tiktok.php';

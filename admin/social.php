@@ -18,6 +18,10 @@ if ($act === 'save') {
     }
     $tok = trim((string) ($_POST['fb_page_token'] ?? ''));
     if ($tok !== '') { set_setting('fb_page_token', $tok); } // vide = on conserve
+    // Connexion automatique : App ID public + App Secret (secret : vide = on conserve)
+    if (isset($_POST['fb_app_id'])) { set_setting('fb_app_id', trim((string) $_POST['fb_app_id'])); }
+    $sec = trim((string) ($_POST['fb_app_secret'] ?? ''));
+    if ($sec !== '') { set_setting('fb_app_secret', $sec); }
     if (isset($_POST['social_daily_max'])) {
         set_setting('social_daily_max', (string) max(1, min(50, (int) $_POST['social_daily_max'])));
     }
@@ -85,6 +89,15 @@ if ($act === 'diagnose') {
     try { $diag = social_diagnose(); }
     catch (Throwable $e) { $flash = ['err', 'Diagnostic impossible : ' . $e->getMessage()]; }
 }
+// --- Connexion / renouvellement AUTOMATIQUE du jeton (depuis un jeton court) ---
+if ($act === 'connect_token') {
+    @set_time_limit(0);
+    try {
+        $seed = trim((string) ($_POST['seed_token'] ?? ''));
+        if ($seed === '') { $flash = ['err', 'Colle d\'abord le jeton utilisateur court (Graph API Explorer → Generate Access Token).']; }
+        else { $r = social_connect_from_seed($seed); $flash = [$r['ok'] ? 'ok' : 'err', $r['msg']]; }
+    } catch (Throwable $e) { $flash = ['err', 'Connexion impossible : ' . $e->getMessage()]; }
+}
 
 $fbEnabled = (int) get_setting('social_fb_enabled', '0') === 1;
 $igEnabled = (int) get_setting('social_ig_enabled', '0') === 1;
@@ -92,6 +105,9 @@ $auto      = (int) get_setting('social_auto', '0') === 1;
 $fbPage    = social_fb_page();
 $igUser    = social_ig_user();
 $hasToken  = social_fb_token() !== '';
+$appId     = (string) get_setting('fb_app_id', '');
+$hasSecret = trim((string) get_setting('fb_app_secret', '')) !== '';
+$userExp   = (int) get_setting('fb_user_token_expires', '0');
 $siteUrl   = (string) (get_setting('site_public_url', '') ?: social_base());
 $dailyMax  = max(1, (int) get_setting('social_daily_max', '10'));
 $fbToday   = social_posted_today('facebook');
@@ -143,9 +159,45 @@ $cronUrl = rtrim(social_base(), '/') . '/social-tick.php?key=' . $tickKey;
     <span class="muted">File : <strong><?= (int) $stats['pending'] ?></strong> en attente · <strong><?= (int) $stats['posted'] ?></strong> postés · <strong style="color:#ff5d5d"><?= (int) $stats['error'] ?></strong> erreurs</span>
 </div>
 
-<!-- Connexion -->
+<!-- Connexion AUTOMATIQUE (jeton permanent, anti-coupure) -->
+<div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0;border:1px solid rgba(57,255,170,.35)">
+    <h2 style="margin-top:0">🔄 Connexion automatique <span style="font-size:.7em;color:#39ffaa">(recommandé — jeton permanent)</span></h2>
+    <p class="muted" style="max-width:820px;font-size:.9rem">Finie la coupure tous les 60 jours : renseigne <strong>App ID + App Secret</strong> une seule fois, colle un jeton court, et ViceHub génère le <strong>jeton de Page permanent</strong> + <strong>détecte ton compte Instagram</strong> tout seul. Ensuite il le <strong>renouvelle automatiquement</strong> (le heartbeat ré-étend le jeton avant chaque expiration).</p>
+
+    <?php if ($userExp > 0): ?>
+        <div class="alert alert--<?= $userExp > time() ? 'ok' : 'err' ?>" style="margin:.4rem 0">
+            <?= $userExp > time() ? '✅ Renouvellement auto actif' : '⚠️ Jeton utilisateur expiré' ?> — jeton utilisateur valable jusqu'au <strong><?= date('d/m/Y', $userExp) ?></strong>. Le jeton de Page, lui, est permanent.
+        </div>
+    <?php endif; ?>
+
+    <form method="post" style="display:grid;gap:1rem;max-width:760px">
+        <?= csrf_field() ?><input type="hidden" name="action" value="save">
+        <label>App ID (public)
+            <input type="text" name="fb_app_id" value="<?= e($appId) ?>" placeholder="ex. 1234567890123456" style="display:block;width:100%;margin-top:.3rem">
+            <small class="muted">developers.facebook.com → ton app → Paramètres → Général.</small>
+        </label>
+        <label>App Secret (confidentiel)
+            <input type="password" name="fb_app_secret" value="" placeholder="<?= $hasSecret ? '•••••• (déjà enregistré — laisse vide pour conserver)' : 'Clé secrète de l\'app' ?>" style="display:block;width:100%;margin-top:.3rem" autocomplete="off">
+            <small class="muted">🔒 Stocké uniquement dans ta base, comme une clé Stripe. Sert à fabriquer le jeton longue durée.</small>
+        </label>
+        <div><button class="btn btn--primary" type="submit">💾 Enregistrer App ID / Secret</button></div>
+    </form>
+
+    <form method="post" style="display:grid;gap:.7rem;max-width:760px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--glass-brd)">
+        <?= csrf_field() ?><input type="hidden" name="action" value="connect_token">
+        <label>Jeton utilisateur court (collé une fois depuis Graph API Explorer)
+            <input type="text" name="seed_token" value="" placeholder="EAA… (Generate Access Token avec instagram_content_publish, pages_manage_posts…)" style="display:block;width:100%;margin-top:.3rem" autocomplete="off">
+            <small class="muted">1) developers.facebook.com/tools/explorer → ton app → ajoute les permissions <code>instagram_basic</code>, <code>instagram_content_publish</code>, <code>pages_show_list</code>, <code>pages_read_engagement</code>, <code>pages_manage_posts</code>, <code>business_management</code> → <strong>Generate Access Token</strong> → copie-colle ici. 2) Clique le bouton ci-dessous : ViceHub fait le reste.</small>
+        </label>
+        <div><button class="btn btn--primary" type="submit" <?= ($appId !== '' && $hasSecret) ? '' : 'disabled' ?>>🔄 Connecter / Renouveler automatiquement</button>
+            <?php if ($appId === '' || !$hasSecret): ?><span class="muted" style="font-size:.85rem">⬆️ Enregistre d'abord App ID + App Secret.</span><?php endif; ?>
+        </div>
+    </form>
+</div>
+
+<!-- Connexion MANUELLE (si tu préfères coller le jeton de Page toi-même) -->
 <div class="glass" style="padding:1.4rem;border-radius:16px;margin:1rem 0">
-    <h2 style="margin-top:0">🔑 Connexion Meta (Facebook + Instagram)</h2>
+    <h2 style="margin-top:0">🔑 Connexion Meta manuelle (Facebook + Instagram)</h2>
     <form method="post" style="display:grid;gap:1rem;max-width:760px">
         <?= csrf_field() ?><input type="hidden" name="action" value="save">
         <label>URL publique du site

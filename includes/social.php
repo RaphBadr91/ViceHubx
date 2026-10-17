@@ -596,6 +596,101 @@ function social_diagnose(): array
     return ['lines' => $lines, 'token_ok' => $tokenOk];
 }
 
+/* ================================================================== */
+/*  Jeton Meta : connexion & renouvellement AUTOMATIQUE (anti-coupure)  */
+/* ================================================================== */
+
+/** Échange un jeton utilisateur COURT (collé depuis Graph API Explorer) contre un
+ *  jeton utilisateur LONGUE DURÉE (~60 jours). Nécessite App ID + App Secret. */
+function social_exchange_user_token(string $shortToken): array
+{
+    $appId  = trim((string) get_setting('fb_app_id', ''));
+    $secret = trim((string) get_setting('fb_app_secret', ''));
+    if ($appId === '' || $secret === '') { return [false, 'App ID / App Secret manquants (section Connexion automatique).']; }
+    if ($shortToken === '') { return [false, 'Jeton utilisateur manquant.']; }
+    $ver = social_graph_ver();
+    [$c, $b] = social_graph_get("https://graph.facebook.com/{$ver}/oauth/access_token?grant_type=fb_exchange_token"
+        . '&client_id=' . urlencode($appId)
+        . '&client_secret=' . urlencode($secret)
+        . '&fb_exchange_token=' . urlencode($shortToken));
+    if ($c === 200 && !empty($b['access_token'])) {
+        return [true, ['token' => (string) $b['access_token'], 'expires' => time() + (int) ($b['expires_in'] ?? 5184000)]];
+    }
+    return [false, 'Échange refusé par Meta : ' . social_err($b)];
+}
+
+/** À partir d'un jeton utilisateur, récupère le jeton de la PAGE (qui, lui, ne
+ *  réexpire pas) + l'ID du compte Instagram Business lié à cette Page. */
+function social_derive_page_token(string $userToken): array
+{
+    $ver    = social_graph_ver();
+    $pageId = social_fb_page();
+    [$c, $b] = social_graph_get("https://graph.facebook.com/{$ver}/me/accounts?limit=100"
+        . '&fields=id,name,access_token,instagram_business_account'
+        . '&access_token=' . urlencode($userToken));
+    if ($c !== 200 || empty($b['data'])) { return [false, 'Lecture des Pages échouée : ' . social_err($b)]; }
+    $chosen = null;
+    foreach ($b['data'] as $p) {
+        if ($pageId !== '' && (string) ($p['id'] ?? '') === $pageId) { $chosen = $p; break; }
+    }
+    if (!$chosen) { $chosen = $b['data'][0]; } // aucun ID fixé → 1re Page gérée
+    $pageToken = (string) ($chosen['access_token'] ?? '');
+    if ($pageToken === '') { return [false, 'Jeton de Page introuvable (es-tu admin de la Page ?).']; }
+    return [true, [
+        'page_id'    => (string) ($chosen['id'] ?? ''),
+        'page_name'  => (string) ($chosen['name'] ?? ''),
+        'page_token' => $pageToken,
+        'ig_id'      => (string) ($chosen['instagram_business_account']['id'] ?? ''),
+    ]];
+}
+
+/** Flux complet depuis un jeton COURT : échange → jeton user longue durée (stocké)
+ *  → jeton de Page (stocké) + détection auto de l'ID Instagram. */
+function social_connect_from_seed(string $shortToken): array
+{
+    [$ok, $res] = social_exchange_user_token($shortToken);
+    if (!$ok) { return ['ok' => false, 'msg' => '❌ ' . $res]; }
+    set_setting('fb_user_token', $res['token']);
+    set_setting('fb_user_token_expires', (string) $res['expires']);
+
+    [$ok2, $r2] = social_derive_page_token($res['token']);
+    if (!$ok2) { return ['ok' => false, 'msg' => '❌ ' . $r2 . ' (jeton utilisateur enregistré ; renseigne l\'ID de Page puis réessaie).']; }
+    set_setting('fb_page_token', $r2['page_token']);
+    if ($r2['page_id'] !== '' && social_fb_page() === '') { set_setting('fb_page_id', $r2['page_id']); }
+    if ($r2['ig_id'] !== '') { set_setting('ig_user_id', $r2['ig_id']); }
+
+    return ['ok' => true, 'msg' => '✅ Connecté ! Page : ' . ($r2['page_name'] ?: $r2['page_id'])
+        . ($r2['ig_id'] ? ' · Instagram : ' . $r2['ig_id'] : ' · ⚠️ aucun compte Instagram Business lié à cette Page (lie-le dans Meta Business).')
+        . '. Jeton de Page permanent enregistré ; renouvellement auto actif (plus de coupure).'];
+}
+
+/** Renouvellement AUTOMATIQUE (appelé par le heartbeat). Si le jeton utilisateur
+ *  longue durée approche de l'expiration, on le réétend (fb_exchange_token) et on
+ *  re-dérive le jeton de Page. Tant que le site a du trafic, le jeton ne meurt
+ *  jamais. Throttlé à 1 tentative / 24 h. Silencieux (jamais d'erreur publique). */
+function social_token_autorenew(): void
+{
+    $appId   = trim((string) get_setting('fb_app_id', ''));
+    $secret  = trim((string) get_setting('fb_app_secret', ''));
+    $userTok = trim((string) get_setting('fb_user_token', ''));
+    if ($appId === '' || $secret === '' || $userTok === '') { return; } // mode manuel : rien à faire
+    if (time() - (int) get_setting('fb_token_renew_last', '0') < 86400) { return; }      // 1x/jour max
+    $exp = (int) get_setting('fb_user_token_expires', '0');
+    if ($exp > 0 && $exp - time() > 12 * 86400) { return; }                               // encore >12 j : on attend
+    set_setting('fb_token_renew_last', (string) time());
+    try {
+        [$ok, $res] = social_exchange_user_token($userTok);
+        if (!$ok) { return; } // on réessaiera demain
+        set_setting('fb_user_token', $res['token']);
+        set_setting('fb_user_token_expires', (string) $res['expires']);
+        [$ok2, $r2] = social_derive_page_token($res['token']);
+        if ($ok2) {
+            set_setting('fb_page_token', $r2['page_token']);
+            if ($r2['ig_id'] !== '') { set_setting('ig_user_id', $r2['ig_id']); }
+        }
+    } catch (Throwable $e) { /* silencieux */ }
+}
+
 /** Nombre de posts déjà publiés AUJOURD'HUI sur une plateforme (plafond quotidien). */
 function social_posted_today(string $platform): int
 {
