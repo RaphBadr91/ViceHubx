@@ -1049,7 +1049,14 @@ function get_trailer_analyses(): array
 
 function get_deals(): array
 {
-    return db()->query("SELECT * FROM affiliate_links WHERE active = 1 ORDER BY id ASC")->fetchAll();
+    // Ordre d'affichage : colonne `sort` si elle existe (catalogue rangé par
+    // catégorie), sinon repli sur l'id. Robuste si la colonne n'a pas encore
+    // été ajoutée (ancienne base).
+    try {
+        return db()->query("SELECT * FROM affiliate_links WHERE active = 1 ORDER BY sort ASC, id ASC")->fetchAll();
+    } catch (Throwable $e) {
+        return db()->query("SELECT * FROM affiliate_links WHERE active = 1 ORDER BY id ASC")->fetchAll();
+    }
 }
 
 /** Produits de la boutique (filtrables par catégorie). */

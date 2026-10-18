@@ -24,6 +24,7 @@ $admin_nav = [
     ['newsletter.php', '📧 Newsletter'],
     ['tiktok.php',    '🎵 TikTok'],
     ['products.php',  'Boutique'],
+    ['deals.php',     '🛒 Deals Amazon'],
     ['orders.php',    'Commandes'],
     ['fanarts.php',   'Fan-arts'],
     ['events.php',    'Événements'],
