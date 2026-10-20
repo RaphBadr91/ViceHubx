@@ -102,10 +102,13 @@ $renderCards = static function (array $items) use ($fr): void {
     echo '<div class="cards" style="margin:1rem 0 1.8rem">';
     foreach ($items as $d) {
         echo '<a class="deal glass reveal" href="' . e(amazon_url((string) $d['url'])) . '" rel="sponsored nofollow" target="_blank">';
+        echo deal_visual($d);
+        echo '<div class="deal-body">';
         echo '<span class="tag">' . e((string) $d['platform']) . (!empty($d['badge']) ? ' · ' . e((string) $d['badge']) : '') . '</span>';
-        echo '<h3 style="font-size:1.05rem">' . e((string) $d['title']) . '</h3>';
+        echo '<h3>' . e((string) $d['title']) . '</h3>';
         echo '<p class="muted">' . e((string) $d['description']) . '</p>';
-        echo '<span class="btn btn--ghost" style="align-self:flex-start">' . ($fr ? 'Voir le produit' : 'View product') . ' →</span>';
+        echo '<span class="btn btn--primary" style="align-self:flex-start">' . ($fr ? 'Voir le produit' : 'View product') . ' →</span>';
+        echo '</div>';
         echo '</a>';
     }
     echo '</div>';

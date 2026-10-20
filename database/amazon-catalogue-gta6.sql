@@ -18,8 +18,9 @@
 -- « Résultat vide (aucune ligne) » = SUCCÈS.
 -- =====================================================================
 
--- Colonne d'ordre d'affichage (MariaDB : IF NOT EXISTS supporté).
+-- Colonnes d'ordre d'affichage + photo produit (MariaDB : IF NOT EXISTS supporté).
 ALTER TABLE affiliate_links ADD COLUMN IF NOT EXISTS sort INT NOT NULL DEFAULT 0;
+ALTER TABLE affiliate_links ADD COLUMN IF NOT EXISTS image VARCHAR(400) DEFAULT NULL;
 
 -- Nettoie les placeholders + l'ancienne sélection Amazon (anti-doublon) ; préserve
 -- tout autre lien d'affiliation ajouté à la main (hors amazon).

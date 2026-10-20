@@ -7,8 +7,9 @@
 $ADMIN_TITLE = 'ViceHub X — Deals Amazon';
 require __DIR__ . '/../includes/admin_header.php';
 
-// La colonne d'ordre peut manquer sur une ancienne base : on l'ajoute au besoin.
+// Colonnes qui peuvent manquer sur une ancienne base : on les ajoute au besoin.
 try { db()->exec('ALTER TABLE affiliate_links ADD COLUMN IF NOT EXISTS sort INT NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
+try { db()->exec('ALTER TABLE affiliate_links ADD COLUMN IF NOT EXISTS image VARCHAR(400) DEFAULT NULL'); } catch (Throwable $e) {}
 
 /** Nettoie une URL Amazon collée : retire un éventuel tag d'affiliation étranger
  *  (le nôtre est ajouté au rendu) et quelques paramètres de suivi inutiles. */
@@ -34,13 +35,14 @@ if ($act === 'add') {
     if ($title === '' || $url === '') {
         $flash = ['err', 'Titre et lien obligatoires.'];
     } else {
-        $st = db()->prepare('INSERT INTO affiliate_links (title, description, url, platform, badge, active, sort) VALUES (?,?,?,?,?,1,?)');
+        $st = db()->prepare('INSERT INTO affiliate_links (title, description, url, platform, badge, image, active, sort) VALUES (?,?,?,?,?,?,1,?)');
         $st->execute([
             mb_substr($title, 0, 160),
             mb_substr(trim((string) ($_POST['description'] ?? '')), 0, 300),
             mb_substr($url, 0, 400),
             mb_substr(trim((string) ($_POST['platform'] ?? 'Amazon')) ?: 'Amazon', 0, 60),
             mb_substr(trim((string) ($_POST['badge'] ?? '')), 0, 40),
+            mb_substr(trim((string) ($_POST['image'] ?? '')), 0, 400) ?: null,
             (int) ($_POST['sort'] ?? 100),
         ]);
         $flash = ['ok', '✅ Produit ajouté.'];
@@ -49,13 +51,14 @@ if ($act === 'add') {
 if ($act === 'update') {
     $id = (int) ($_POST['id'] ?? 0);
     if ($id > 0) {
-        $st = db()->prepare('UPDATE affiliate_links SET title=?, description=?, url=?, platform=?, badge=?, sort=?, active=? WHERE id=?');
+        $st = db()->prepare('UPDATE affiliate_links SET title=?, description=?, url=?, platform=?, badge=?, image=?, sort=?, active=? WHERE id=?');
         $st->execute([
             mb_substr(trim((string) ($_POST['title'] ?? '')), 0, 160),
             mb_substr(trim((string) ($_POST['description'] ?? '')), 0, 300),
             mb_substr(deals_clean_url((string) ($_POST['url'] ?? '')), 0, 400),
             mb_substr(trim((string) ($_POST['platform'] ?? 'Amazon')) ?: 'Amazon', 0, 60),
             mb_substr(trim((string) ($_POST['badge'] ?? '')), 0, 40),
+            mb_substr(trim((string) ($_POST['image'] ?? '')), 0, 400) ?: null,
             (int) ($_POST['sort'] ?? 100),
             !empty($_POST['active']) ? 1 : 0,
             $id,
@@ -94,6 +97,7 @@ $activeCount = 0; foreach ($rows as $r) { if ((int) $r['active'] === 1) { $activ
         <?= csrf_field() ?><input type="hidden" name="action" value="add">
         <input type="text" name="title" placeholder="Titre (ex. Manette DualSense PS5)" required>
         <input type="text" name="url" placeholder="Lien Amazon du produit (https://www.amazon.fr/dp/…)" required>
+        <input type="text" name="image" placeholder="Photo du produit (URL d'image) — optionnel, sinon vignette auto">
         <input type="text" name="description" placeholder="Description courte (pourquoi c'est bien pour GTA 6)">
         <div style="display:flex;gap:.6rem;flex-wrap:wrap">
             <input type="text" name="badge" placeholder="Catégorie (ex. Console)" style="flex:1;min-width:140px">
@@ -111,6 +115,7 @@ $activeCount = 0; foreach ($rows as $r) { if ((int) $r['active'] === 1) { $activ
             <?= csrf_field() ?><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="<?= (int) $r['id'] ?>">
             <input type="text" name="title" value="<?= e($r['title']) ?>" required>
             <input type="text" name="url" value="<?= e($r['url']) ?>" required>
+            <input type="text" name="image" value="<?= e((string) ($r['image'] ?? '')) ?>" placeholder="Photo du produit (URL d'image) — sinon vignette auto">
             <input type="text" name="description" value="<?= e((string) $r['description']) ?>">
             <div style="display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
                 <input type="text" name="platform" value="<?= e((string) $r['platform']) ?>" placeholder="Amazon" style="width:120px">

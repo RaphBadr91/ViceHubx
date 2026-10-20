@@ -1416,6 +1416,98 @@ function article_hub_cta(): string
         . '</aside>';
 }
 
+/** Icône (vhx_icon) représentant une catégorie de produit, pour la vignette par défaut. */
+function deal_cat_icon(string $badge): string
+{
+    switch (mb_strtolower(trim($badge))) {
+        case 'console': case 'premium': case 'petit prix': case 'manette': case 'pro': return 'controller';
+        case 'conduite': return 'car';
+        case 'audio': case 'streaming': return 'live';
+        case 'stockage': return 'folder';
+        case 'écran': case 'ecran': case 'vr': case 'pc': return 'monitor';
+        case 'jeu': return 'play';
+        case 'déco': case 'deco': return 'palm';
+        case 'goodies': return 'bag';
+        case 'setup': case 'confort': case 'collector': return 'trophy';
+        default: return 'tag';
+    }
+}
+
+/** Vignette d'un produit : la PHOTO si fournie (champ image), sinon une tuile
+ *  dégradée avec l'icône de la catégorie. Donne toujours un visuel attrayant
+ *  sans enfreindre les règles Amazon (pas d'image Amazon « hotlinkée »). */
+function deal_visual(array $d): string
+{
+    $img = trim((string) ($d['image'] ?? ''));
+    $alt = e((string) ($d['title'] ?? ($d['name'] ?? '')));
+    if ($img !== '') {
+        $src = preg_match('#^https?://#i', $img) ? $img : (BASE_URL . '/' . ltrim($img, '/'));
+        return '<span class="deal-media"><img src="' . e($src) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
+            . ' onerror="var m=this.closest(\'.deal-media\'); if(m){m.classList.add(\'deal-media--ph\'); m.innerHTML=\'\';}"></span>';
+    }
+    $badge = (string) ($d['badge'] ?? '');
+    return '<span class="deal-media deal-media--ph">' . vhx_icon(deal_cat_icon($badge))
+        . '<i class="deal-media__lbl">' . e($badge !== '' ? $badge : 'GTA 6') . '</i></span>';
+}
+
+/**
+ * Carte produit CONTEXTUELLE insérée dans l'article : choisit un produit Amazon
+ * en rapport avec le SUJET de l'article (stockage, conduite, graphismes, audio…)
+ * et l'affiche avec une vignette + bouton d'achat. Monétise chaque article de
+ * façon pertinente. Repli : une console, puis n'importe quel produit actif.
+ */
+function article_deal_cta(array $article, string $hay = ''): string
+{
+    $fr  = lang() === 'fr';
+    $hay = mb_strtolower($hay . ' ' . (string) ($article['title'] ?? ''));
+
+    // Sujet de l'article → catégorie (badge) de produit la plus pertinente.
+    $rules = [
+        'Stockage' => ['storage', 'stockage', ' ssd', 'install size', 'espace', 'gigaoctet', ' go ', 'disque', 'mémoire', 'memory'],
+        'Conduite' => ['driving', 'conduite', 'voiture', ' car ', 'vehicle', 'véhicule', 'physics', 'racing', 'course', 'volant', 'supercar', 'moto', 'bike'],
+        'Écran'    => ['graphics', 'graphique', 'ray tracing', 'ray-tracing', 'resolution', 'résolution', '120hz', ' 4k', 'rage engine', 'visual', 'écran', 'screen'],
+        'Audio'    => ['soundtrack', 'bande-son', 'bande son', 'music', 'musique', 'radio', ' son ', 'audio'],
+        'Streaming'=> ['stream', 'streamer', 'twitch', 'youtube', 'creator', 'créateur'],
+        'Manette'  => ['controller', 'manette', 'gameplay', 'combat', 'shooting', 'aim', 'fusillade', 'co-op', 'coop', 'multijoueur', 'multiplayer'],
+        'VR'       => [' vr ', 'réalité virtuelle', 'virtual reality'],
+        'Jeu'      => ['preorder', 'pre-order', 'précommande', 'edition', 'édition', 'acheter', ' buy ', 'prix', 'price'],
+        'Console'  => ['ps5', 'playstation', 'xbox', 'console', 'hardware', 'specs', 'performance', 'next-gen', 'next gen'],
+    ];
+    $targets = [];
+    foreach ($rules as $badge => $kws) {
+        foreach ($kws as $kw) { if (str_contains($hay, $kw)) { $targets[] = $badge; break; } }
+    }
+    try {
+        $p = null;
+        foreach ($targets as $b) {
+            $st = db()->prepare("SELECT * FROM affiliate_links WHERE active=1 AND badge=? ORDER BY RAND() LIMIT 1");
+            $st->execute([$b]);
+            $p = $st->fetch(PDO::FETCH_ASSOC);
+            if ($p) { break; }
+        }
+        if (!$p) {
+            $p = db()->query("SELECT * FROM affiliate_links WHERE active=1 AND badge IN ('Console','Premium') ORDER BY RAND() LIMIT 1")->fetch(PDO::FETCH_ASSOC)
+              ?: db()->query("SELECT * FROM affiliate_links WHERE active=1 ORDER BY RAND() LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        }
+    } catch (Throwable $e) { return ''; }
+    if (!$p) { return ''; }
+
+    $buy      = amazon_url((string) $p['url']);
+    $dealsUrl = with_lang(url('pages/deals.php'));
+    return '<aside class="art-cta art-cta--deal">'
+        . '<a class="art-cta__media" href="' . e($buy) . '" target="_blank" rel="sponsored nofollow noopener" aria-label="' . e((string) $p['title']) . '">'
+        . deal_visual($p)
+        . '<span class="art-cta__badge">' . e((string) ($p['badge'] ?: 'Amazon')) . '</span></a>'
+        . '<div class="art-cta__body">'
+        . '<span class="art-cta__tag">🛒 ' . ($fr ? 'Notre reco matériel pour GTA 6' : 'Our GTA 6 gear pick') . '</span>'
+        . '<h3>' . e((string) $p['title']) . '</h3>'
+        . '<p>' . e((string) $p['description']) . '</p>'
+        . '<div class="art-cta__btns">'
+        . '<a class="btn btn--primary" href="' . e($buy) . '" target="_blank" rel="sponsored nofollow noopener">' . ($fr ? 'Voir sur Amazon' : 'View on Amazon') . ' ↗</a>'
+        . '<a class="btn btn--ghost" href="' . e($dealsUrl) . '">' . ($fr ? 'Tout le matériel' : 'All the gear') . '</a>'
+        . '</div></div></aside>';
+}
+
 function inject_internal_ads(string $html, array $article): string
 {
     $paraCount = substr_count($html, '</p>');
@@ -1426,19 +1518,23 @@ function inject_internal_ads(string $html, array $article): string
         $html = inject_after_paragraph($html, min(1, $paraCount - 1), $hub);
     }
     if ($paraCount < 4) {
-        return $html . article_shop_cta('full');
+        // Article court : une reco produit Amazon CONTEXTUELLE (repli boutique).
+        $deal = article_deal_cta($article, $html);
+        return $html . ($deal !== '' ? $deal : article_shop_cta('full'));
     }
     // ~1 pub toutes les 4 paragraphes, borné entre 3 et 6, sans dépasser l'espace dispo.
     $n = max(3, min(6, (int) floor($paraCount / 4)));
     $n = min($n, max(1, $paraCount - 1));
 
-    // Rotation Boutique → Forum → Blog (relève toujours quelque chose de pertinent).
+    // Rotation Reco produit (Amazon, contextuelle) → Boutique → Forum → Blog.
+    // Le produit Amazon arrive en 1er (position la plus haute) = visible tôt.
     $blocks = [];
     for ($i = 0; $i < $n; $i++) {
-        $type = ['shop', 'forum', 'blog'][$i % 3];
-        $b = $type === 'shop' ? article_shop_cta('full')
-            : ($type === 'forum' ? article_forum_cta($article) : article_blog_cta($article));
-        if ($b === '') { $b = article_shop_cta('full'); } // repli si forum/blog vide (garde une image)
+        $type = ['deal', 'shop', 'forum', 'blog'][$i % 4];
+        $b = $type === 'deal' ? article_deal_cta($article, $html)
+            : ($type === 'shop' ? article_shop_cta('full')
+            : ($type === 'forum' ? article_forum_cta($article) : article_blog_cta($article)));
+        if ($b === '') { $b = article_deal_cta($article, $html) ?: article_shop_cta('full'); }
         if ($b !== '') { $blocks[] = $b; }
     }
     if (!$blocks) { return $html; }
