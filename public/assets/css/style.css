@@ -325,6 +325,12 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0.02em; line-
 /* Dans une carte article (art-cta), la vignette remplit la zone média. */
 .art-cta__media .deal-media { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; }
 
+/* Fil d'Ariane (articles) : maillage interne + repère visuel. */
+.breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); margin: 0 0 .2rem; }
+.breadcrumb a { color: var(--muted); }
+.breadcrumb a:hover { color: var(--blue, #2bd6ff); }
+.breadcrumb__current { color: var(--ink); opacity: .7; }
+
 /* ---------- Admin ---------- */
 .admin-shell { max-width: 1100px; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2rem); }
 

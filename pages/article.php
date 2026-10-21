@@ -178,7 +178,13 @@ require ROOT_PATH . '/includes/header.php';
             <a href="<?= e(url('admin/articles.php')) ?>" style="color:#0d0018;text-decoration:underline">Retour à la gestion</a>
         </div>
     <?php endif; ?>
-    <a class="link-all" href="<?= e(with_lang(url('pages/' . $__catPage . '.php'))) ?>">← <?= e($article['category_name'] ?? t('nav_news')) ?></a>
+    <nav class="breadcrumb" aria-label="<?= lang() === 'fr' ? 'Fil d’Ariane' : 'Breadcrumb' ?>">
+        <a href="<?= e(with_lang(url('index.php'))) ?>"><?= lang() === 'fr' ? 'Accueil' : 'Home' ?></a>
+        <span aria-hidden="true">›</span>
+        <a href="<?= e(with_lang(url('pages/' . $__catPage . '.php'))) ?>"><?= e($article['category_name'] ?? t('nav_news')) ?></a>
+        <span aria-hidden="true">›</span>
+        <span class="breadcrumb__current"><?= e(mb_strimwidth((string) $article['title'], 0, 48, '…')) ?></span>
+    </nav>
 
     <div style="margin:.8rem 0 1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
         <?= badge_html($article['badge']) ?>
