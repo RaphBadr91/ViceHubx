@@ -1450,6 +1450,34 @@ function deal_visual(array $d): string
         . '<i class="deal-media__lbl">' . e($badge !== '' ? $badge : 'GTA 6') . '</i></span>';
 }
 
+/** Grille de cartes produits (affiliation) pour une/des catégorie(s) de badge.
+ *  Réutilisée par les guides d'achat (SSD, manette, casque, écran…). */
+function render_deal_picks(array $badges, int $limit = 6): string
+{
+    $badges = array_values(array_filter(array_map('strval', $badges), static fn ($b) => $b !== ''));
+    if (!$badges) { return ''; }
+    $in = implode(',', array_fill(0, count($badges), '?'));
+    try {
+        $st = db()->prepare("SELECT * FROM affiliate_links WHERE active=1 AND badge IN ($in) ORDER BY sort ASC, id ASC LIMIT " . max(1, (int) $limit));
+        $st->execute($badges);
+        $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Throwable $e) { return ''; }
+    if (!$rows) { return ''; }
+    $fr = lang() === 'fr';
+    $h = '<div class="cards" style="margin:1rem 0 1.4rem">';
+    foreach ($rows as $d) {
+        $h .= '<a class="deal glass reveal" href="' . e(amazon_url((string) $d['url'])) . '" rel="sponsored nofollow" target="_blank">'
+            . deal_visual($d)
+            . '<div class="deal-body">'
+            . '<span class="tag">' . e((string) $d['platform']) . (!empty($d['badge']) ? ' · ' . e((string) $d['badge']) : '') . '</span>'
+            . '<h3>' . e((string) $d['title']) . '</h3>'
+            . '<p class="muted">' . e((string) $d['description']) . '</p>'
+            . '<span class="btn btn--primary" style="align-self:flex-start">' . ($fr ? 'Voir le produit' : 'View product') . ' →</span>'
+            . '</div></a>';
+    }
+    return $h . '</div>';
+}
+
 /**
  * Carte produit CONTEXTUELLE insérée dans l'article : choisit un produit Amazon
  * en rapport avec le SUJET de l'article (stockage, conduite, graphismes, audio…)
@@ -1991,6 +2019,9 @@ function internal_autolink(string $html): string
             'accessories'       => 'pages/deals.php',
             'SSD'               => 'pages/gta-6-meilleur-ssd.php',
             'best controller'   => 'pages/gta-6-meilleure-manette.php',
+            'RAGE engine'       => 'pages/gta-6-rage-engine.php',
+            'RAGE Engine'       => 'pages/gta-6-rage-engine.php',
+            'headset'           => 'pages/gta-6-meilleur-casque.php',
             'GTA 5'             => 'pages/gta6-vs-gta5.php',
             'GTA V'             => 'pages/gta6-vs-gta5.php',
             'Leonida'           => 'pages/map.php',
@@ -2016,6 +2047,8 @@ function internal_autolink(string $html): string
             'accessoires'       => 'pages/deals.php',
             'SSD'               => 'pages/gta-6-meilleur-ssd.php',
             'meilleure manette' => 'pages/gta-6-meilleure-manette.php',
+            'RAGE Engine'       => 'pages/gta-6-rage-engine.php',
+            'casque gaming'     => 'pages/gta-6-meilleur-casque.php',
             'GTA 5'             => 'pages/gta6-vs-gta5.php',
             'GTA V'             => 'pages/gta6-vs-gta5.php',
             'Leonida'           => 'pages/map.php',

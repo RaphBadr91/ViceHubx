@@ -49,6 +49,7 @@
             <a href="<?= e(with_lang(url('pages/gta-6-date-de-sortie.php'))) ?>"><?= lang() === 'fr' ? 'Date de sortie' : 'Release date' ?></a>
             <a href="<?= e(with_lang(url('pages/gta-6-launch-live.php'))) ?>"><?= lang() === 'fr' ? 'GTA 6 est-il sorti ?' : 'Is GTA 6 out yet?' ?></a>
             <a href="<?= e(with_lang(url('pages/gta-6-meilleur-ssd.php'))) ?>"><?= lang() === 'fr' ? 'Quel SSD pour GTA 6 ?' : 'Best SSD for GTA 6?' ?></a>
+            <a href="<?= e(with_lang(url('pages/gta-6-rage-engine.php'))) ?>"><?= lang() === 'fr' ? 'Moteur RAGE Engine' : 'RAGE Engine' ?></a>
             <a href="<?= e(with_lang(url('pages/gta-6-prix-editions.php'))) ?>"><?= lang() === 'fr' ? 'Prix & éditions' : 'Price & editions' ?></a>
             <a href="<?= e(with_lang(url('pages/map.php'))) ?>"><?= e(t('nav_map')) ?></a>
             <a href="<?= e(with_lang(url('pages/vehicles.php'))) ?>"><?= e(t('nav_vehicles')) ?></a>
