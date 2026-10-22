@@ -8,6 +8,7 @@ $vehicles = get_vehicles();
 $rarity_labels = lang() === 'fr'
     ? ['common' => 'Commun', 'rare' => 'Rare', 'epic' => 'Épique', 'legendary' => 'Légendaire']
     : ['common' => 'Common', 'rare' => 'Rare', 'epic' => 'Epic', 'legendary' => 'Legendary'];
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195953_5c52e992-bf66-4413-b7f2-27c48cd71828_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

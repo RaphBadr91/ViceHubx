@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Leaks GTA VI classés par fiabilité : confirmé, probable, rumeur, analyse ou faux.'
     : 'GTA VI leaks ranked by reliability: confirmed, likely, rumor, analysis or fake.';
 $leaks = get_articles(['category' => 'leaks', 'lang' => lang()]);
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195951_25bd4f6c-d921-4d3a-8e54-388b8167ae10_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

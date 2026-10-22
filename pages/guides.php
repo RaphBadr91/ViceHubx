@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Guides GTA VI : prise en main, argent, conduite et astuces pour progresser vite.'
     : 'GTA VI guides: getting started, money, driving and tips to progress fast.';
 $articles = get_articles(['category' => 'guides', 'lang' => lang()]);
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195952_54df222b-93d5-4bb0-bf80-214d86be2fd9_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

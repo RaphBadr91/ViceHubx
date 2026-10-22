@@ -23,7 +23,7 @@ $SEO_TITLE = $fr
 $SEO_DESC = $fr
     ? 'GTA 6 sort d\'abord sur PS5/Xbox le 19 nov 2026 — voici la date PC attendue, pourquoi Rockstar retarde la version PC, et tout ce qui est confirmé en 2026.'
     : 'GTA 6 hits PC after PS5/Xbox — here\'s the expected GTA 6 PC release date, why Rockstar delays PC, and everything confirmed as of 2026.';
-$SEO_OG_IMAGE = cdn_url('downtown.png');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195953_d4d1c66d-305c-4cc1-a659-9183dccf4246_min.webp';
 
 // FAQ (les vraies requêtes GSC) — reprises dans le schema ET affichées.
 $faq = $fr ? [

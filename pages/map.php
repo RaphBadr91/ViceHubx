@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Carte interactive stylisée non officielle de Vice City : quartiers et zones cliquables.'
     : 'Stylised unofficial interactive map of Vice City: clickable districts and zones.';
 $zones = get_map_zones();
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195952_fb38c3c3-1b3c-4d95-90dd-8fb5a4c99fdc_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

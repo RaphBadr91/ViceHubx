@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Analyse image par image des trailers GTA VI : timecodes, indices et importance.'
     : 'Frame-by-frame GTA VI trailer analysis: timecodes, clues and importance.';
 $rows = get_trailer_analyses();
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195951_d75c6342-12d2-4300-bf72-df910da8afec_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

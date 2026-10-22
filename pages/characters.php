@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Fiches personnages GTA VI : rôles, descriptions, théories et liens.'
     : 'GTA VI character sheets: roles, descriptions, theories and links.';
 $chars = get_characters();
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195950_543258b2-c15d-4a7e-a82e-1dc0ca9afb8f_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">

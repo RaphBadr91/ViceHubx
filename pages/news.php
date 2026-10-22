@@ -5,6 +5,7 @@ $SEO_DESC  = lang() === 'fr'
     ? 'Toute l’actualité GTA VI : annonces, analyses et infos en continu sur ViceHub X.'
     : 'All the GTA VI news: announcements, analysis and continuous coverage on ViceHub X.';
 $articles = get_articles(['category' => 'news', 'lang' => lang()]);
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195952_3890268b-70b3-4fd3-9ceb-2fd14ae82cd3_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
