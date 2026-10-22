@@ -83,6 +83,7 @@ $SEO_DESC = lang() === 'fr'
     : 'All the GTA VI news: release date (Nov 19, 2026), trailers, Leonida map, Jason & Lucia, verified leaks, guides and shop. The #1 fan media about Vice City.';
 // (JSON-LD WebSite retiré : header.php émet déjà un @graph Organization + WebSite complet
 //  avec @id + SearchAction — on évite le doublon d'entité WebSite sur l'accueil.)
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_194213_e3d38ea4-ed66-439e-a7b6-7cd5aa5838de_min.webp';
 require __DIR__ . '/includes/header.php';
 ?>
 

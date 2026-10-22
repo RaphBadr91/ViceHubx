@@ -25,7 +25,7 @@ $SEO_TITLE = $fr
 $SEO_DESC = $fr
     ? 'GTA 6 sort le 19 novembre 2026 sur PS5 et Xbox Series X|S. Compte à rebours en direct, ce qui est confirmé par Rockstar, la version PC et les rumeurs de report : tout est ici.'
     : 'GTA 6 launches November 19, 2026 on PS5 and Xbox Series X|S. Live countdown, everything Rockstar has confirmed, the PC version and delay rumors — it\'s all here.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_194214_a4edf34e-1a5f-406d-a25e-53170f7406ae_min.webp';
 
 // FAQ ciblée « date » (vraies requêtes) — reprise dans le schema ET affichée.
 $faq = $fr ? [
@@ -71,6 +71,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], ['GTA 6', with_lang(url('pages/gta6.php'))], [$fr ? 'Date de sortie' : 'Release date', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('calendar') ?> GTA 6 · <?= $fr ? 'Date de sortie' : 'Release date' ?></span>
     <h1><?= $fr ? 'Date de sortie de GTA 6' : 'GTA 6 Release Date' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>

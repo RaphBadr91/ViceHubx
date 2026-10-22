@@ -117,6 +117,7 @@ if (count($HREFLANG_ALT) < 2) { $HREFLANG_ALT = []; } // pas de contrepartie →
 
 $OG_TYPE      = 'article';
 $OG_PUBLISHED = $pub_iso;
+$OG_MODIFIED  = (($article['updated_at'] ?? '') !== '') ? date('c', strtotime((string) $article['updated_at'])) : $pub_iso;
 $OG_SECTION   = $article['category_name'] ?? 'News';
 
 // Correspondance slug catégorie -> page réelle (évite les liens & breadcrumb 404 :

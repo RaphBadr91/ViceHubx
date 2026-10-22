@@ -72,7 +72,7 @@ foreach ($arts as $a) {
 }
 // Produits actifs
 try {
-    $prods = db()->query("SELECT slug FROM products WHERE active = 1 ORDER BY sort ASC")->fetchAll();
+    $prods = db()->query("SELECT slug, image FROM products WHERE active = 1 ORDER BY sort ASC")->fetchAll();
 } catch (Throwable $e) {
     $prods = [];
 }
@@ -147,7 +147,13 @@ foreach ($arts as $a) {
     echo '  <url><loc>' . e($artUrl((string) $a['slug'])) . '</loc>' . $lastmod . $alts . $imgTag . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
 }
 foreach ($prods as $p) {
-    echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
+    $pimg = trim((string) ($p['image'] ?? ''));
+    $pimgTag = '';
+    if ($pimg !== '') {
+        $pimgAbs = preg_match('#^https?://#i', $pimg) ? $pimg : $abs(ltrim($pimg, '/'));
+        $pimgTag = '<image:image><image:loc>' . e($pimgAbs) . '</image:loc></image:image>';
+    }
+    echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . '</loc>' . $pimgTag . "<changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
 }
 // Profils membres et sujets forum : contenu mince → volontairement EXCLUS du
 // sitemap pour concentrer le budget de crawl sur les articles et les piliers

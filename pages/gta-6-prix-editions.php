@@ -23,7 +23,7 @@ $SEO_TITLE = $fr
 $SEO_DESC = $fr
     ? 'Prix de GTA 6 : édition Standard à 79,99 € et Ultimate à 99,99 €. Comparatif clair des deux éditions, bonus de précommande (Vintage Vice City Pack) et laquelle choisir.'
     : 'GTA 6 price: Standard edition €79.99 and Ultimate €99.99. A clear comparison of both editions, the pre-order bonus (Vintage Vice City Pack) and which one to pick.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_194214_4420d177-31cd-4b53-92e1-61adccf2d46f_min.webp';
 
 // FAQ ciblée « prix / éditions » — reprise dans le schema ET affichée.
 $faq = $fr ? [
@@ -71,6 +71,7 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], ['GTA 6', with_lang(url('pages/gta6.php'))], [$fr ? 'Prix & éditions' : 'Price & editions', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('price') ?> GTA 6 · <?= $fr ? 'Prix &amp; éditions' : 'Price &amp; editions' ?></span>
     <h1><?= $fr ? 'Prix de GTA 6 et éditions' : 'GTA 6 Price &amp; Editions' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>

@@ -141,6 +141,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta property="og:type" content="<?= e($OG_TYPE ?? 'website') ?>">
     <meta property="og:site_name" content="<?= e(APP_NAME) ?>">
     <?php if (!empty($OG_PUBLISHED)): ?><meta property="article:published_time" content="<?= e($OG_PUBLISHED) ?>"><?php endif; ?>
+    <?php if (!empty($OG_MODIFIED)): ?><meta property="article:modified_time" content="<?= e($OG_MODIFIED) ?>"><?php endif; ?>
     <?php if (!empty($OG_SECTION)): ?><meta property="article:section" content="<?= e($OG_SECTION) ?>"><?php endif; ?>
     <meta property="og:title" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:description" content="<?= e($SEO_DESC) ?>">
@@ -153,6 +154,7 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <meta property="og:image:alt" content="<?= e($SEO_TITLE) ?>">
     <meta property="og:url" content="<?= e($canonical) ?>">
     <meta property="og:locale" content="<?= lang() === 'fr' ? 'fr_FR' : 'en_US' ?>">
+    <meta property="og:locale:alternate" content="<?= lang() === 'fr' ? 'en_US' : 'fr_FR' ?>">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="<?= e($SEO_TITLE) ?>">
     <meta name="twitter:description" content="<?= e($SEO_DESC) ?>">

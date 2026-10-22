@@ -35,6 +35,7 @@ $rows = $fr ? [
     ['Launch price', '$59.99 back then', 'Standard $79.99 · Ultimate $99.99'],
 ];
 
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_194213_2fdd2e1f-9224-4ce8-b7cb-a0301c1ac397_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">

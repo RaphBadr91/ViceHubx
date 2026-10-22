@@ -81,6 +81,7 @@ $JSONLD = [
     ],
 ];
 
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_194214_d5846fd9-bd19-4ef8-9ab0-6c9eb9818d78_min.webp';
 require ROOT_PATH . '/includes/header.php';
 ?>
 <article class="section pillar">
