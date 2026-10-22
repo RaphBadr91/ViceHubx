@@ -1436,16 +1436,59 @@ function deal_cat_icon(string $badge): string
 /** Vignette d'un produit : la PHOTO si fournie (champ image), sinon une tuile
  *  dégradée avec l'icône de la catégorie. Donne toujours un visuel attrayant
  *  sans enfreindre les règles Amazon (pas d'image Amazon « hotlinkée »). */
+/** Photo par défaut d'une catégorie de produit (visuels néon Vice City générés,
+ *  hébergés sur le CDN du site). Donne une vraie image attrayante à chaque carte
+ *  même sans photo propre. L'admin peut toujours surcharger avec une photo dédiée. */
+function deal_cat_image(string $badge): string
+{
+    $cdn = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/';
+    $map = [
+        'console'    => 'hf_20261022_142952_99a07c64-2466-489a-b4ac-e6effdd23019.png',
+        'premium'    => 'hf_20261022_142952_99a07c64-2466-489a-b4ac-e6effdd23019.png',
+        'petit prix' => 'hf_20261022_142952_99a07c64-2466-489a-b4ac-e6effdd23019.png',
+        'manette'    => 'hf_20261022_142953_8fa02a56-80bf-4c06-a07f-d34249d15a45.png',
+        'pro'        => 'hf_20261022_142953_8fa02a56-80bf-4c06-a07f-d34249d15a45.png',
+        'audio'      => 'hf_20261022_142953_286b5c8b-a7e1-4bb6-b766-298405fa17f1.png',
+        'stockage'   => 'hf_20261022_142952_a6338dbb-2b27-47c1-9126-e9e970a36622.png',
+        'écran'      => 'hf_20261022_142954_170d66db-c590-4c4d-acf2-57605780481a.png',
+        'ecran'      => 'hf_20261022_142954_170d66db-c590-4c4d-acf2-57605780481a.png',
+        'conduite'   => 'hf_20261022_142952_7c55d303-2b30-4a99-bc97-565073c697dc.png',
+        'setup'      => 'hf_20261022_142952_f3a878ad-73c5-42de-8390-19c0971ae774.png',
+        'confort'    => 'hf_20261022_142952_f3a878ad-73c5-42de-8390-19c0971ae774.png',
+        'pc'         => 'hf_20261022_142954_f72c96f9-080b-4ecf-ba0b-578082720390.png',
+        'accessoire' => 'hf_20261022_142954_f72c96f9-080b-4ecf-ba0b-578082720390.png',
+        'vr'         => 'hf_20261022_142951_159edec3-0f95-49ad-aa5d-052080e905fc.png',
+        'streaming'  => 'hf_20261022_142954_795c79a6-a373-443f-b3bc-7d49c4c9ceb5.png',
+        'jeu'          => 'hf_20261022_142953_d9c50c37-5a9d-4f32-8b21-70f1430d8ff3.png',
+        'carte cadeau' => 'hf_20261022_142953_d9c50c37-5a9d-4f32-8b21-70f1430d8ff3.png',
+        'abonnement'   => 'hf_20261022_142953_d9c50c37-5a9d-4f32-8b21-70f1430d8ff3.png',
+        'goodies'    => 'hf_20261022_142955_bd213522-41da-4bba-ba25-a475f1b62d3a.png',
+        'collector'  => 'hf_20261022_142955_bd213522-41da-4bba-ba25-a475f1b62d3a.png',
+        'déco'       => 'hf_20261022_142955_bd213522-41da-4bba-ba25-a475f1b62d3a.png',
+        'deco'       => 'hf_20261022_142955_bd213522-41da-4bba-ba25-a475f1b62d3a.png',
+    ];
+    $k = mb_strtolower(trim($badge));
+    return isset($map[$k]) ? $cdn . $map[$k] : '';
+}
+
 function deal_visual(array $d): string
 {
     $img = trim((string) ($d['image'] ?? ''));
     $alt = e((string) ($d['title'] ?? ($d['name'] ?? '')));
+    // 1) Photo propre renseignée dans l'admin → prioritaire.
     if ($img !== '') {
         $src = preg_match('#^https?://#i', $img) ? $img : (BASE_URL . '/' . ltrim($img, '/'));
         return '<span class="deal-media"><img src="' . e($src) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
             . ' onerror="var m=this.closest(\'.deal-media\'); if(m){m.classList.add(\'deal-media--ph\'); m.innerHTML=\'\';}"></span>';
     }
     $badge = (string) ($d['badge'] ?? '');
+    // 2) Sinon, la photo néon générée pour cette catégorie.
+    $catImg = deal_cat_image($badge);
+    if ($catImg !== '') {
+        return '<span class="deal-media"><img src="' . e($catImg) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
+            . ' onerror="var m=this.closest(\'.deal-media\'); if(m){m.classList.add(\'deal-media--ph\'); m.innerHTML=\'\';}"></span>';
+    }
+    // 3) Dernier repli : tuile dégradée + icône.
     return '<span class="deal-media deal-media--ph">' . vhx_icon(deal_cat_icon($badge))
         . '<i class="deal-media__lbl">' . e($badge !== '' ? $badge : 'GTA 6') . '</i></span>';
 }
