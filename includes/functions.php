@@ -1450,6 +1450,44 @@ function deal_visual(array $d): string
         . '<i class="deal-media__lbl">' . e($badge !== '' ? $badge : 'GTA 6') . '</i></span>';
 }
 
+/** Bandeau de réassurance (conversion) : paiement sécurisé, livraison, support.
+ *  Rassure le visiteur avant l'achat → augmente le taux de conversion. */
+function trust_row(): string
+{
+    $fr = lang() === 'fr';
+    $items = $fr ? [
+        ['🔒', 'Paiement 100% sécurisé'],
+        ['⚡', 'Livraison immédiate par e-mail'],
+        ['🌴', 'Éditions fan ViceHub X'],
+        ['💬', 'Support réactif'],
+    ] : [
+        ['🔒', '100% secure payment'],
+        ['⚡', 'Instant delivery by email'],
+        ['🌴', 'ViceHub X fan editions'],
+        ['💬', 'Responsive support'],
+    ];
+    $h = '<div class="trust-row">';
+    foreach ($items as [$ic, $tx]) {
+        $h .= '<span class="trust-item"><b aria-hidden="true">' . $ic . '</b> ' . e($tx) . '</span>';
+    }
+    return $h . '</div>';
+}
+
+/** Bandeau de cross-sell « matériel GTA 6 » (affiliation) : incite à découvrir les
+ *  bons plans depuis la boutique / une fiche produit. */
+function gear_crosssell_banner(): string
+{
+    $fr = lang() === 'fr';
+    return '<aside class="gear-banner glass">'
+        . '<div class="gear-banner__txt">'
+        . '<span class="art-cta__tag">🛒 ' . ($fr ? 'Matériel pour GTA 6' : 'GTA 6 gear') . '</span>'
+        . '<h3>' . ($fr ? 'Prépare ton setup pour le 19 novembre' : 'Get your setup ready for November 19') . '</h3>'
+        . '<p class="muted">' . ($fr ? 'Consoles, manettes, casques, SSD, écrans 4K et goodies Vice City — notre sélection.' : 'Consoles, controllers, headsets, SSDs, 4K screens and Vice City goodies — our pick.') . '</p>'
+        . '</div>'
+        . '<a class="btn btn--primary" href="' . e(with_lang(url('pages/deals.php'))) . '">' . ($fr ? 'Voir le matériel' : 'See the gear') . ' →</a>'
+        . '</aside>';
+}
+
 /** Grille de cartes produits (affiliation) pour une/des catégorie(s) de badge.
  *  Réutilisée par les guides d'achat (SSD, manette, casque, écran…). */
 function render_deal_picks(array $badges, int $limit = 6): string

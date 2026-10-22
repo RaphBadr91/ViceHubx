@@ -564,11 +564,15 @@ $days_left = max(0, (int) floor((strtotime(release_date()) - time()) / 86400));
         <a class="link-all" href="<?= e(with_lang(url('pages/deals.php'))) ?>"><?= e(t('view_all')) ?> →</a>
     </div>
     <div class="cards">
-        <?php foreach ($deals as $d): ?>
-            <a class="deal glass reveal" href="<?= e($d['url']) ?>" rel="sponsored nofollow" target="_blank">
-                <span class="tag"><?= e($d['platform']) ?> · <?= e($d['badge']) ?></span>
-                <h3><?= e($d['title']) ?></h3>
-                <p class="muted"><?= e($d['description']) ?></p>
+        <?php foreach (array_slice($deals, 0, 8) as $d): ?>
+            <a class="deal glass reveal" href="<?= e(amazon_url((string) $d['url'])) ?>" rel="sponsored nofollow" target="_blank">
+                <?= deal_visual($d) ?>
+                <div class="deal-body">
+                    <span class="tag"><?= e($d['platform']) ?><?= !empty($d['badge']) ? ' · ' . e($d['badge']) : '' ?></span>
+                    <h3><?= e($d['title']) ?></h3>
+                    <p class="muted"><?= e($d['description']) ?></p>
+                    <span class="btn btn--primary" style="align-self:flex-start"><?= lang() === 'fr' ? 'Voir le produit' : 'View product' ?> →</span>
+                </div>
             </a>
         <?php endforeach; ?>
     </div>

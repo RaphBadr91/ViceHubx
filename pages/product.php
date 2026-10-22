@@ -112,13 +112,21 @@ require ROOT_PATH . '/includes/header.php';
                         ? '🔒 Paiement sécurisé par Stripe. Produit expédié par ViceHub X.'
                         : '🔒 Secure payment by Stripe. Shipped by ViceHub X.' ?>
                 <?php else: ?>
-                    <?= lang() === 'fr'
-                        ? 'Lien partenaire. Achat, paiement et livraison gérés par le marchand. ViceHub X peut percevoir une commission.'
-                        : 'Partner link. Purchase, payment and shipping handled by the merchant. ViceHub X may earn a commission.' ?>
+                    <span style="opacity:.6"><?= lang() === 'fr'
+                        ? 'Achat, paiement et livraison gérés par le marchand.'
+                        : 'Purchase, payment and shipping handled by the merchant.' ?></span>
                 <?php endif; ?>
             </p>
+            <?php if (($product['sale_type'] ?? 'external') === 'stripe'): ?>
+                <?= trust_row() ?>
+            <?php endif; ?>
         </div>
     </div>
+
+    <!-- Cross-sell : complète ton setup GTA 6 (gear Amazon) → ventes d'affiliation -->
+    <div class="section-head" style="margin-top:3rem"><h2><?= lang() === 'fr' ? 'Complète ton setup GTA 6' : 'Complete your GTA 6 setup' ?></h2>
+        <a class="link-all" href="<?= e(with_lang(url('pages/deals.php'))) ?>"><?= e(t('view_all')) ?> →</a></div>
+    <?= render_deal_picks(['Console', 'Stockage', 'Manette', 'Audio'], 4) ?>
 
     <?php if ($related): ?>
     <div class="section-head" style="margin-top:3rem">

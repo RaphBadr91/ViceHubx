@@ -111,6 +111,7 @@ require ROOT_PATH . '/includes/header.php';
     <span class="eyebrow"><?= vhx_icon('bag') ?> ViceHub X</span>
     <h1><?= e(t('page_shop_title')) ?></h1>
     <p class="muted" style="max-width:720px"><?= e(t('shop_intro')) ?></p>
+    <?= trust_row() ?>
 
     <div class="shop-filters" role="tablist" aria-label="<?= e(t('page_shop_title')) ?>">
         <a class="chip<?= $active_cat === 'all' ? ' chip--on' : '' ?>" href="<?= e(with_lang(url('pages/shop.php'))) ?>"><?= lang() === 'fr' ? 'Tout' : 'All' ?></a>
@@ -178,10 +179,12 @@ require ROOT_PATH . '/includes/header.php';
     </div>
     <?php endif; ?>
 
-    <p class="muted shop-disclosure">
+    <?= gear_crosssell_banner() ?>
+
+    <p class="muted shop-disclosure" style="font-size:.74rem;opacity:.55;margin-top:1.6rem">
         <?= lang() === 'fr'
-            ? '🔗 Liens partenaires / affiliés. ViceHub X peut percevoir une commission sans surcoût pour vous. Les achats, paiements et livraisons sont gérés par nos partenaires (Amazon, boutique d’impression à la demande).'
-            : '🔗 Partner / affiliate links. ViceHub X may earn a commission at no extra cost to you. Purchases, payments and shipping are handled by our partners (Amazon, print-on-demand store).' ?>
+            ? 'En tant que Partenaire Amazon, ViceHub X réalise un bénéfice sur les achats remplissant les conditions requises. Certains achats sont gérés par nos partenaires.'
+            : 'As an Amazon Associate, ViceHub X earns from qualifying purchases. Some purchases are handled by our partners.' ?>
     </p>
 </section>
 <?php require ROOT_PATH . '/includes/footer.php'; ?>
