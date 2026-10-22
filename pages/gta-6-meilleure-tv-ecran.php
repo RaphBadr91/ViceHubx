@@ -13,7 +13,7 @@ $SEO_TITLE = $fr ? 'Quelle TV / écran pour GTA 6 ? (4K 120Hz, 2026)' : 'Best TV
 $SEO_DESC  = $fr
     ? 'Quelle TV ou quel écran pour GTA 6 ? OLED, 4K, 120Hz, HDMI 2.1 : notre guide pour voir Leonida en pleine résolution et fluidité sur PS5 et Xbox.'
     : 'Which TV or screen for GTA 6? OLED, 4K, 120Hz, HDMI 2.1: our guide to see Leonida at full resolution and smoothness on PS5 and Xbox.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174633_312eda89-c9ba-4f99-8b3d-4b485dc7a1dd_min.webp';
 
 $faq = $fr ? [
     ['Quelle TV choisir pour GTA 6 ?', 'Idéalement une TV 4K avec HDMI 2.1 et 120Hz (OLED pour des noirs parfaits, comme la LG OLED C4). GTA 6 sur PS5/Xbox profitera de la haute résolution et de la fluidité.'],
@@ -31,9 +31,11 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], [$fr ? 'Matériel GTA 6' : 'GTA 6 gear', with_lang(url('pages/deals.php'))], [$fr ? 'Quelle TV / écran' : 'Best TV / screen', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('monitor') ?> GTA 6 · <?= $fr ? 'Guide TV & écran' : 'TV & screen guide' ?></span>
     <h1><?= $fr ? 'Quelle TV / écran pour GTA 6 ?' : 'Best TV / Screen for GTA 6?' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
     <div class="lore-block glass" style="margin:1.1rem 0 1.4rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.12rem;margin:0"><strong><?= $fr
             ? 'En bref : pour GTA 6, vise une TV 4K OLED avec HDMI 2.1 et 120Hz (ex. LG OLED C4) afin de profiter de la résolution et de la fluidité sur PS5/Xbox. Un écran PC 4K 120/144Hz fait aussi très bien le job.'

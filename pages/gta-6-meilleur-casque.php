@@ -13,7 +13,7 @@ $SEO_TITLE = $fr ? 'Quel casque pour GTA 6 ? (PS5 & Xbox, 2026)' : 'Best Headset
 $SEO_DESC  = $fr
     ? 'Quel casque gaming choisir pour GTA 6 ? Son 3D PULSE, sans fil ou réduction de bruit : notre guide pour vivre la bande-son synthwave de Vice City à fond.'
     : 'Which gaming headset for GTA 6? 3D PULSE audio, wireless or noise-cancelling: our guide to enjoy Vice City\'s synthwave soundtrack at its best.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174633_6c074c1e-8032-4fb4-8dac-0bfe760de258_min.webp';
 
 $faq = $fr ? [
     ['Quel casque est le meilleur pour GTA 6 sur PS5 ?', 'Le Sony PULSE 3D (ou le PULSE Elite) exploite le son 3D Tempest de la PS5, idéal pour localiser les sons de Vice City. Pour le sans-fil polyvalent, le SteelSeries Arctis Nova 7 est une référence.'],
@@ -31,9 +31,11 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], [$fr ? 'Matériel GTA 6' : 'GTA 6 gear', with_lang(url('pages/deals.php'))], [$fr ? 'Quel casque' : 'Best headset', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('live') ?> GTA 6 · <?= $fr ? 'Guide casque' : 'Headset guide' ?></span>
     <h1><?= $fr ? 'Quel casque pour GTA 6 ?' : 'Best Headset for GTA 6?' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
     <div class="lore-block glass" style="margin:1.1rem 0 1.4rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.12rem;margin:0"><strong><?= $fr
             ? 'En bref : sur PS5, le Sony PULSE 3D (ou PULSE Elite) est le meilleur choix pour le son 3D de GTA 6. Pour un casque sans fil polyvalent, le SteelSeries Arctis Nova 7 ; pour l\'immersion totale, un casque à réduction de bruit comme le Sony WH-1000XM5.'

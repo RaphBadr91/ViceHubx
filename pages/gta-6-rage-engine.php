@@ -18,7 +18,7 @@ $SEO_TITLE = $fr ? 'Quel moteur pour GTA 6 ? Le RAGE Engine expliqué (2026)' : 
 $SEO_DESC  = $fr
     ? 'GTA 6 tourne sur le RAGE Engine de Rockstar. On explique le moteur graphique : ray tracing, physique, performances sur PS5 et Xbox, et pourquoi il repousse les limites.'
     : 'GTA 6 runs on Rockstar\'s RAGE Engine. We break down the graphics engine: ray tracing, physics, performance on PS5 and Xbox, and why it pushes the limits.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174632_4a5ae7cd-f774-4bb6-840e-db5ba8a41106_min.webp';
 
 $faq = $fr ? [
     ['Quel moteur utilise GTA 6 ?', 'GTA 6 utilise le RAGE (Rockstar Advanced Game Engine), le moteur maison de Rockstar, dans une version fortement améliorée par rapport à GTA V et Red Dead Redemption 2.'],
@@ -38,9 +38,11 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], ['GTA 6', with_lang(url('pages/gta6.php'))], [$fr ? 'Moteur RAGE Engine' : 'RAGE Engine', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('flask') ?> GTA 6 · <?= $fr ? 'Moteur graphique' : 'Graphics engine' ?></span>
     <h1><?= $fr ? 'Quel moteur pour GTA 6 ? Le RAGE Engine' : 'What Engine Does GTA 6 Use? RAGE Engine' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
     <div class="lore-block glass" style="margin:1.1rem 0 1.4rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.12rem;margin:0"><strong><?= $fr
             ? 'Réponse courte : GTA 6 tourne sur le RAGE Engine (Rockstar Advanced Game Engine), le moteur maison de Rockstar, dans une version bien plus avancée que GTA V et RDR2 — ray tracing, physique et illumination globale poussés pour la nouvelle génération.'

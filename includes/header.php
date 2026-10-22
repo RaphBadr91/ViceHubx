@@ -183,6 +183,11 @@ $current_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://d8j0ntlcm91z4.cloudfront.net" crossorigin>
     <link rel="dns-prefetch" href="https://d8j0ntlcm91z4.cloudfront.net">
+    <?php // Polices Google en NON-BLOQUANT (media=print puis onload) : n'empêche
+          // plus le rendu initial (meilleur FCP/LCP = bonus Core Web Vitals / SEO).
+          $__fonts = 'https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap'; ?>
+    <link rel="stylesheet" href="<?= e($__fonts) ?>" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="<?= e($__fonts) ?>"></noscript>
     <link rel="stylesheet" href="<?= e(asset('css/style.css')) ?>">
 
     <?php if (!empty($JSONLD)): ?>

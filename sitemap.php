@@ -105,7 +105,10 @@ foreach ($urls as [$path, $freq, $prio]) {
               . '<xhtml:link rel="alternate" hreflang="en" href="' . e($loc . '?lang=en') . '"/>'
               . '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($loc . '?lang=en') . '"/>';
     }
-    echo '  <url><loc>' . e($loc) . '</loc>' . $alts . '<changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
+    // lastmod = date de modif réelle du fichier PHP (signal de fraîcheur pour Google).
+    $__fp = ROOT_PATH . '/' . $path;
+    $lm = is_file($__fp) ? '<lastmod>' . date('Y-m-d', filemtime($__fp)) . '</lastmod>' : '';
+    echo '  <url><loc>' . e($loc) . '</loc>' . $lm . $alts . '<changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
 }
 $artUrl = static function (string $slug) use ($abs): string {
     return $abs('article/' . rawurlencode($slug));

@@ -2,7 +2,8 @@
    ViceHub X — Vice City OS theme
    Liquid Glass · Glassmorphism · Néons Miami
    ================================================================== */
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Sora:wght@400;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap');
+/* Polices chargées en NON-BLOQUANT via <link> dans includes/header.php
+   (l'ancien @import ici était render-blocking et ralentissait l'affichage). */
 
 :root {
     /* Palette néon Miami / coucher de soleil */

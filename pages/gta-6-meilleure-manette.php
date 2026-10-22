@@ -18,7 +18,7 @@ $SEO_TITLE = $fr ? 'Quelle manette pour GTA 6 ? (PS5 & Xbox, 2026)' : 'Best Cont
 $SEO_DESC  = $fr
     ? 'Quelle manette choisir pour jouer à GTA 6 ? DualSense, DualSense Edge, manette Xbox ou Elite : notre guide pour bien viser, conduire et profiter de Vice City.'
     : 'Which controller should you pick for GTA 6? DualSense, DualSense Edge, Xbox or Elite: our guide to aim, drive and enjoy Vice City at its best.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174632_a8fbe5b9-11b1-4fe0-9869-5a68cec846a2_min.webp';
 
 try { $picks = db()->query("SELECT * FROM affiliate_links WHERE active=1 AND badge IN ('Manette','Pro') ORDER BY sort ASC, id ASC LIMIT 6")->fetchAll(); }
 catch (Throwable $e) { $picks = []; }
@@ -48,9 +48,11 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], [$fr ? 'Matériel GTA 6' : 'GTA 6 gear', with_lang(url('pages/deals.php'))], [$fr ? 'Quelle manette' : 'Best controller', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('controller') ?> GTA 6 · <?= $fr ? 'Guide manette' : 'Controller guide' ?></span>
     <h1><?= $fr ? 'Quelle manette pour GTA 6 ?' : 'Best Controller for GTA 6?' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
 
     <div class="lore-block glass" style="margin:1.1rem 0 1.4rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.12rem;margin:0"><strong><?= $fr

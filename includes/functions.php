@@ -1516,6 +1516,32 @@ function trust_row(): string
     return $h . '</div>';
 }
 
+/** Fil d'Ariane réutilisable (affichage visible + schema BreadcrumbList inline)
+ *  pour les pages piliers/guides. $trail = [[label, href|''], …] ; le dernier
+ *  élément (href vide) est la page courante. */
+function breadcrumb_bar(array $trail): string
+{
+    if (!$trail) { return ''; }
+    $items = [];
+    $html  = '';
+    $n     = count($trail);
+    foreach ($trail as $i => $row) {
+        $label = (string) ($row[0] ?? '');
+        $href  = (string) ($row[1] ?? '');
+        $isLast = ($i === $n - 1);
+        if (!$isLast && $href !== '') {
+            $html .= '<a href="' . e($href) . '">' . e($label) . '</a><span aria-hidden="true">›</span>';
+            $items[] = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $label, 'item' => $href];
+        } else {
+            $html .= '<span class="breadcrumb__current">' . e($label) . '</span>';
+            $items[] = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $label];
+        }
+    }
+    $ld = json_encode(['@context' => 'https://schema.org', '@type' => 'BreadcrumbList', 'itemListElement' => $items], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    return '<nav class="breadcrumb" aria-label="' . (lang() === 'fr' ? 'Fil d’Ariane' : 'Breadcrumb') . '">' . $html . '</nav>'
+        . '<script type="application/ld+json">' . $ld . '</script>';
+}
+
 /** Bandeau de cross-sell « matériel GTA 6 » (affiliation) : incite à découvrir les
  *  bons plans depuis la boutique / une fiche produit. */
 function gear_crosssell_banner(): string

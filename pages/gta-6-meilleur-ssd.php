@@ -18,7 +18,7 @@ $SEO_TITLE = $fr ? 'Quel SSD pour GTA 6 sur PS5 & Xbox ? (guide 2026)' : 'Best S
 $SEO_DESC  = $fr
     ? 'GTA 6 sera énorme : quel SSD choisir pour PS5 (NVMe) ou Xbox (carte d\'extension), combien de Go prévoir et comment libérer de l\'espace avant le 19 novembre 2026.'
     : 'GTA 6 will be huge: which SSD to pick for PS5 (NVMe) or Xbox (expansion card), how many GB to plan, and how to free up space before November 19, 2026.';
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174632_cc580d8b-71e3-46f4-a6ad-91ff683065f6_min.webp';
 
 try { $picks = db()->query("SELECT * FROM affiliate_links WHERE active=1 AND badge='Stockage' ORDER BY sort ASC, id ASC LIMIT 6")->fetchAll(); }
 catch (Throwable $e) { $picks = []; }
@@ -48,9 +48,11 @@ $JSONLD = ['@context' => 'https://schema.org', '@graph' => [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:860px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], [$fr ? 'Matériel GTA 6' : 'GTA 6 gear', with_lang(url('pages/deals.php'))], [$fr ? 'Quel SSD pour GTA 6' : 'Best SSD for GTA 6', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('folder') ?> GTA 6 · <?= $fr ? 'Guide stockage' : 'Storage guide' ?></span>
     <h1><?= $fr ? 'Quel SSD pour GTA 6 ? (PS5 &amp; Xbox)' : 'Best SSD for GTA 6? (PS5 &amp; Xbox)' ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
 
     <div class="lore-block glass" style="margin:1.1rem 0 1.4rem;border-left:3px solid var(--blue)">
         <p style="font-size:1.12rem;margin:0"><strong><?= $fr

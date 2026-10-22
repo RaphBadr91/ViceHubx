@@ -30,7 +30,7 @@ $SEO_DESC = $released
            : 'GTA 6 is live! Real-time launch tracker: servers, day-one patch, map, walkthroughs, cheats and where to buy at the best price. Everything, minute by minute.')
     : ($fr ? 'GTA 6 est-il déjà sorti ? Pas encore : sortie le 19 novembre 2026 sur PS5 & Xbox. Compte à rebours en direct, ce qu\'il faut préparer et où précommander.'
            : 'Is GTA 6 out yet? Not yet: it launches November 19, 2026 on PS5 & Xbox. Live countdown, what to get ready and where to pre-order before the drop.');
-$SEO_OG_IMAGE = cdn_url('downtown.png') ?: ($base . '/public/assets/img/brand/og-share.jpg');
+$SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_174633_2c991c7b-f6ec-4b12-89df-fbddb4ed8990_min.webp';
 
 $faq = $fr ? [
     ['GTA 6 est-il déjà sorti ?', $released
@@ -69,11 +69,14 @@ $JSONLD = [
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section" style="max-width:900px">
+    <?= breadcrumb_bar([[$fr ? 'Accueil' : 'Home', with_lang(url('index.php'))], ['GTA 6', with_lang(url('pages/gta6.php'))], [$fr ? 'GTA 6 est-il sorti ?' : 'Is GTA 6 out yet?', '']]) ?>
     <span class="eyebrow"><?= vhx_icon('live') ?> GTA 6 · <?= $fr ? 'Sortie en direct' : 'Launch live' ?></span>
     <h1><?= $released
         ? ($fr ? 'GTA 6 est SORTI ! 🎉' : 'GTA 6 Is OUT! 🎉')
         : ($fr ? 'GTA 6 est-il sorti ?' : 'Is GTA 6 Out Yet?') ?></h1>
     <p class="muted" style="margin:.2rem 0 0;font-size:.85rem"><?= $fr ? 'Mis à jour le' : 'Updated' ?> <?= e(date($fr ? 'd/m/Y' : 'M j, Y', strtotime($modDate) ?: time())) ?> · <?= $fr ? 'suivi en direct' : 'live tracking' ?> · ViceHub X</p>
+    <img src="<?= e($SEO_OG_IMAGE) ?>" alt="<?= e($SEO_TITLE) ?>" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async" style="width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:16px;margin:1rem 0 .4rem;display:block">
+
 
     <!-- Compte à rebours (bascule en "disponible" à la sortie via app.js) -->
     <div class="countdown" data-deadline="<?= e($deadline) ?>" role="timer" aria-label="<?= e(t('cd_title')) ?>" style="margin:1.2rem 0">
