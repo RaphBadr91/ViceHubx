@@ -197,6 +197,25 @@ require __DIR__ . '/includes/header.php';
             <h2><?= lang() === 'fr' ? 'Bienvenue à Vice City' : 'Welcome to Vice City' ?></h2>
         </div>
     </a>
+    <?php
+    // Schema VideoObject : rend la bande-annonce éligible aux résultats vidéo
+    // enrichis de Google (requête « GTA 6 trailer », fort volume). La date peut
+    // être ajustée dans Admin → Réglages (clé trailer_date).
+    $__vidDate = trim((string) get_setting('trailer_date', '')) ?: '2025-05-06';
+    echo '<script type="application/ld+json">' . json_encode([
+        '@context'     => 'https://schema.org',
+        '@type'        => 'VideoObject',
+        'name'         => lang() === 'fr' ? 'GTA 6 — Bande-annonce officielle (Vice City)' : 'GTA 6 — Official Trailer (Vice City)',
+        'description'  => lang() === 'fr'
+            ? 'La bande-annonce de Grand Theft Auto VI : Vice City, Jason et Lucia, dans l\'État de Leonida. Analyse image par image et actus sur ViceHub X.'
+            : 'The Grand Theft Auto VI trailer: Vice City, Jason and Lucia, in the state of Leonida. Frame-by-frame analysis and news on ViceHub X.',
+        'thumbnailUrl' => ['https://i.ytimg.com/vi/' . $yt_id . '/maxresdefault.jpg'],
+        'uploadDate'   => $__vidDate,
+        'embedUrl'     => 'https://www.youtube.com/embed/' . $yt_id,
+        'contentUrl'   => 'https://www.youtube.com/watch?v=' . $yt_id,
+        'publisher'    => ['@type' => 'Organization', 'name' => 'ViceHub X'],
+    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . '</script>';
+    ?>
 </section>
 
 <!-- Lightbox bande-annonce -->

@@ -59,7 +59,7 @@ $urls = [
 
 // Articles publiés (+ langue et article source, pour les alternances hreflang FR/EN)
 try {
-    $arts = db()->query("SELECT id, slug, published_at, lang, source_id FROM articles WHERE status = 'published' ORDER BY published_at DESC")->fetchAll();
+    $arts = db()->query("SELECT id, slug, published_at, lang, source_id, image FROM articles WHERE status = 'published' ORDER BY published_at DESC")->fetchAll();
 } catch (Throwable $e) {
     $arts = [];
 }
@@ -86,7 +86,7 @@ try {
 
 header('Content-Type: application/xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n";
+echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
 
 // URL propres (sans /pages/ ni .php) — cohérent avec .htaccess et url().
 $clean = static function (string $p): string {
@@ -134,7 +134,14 @@ foreach ($arts as $a) {
               .  '<xhtml:link rel="alternate" hreflang="en" href="' . e($artUrl($enSlug)) . '"/>'
               .  '<xhtml:link rel="alternate" hreflang="x-default" href="' . e($artUrl($enSlug)) . '"/>';
     }
-    echo '  <url><loc>' . e($artUrl((string) $a['slug'])) . '</loc>' . $lastmod . $alts . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
+    // Image de l'article → Google Images / Discover (fort levier de trafic visuel).
+    $imgTag = '';
+    $aimg = trim((string) ($a['image'] ?? ''));
+    if ($aimg !== '') {
+        $imgAbs = preg_match('#^https?://#i', $aimg) ? $aimg : $abs(ltrim($aimg, '/'));
+        $imgTag = '<image:image><image:loc>' . e($imgAbs) . '</image:loc></image:image>';
+    }
+    echo '  <url><loc>' . e($artUrl((string) $a['slug'])) . '</loc>' . $lastmod . $alts . $imgTag . "<changefreq>weekly</changefreq><priority>0.7</priority></url>\n";
 }
 foreach ($prods as $p) {
     echo '  <url><loc>' . e($abs('produit/' . rawurlencode($p['slug']))) . "</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>\n";
