@@ -72,6 +72,9 @@ $nav = [
         ['gta6.php',        lang() === 'fr' ? '🎮 GTA 6 : tout savoir' : '🎮 GTA 6: everything'],
         ['gta6-pc.php',     lang() === 'fr' ? '🖥️ GTA 6 sur PC' : '🖥️ GTA 6 on PC'],
         ['gta6-vs-gta5.php', lang() === 'fr' ? '⚔️ GTA 6 vs GTA 5' : '⚔️ GTA 6 vs GTA 5'],
+        ['gta-6-date-de-sortie.php', lang() === 'fr' ? '📅 Date de sortie' : '📅 Release date'],
+        ['gta-6-launch-live.php', lang() === 'fr' ? '🔴 GTA 6 est-il sorti ?' : '🔴 Is GTA 6 out yet?'],
+        ['gta-6-rage-engine.php', lang() === 'fr' ? '⚙️ Moteur RAGE Engine' : '⚙️ RAGE Engine'],
         ['dossier.php',     lang() === 'fr' ? 'Le Dossier' : 'The Files'],
         ['map.php',         t('nav_map')],
         ['vehicles.php',    t('nav_vehicles')],
@@ -92,6 +95,10 @@ $nav = [
         ['shop.php',  lang() === 'fr' ? 'La Boutique' : 'The Shop'],
         ['fonds-ecran-gta6.php', lang() === 'fr' ? '🖥️ Fonds d’écran' : '🖥️ Wallpapers'],
         ['deals.php', t('nav_deals')],
+        ['gta-6-meilleur-ssd.php', lang() === 'fr' ? '💾 Quel SSD pour GTA 6' : '💾 Best SSD for GTA 6'],
+        ['gta-6-meilleure-manette.php', lang() === 'fr' ? '🎮 Quelle manette' : '🎮 Best controller'],
+        ['gta-6-meilleur-casque.php', lang() === 'fr' ? '🎧 Quel casque' : '🎧 Best headset'],
+        ['gta-6-meilleure-tv-ecran.php', lang() === 'fr' ? '🖥️ Quelle TV / écran' : '🖥️ Best TV / screen'],
     ]],
 ];
 
