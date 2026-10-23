@@ -1436,6 +1436,29 @@ function deal_cat_icon(string $badge): string
 /** Vignette d'un produit : la PHOTO si fournie (champ image), sinon une tuile
  *  dégradée avec l'icône de la catégorie. Donne toujours un visuel attrayant
  *  sans enfreindre les règles Amazon (pas d'image Amazon « hotlinkée »). */
+/** Photo SPÉCIFIQUE à un produit (console/manette précise) selon son nom, pour que
+ *  chaque modèle ait SON visuel distinct (PS5 Slim ≠ PS5 Pro ≠ Xbox…). Prioritaire
+ *  sur l'image de catégorie. Vide si aucun modèle précis reconnu. */
+function deal_product_image(string $title): string
+{
+    $cdn = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/';
+    $t = mb_strtolower($title);
+    $has = static fn (string $s): bool => str_contains($t, $s);
+    $ps5 = $has('playstation 5') || $has('ps5');
+    // Ordre : du plus spécifique au plus générique.
+    if ($ps5 && $has('pro'))                                   { $f = 'hf_20261023_091626_1dc514d1-5dad-433e-8e0d-254c6604054f_min.webp'; }
+    elseif ($ps5 && $has('digital'))                           { $f = 'hf_20261023_091624_a9f0953d-4c28-4b6a-a223-f3495056416f_min.webp'; }
+    elseif ($has('xbox series x'))                             { $f = 'hf_20261023_091624_99abefae-26c5-49f0-9035-5e7ec745df3e_min.webp'; }
+    elseif ($has('xbox series s'))                             { $f = 'hf_20261023_091625_5774814f-0d0b-4ba8-a68f-8c96bad91d0e_min.webp'; }
+    elseif ($has('dualsense edge'))                            { $f = 'hf_20261023_091624_9dfbbbe6-48bc-4c6f-b3db-550b01b966ca_min.webp'; }
+    elseif ($has('xbox elite') || ($has('xbox') && $has('elite'))) { $f = 'hf_20261023_091624_8b15e78b-e245-4c7d-98af-0c3ba7d29aca_min.webp'; }
+    elseif ($has('dualsense'))                                 { $f = 'hf_20261023_091625_5aa87fcd-8814-495f-b6dd-81e8f5978d7d_min.webp'; }
+    elseif ($has('xbox') && $has('manette'))                   { $f = 'hf_20261023_091625_2b8720d9-0ce7-4d2c-bc53-6ac139bd2416_min.webp'; }
+    elseif ($ps5)                                              { $f = 'hf_20261023_091626_550f9655-283a-4574-a3e1-a87174488e7a_min.webp'; }
+    else                                                       { return ''; }
+    return $cdn . $f;
+}
+
 /** Photo par défaut d'une catégorie de produit (visuels néon Vice City générés,
  *  hébergés sur le CDN du site). Donne une vraie image attrayante à chaque carte
  *  même sans photo propre. L'admin peut toujours surcharger avec une photo dédiée. */
@@ -1481,8 +1504,14 @@ function deal_visual(array $d): string
         return '<span class="deal-media"><img src="' . e($src) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
             . ' onerror="var m=this.closest(\'.deal-media\'); if(m){m.classList.add(\'deal-media--ph\'); m.innerHTML=\'\';}"></span>';
     }
+    // 2) Photo SPÉCIFIQUE au modèle (PS5 Slim ≠ PS5 Pro ≠ Xbox…) d'après le nom.
+    $prodImg = deal_product_image((string) ($d['title'] ?? ($d['name'] ?? '')));
+    if ($prodImg !== '') {
+        return '<span class="deal-media"><img src="' . e($prodImg) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
+            . ' onerror="var m=this.closest(\'.deal-media\'); if(m){m.classList.add(\'deal-media--ph\'); m.innerHTML=\'\';}"></span>';
+    }
     $badge = (string) ($d['badge'] ?? '');
-    // 2) Sinon, la photo néon générée pour cette catégorie.
+    // 3) Sinon, la photo néon générée pour cette catégorie.
     $catImg = deal_cat_image($badge);
     if ($catImg !== '') {
         return '<span class="deal-media"><img src="' . e($catImg) . '" alt="' . $alt . '" loading="lazy" decoding="async"'
