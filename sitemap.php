@@ -108,7 +108,17 @@ foreach ($urls as [$path, $freq, $prio]) {
     // lastmod = date de modif réelle du fichier PHP (signal de fraîcheur pour Google).
     $__fp = ROOT_PATH . '/' . $path;
     $lm = is_file($__fp) ? '<lastmod>' . date('Y-m-d', filemtime($__fp)) . '</lastmod>' : '';
-    echo '  <url><loc>' . e($loc) . '</loc>' . $lm . $alts . '<changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
+    // Page Bons plans : on déclare les images produits (Google Images / Discover).
+    $imgs = '';
+    if ($cp === 'deals' && function_exists('get_deals') && function_exists('deal_resolved_image')) {
+        $seen = [];
+        foreach (get_deals() as $d) {
+            $iu = deal_resolved_image($d);
+            if ($iu !== '' && !isset($seen[$iu])) { $seen[$iu] = 1; $imgs .= '<image:image><image:loc>' . e($iu) . '</image:loc></image:image>'; }
+            if (count($seen) >= 100) { break; }
+        }
+    }
+    echo '  <url><loc>' . e($loc) . '</loc>' . $lm . $alts . $imgs . '<changefreq>' . $freq . '</changefreq><priority>' . $prio . "</priority></url>\n";
 }
 $artUrl = static function (string $slug) use ($abs): string {
     return $abs('article/' . rawurlencode($slug));

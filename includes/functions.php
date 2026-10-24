@@ -1454,6 +1454,23 @@ function deal_product_image(string $title): string
     elseif ($has('xbox elite') || ($has('xbox') && $has('elite'))) { $f = 'hf_20261023_091624_8b15e78b-e245-4c7d-98af-0c3ba7d29aca_min.webp'; }
     elseif ($has('dualsense'))                                 { $f = 'hf_20261023_091625_5aa87fcd-8814-495f-b6dd-81e8f5978d7d_min.webp'; }
     elseif ($has('xbox') && $has('manette'))                   { $f = 'hf_20261023_091625_2b8720d9-0ce7-4d2c-bc53-6ac139bd2416_min.webp'; }
+    // Casques
+    elseif ($has('pulse 3d'))                                  { $f = 'hf_20261023_092331_aca52ac0-5e04-4776-9541-f308a57196e1_min.webp'; }
+    elseif ($has('arctis'))                                    { $f = 'hf_20261023_092331_c6fbd5c2-9faa-479b-87fe-15a509901a9c_min.webp'; }
+    elseif ($has('hyperx cloud'))                              { $f = 'hf_20261023_092330_1aef1716-0578-487d-b953-e4a01e0eb50e_min.webp'; }
+    elseif ($has('wh-1000') || $has('xm5'))                    { $f = 'hf_20261023_092331_cd848c6c-8591-438b-984e-07822064199a_min.webp'; }
+    // Stockage
+    elseif ($has('sn850p'))                                    { $f = 'hf_20261023_092333_e82db2c5-622f-4af0-b74a-817f48ab0ab5_min.webp'; }
+    elseif ($has('990 pro'))                                   { $f = 'hf_20261023_092330_960d0086-9600-4328-8cf7-c0685a57a03a_min.webp'; }
+    elseif ($has('seagate') || ($has('extension') && $has('xbox'))) { $f = 'hf_20261023_092330_0406d276-400e-4a27-b36e-590a5934f4e2_min.webp'; }
+    // Écrans
+    elseif ($has('oled') || $has(' c4'))                       { $f = 'hf_20261023_092332_60a57012-b1a6-49d6-814b-f367ec940204_min.webp'; }
+    elseif ($has('bravia'))                                    { $f = 'hf_20261023_092333_8d300d1c-eb50-4399-b951-6f3a1edb523d_min.webp'; }
+    // Volants
+    elseif ($has('g29'))                                       { $f = 'hf_20261023_092333_ad97b007-a299-4a47-ac5f-f87ef9875d63_min.webp'; }
+    elseif ($has('t248') || $has('thrustmaster'))              { $f = 'hf_20261023_092332_5ad663ed-910c-49f2-ab61-a7b4da33b58d_min.webp'; }
+    // VR
+    elseif ($has('vr2') || $has('quest'))                      { $f = 'hf_20261023_092332_b59c720b-4e40-4ca7-8b99-d192c878d833_min.webp'; }
     elseif ($ps5)                                              { $f = 'hf_20261023_091626_550f9655-283a-4574-a3e1-a87174488e7a_min.webp'; }
     else                                                       { return ''; }
     return $cdn . $f;
@@ -1492,6 +1509,17 @@ function deal_cat_image(string $badge): string
     ];
     $k = mb_strtolower(trim($badge));
     return isset($map[$k]) ? $cdn . $map[$k] : '';
+}
+
+/** URL de l'image finale d'un produit (même logique que deal_visual, sans HTML) :
+ *  photo admin → photo modèle → photo catégorie → '' (tuile). Sert au sitemap images. */
+function deal_resolved_image(array $d): string
+{
+    $img = trim((string) ($d['image'] ?? ''));
+    if ($img !== '') { return preg_match('#^https?://#i', $img) ? $img : (BASE_URL . '/' . ltrim($img, '/')); }
+    $p = deal_product_image((string) ($d['title'] ?? ($d['name'] ?? '')));
+    if ($p !== '') { return $p; }
+    return deal_cat_image((string) ($d['badge'] ?? ''));
 }
 
 function deal_visual(array $d): string
