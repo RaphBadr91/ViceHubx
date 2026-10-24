@@ -1550,6 +1550,23 @@ function deal_visual(array $d): string
         . '<i class="deal-media__lbl">' . e($badge !== '' ? $badge : 'GTA 6') . '</i></span>';
 }
 
+/** Puce d'URGENCE « J-X avant GTA 6 » (conversion) — calcule le compte à rebours
+ *  côté serveur, bascule en « c'est sorti » après le lancement. */
+function launch_countdown_chip(): string
+{
+    $fr  = lang() === 'fr';
+    $ts  = strtotime(RELEASE_DATE) ?: strtotime('2026-11-19');
+    $now = time();
+    if ($now >= $ts) {
+        return '<span class="launch-chip launch-chip--out">🎉 ' . ($fr ? 'GTA 6 est SORTI !' : 'GTA 6 is OUT!') . '</span>';
+    }
+    $days = (int) ceil(($ts - $now) / 86400);
+    $txt  = $fr
+        ? '⏳ GTA 6 dans ' . $days . ' jour' . ($days > 1 ? 's' : '') . ' — prépare ton setup'
+        : '⏳ GTA 6 in ' . $days . ' day' . ($days > 1 ? 's' : '') . ' — get your setup ready';
+    return '<span class="launch-chip">' . e($txt) . '</span>';
+}
+
 /** Bandeau de réassurance (conversion) : paiement sécurisé, livraison, support.
  *  Rassure le visiteur avant l'achat → augmente le taux de conversion. */
 function trust_row(): string

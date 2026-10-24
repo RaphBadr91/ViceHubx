@@ -72,6 +72,7 @@ $JSONLD = [
     ],
 ];
 
+$BODY_CLASS = trim(($BODY_CLASS ?? '') . ' has-buybar');
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
@@ -92,6 +93,7 @@ require ROOT_PATH . '/includes/header.php';
         <div class="product-detail__info">
             <span class="product__cat"><?= e($cats[$product['category']] ?? $product['category']) ?></span>
             <h1><?= e($product['name']) ?></h1>
+            <p style="margin:.2rem 0 .6rem"><?= launch_countdown_chip() ?></p>
             <?php if ($product['price'] !== null && $product['price'] !== ''): ?>
                 <p class="product-detail__price"><?= price_html($product['price'], active_currency()) ?></p>
             <?php endif; ?>
@@ -157,4 +159,15 @@ require ROOT_PATH . '/includes/header.php';
     </div>
     <?php endif; ?>
 </section>
+
+<!-- Barre d'achat fixe (mobile) : le bouton d'achat reste toujours à portée de pouce. -->
+<div class="buybar">
+    <div class="buybar__info">
+        <span class="buybar__name"><?= e($product['name']) ?></span>
+        <?php if ($product['price'] !== null && $product['price'] !== ''): ?>
+            <span class="buybar__price"><?= price_html($product['price'], active_currency()) ?></span>
+        <?php endif; ?>
+    </div>
+    <?= product_buy_button($product, false) ?>
+</div>
 <?php require ROOT_PATH . '/includes/footer.php'; ?>

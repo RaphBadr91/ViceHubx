@@ -332,6 +332,28 @@ h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: 0.02em; line-
     background: rgba(255,255,255,.04); border: 1px solid var(--glass-brd); border-radius: 999px; padding: .32rem .7rem; }
 .trust-item b { font-size: .95rem; }
 
+/* Puce d'urgence "J-X avant GTA 6" (conversion). */
+.launch-chip { display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: .82rem;
+    color: #fff; background: linear-gradient(90deg, rgba(255,46,136,.22), rgba(43,214,255,.18));
+    border: 1px solid rgba(255,46,136,.45); border-radius: 999px; padding: .34rem .8rem; letter-spacing: .01em; }
+.launch-chip--out { border-color: rgba(57,255,170,.5); background: rgba(57,255,170,.15); }
+
+/* Barre d'achat FIXE en bas sur mobile (CTA toujours visible = conversion). */
+.buybar { display: none; }
+@media (max-width: 680px) {
+    .buybar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+        align-items: center; justify-content: space-between; gap: .8rem;
+        padding: .6rem .9rem calc(.6rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(12,10,22,.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--glass-brd); box-shadow: 0 -8px 24px rgba(0,0,0,.4); }
+    .buybar__info { display: flex; flex-direction: column; min-width: 0; }
+    .buybar__name { font-size: .82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 48vw; }
+    .buybar__price { font-family: var(--font-display); font-size: 1.1rem; color: var(--pink); font-weight: 800; }
+    .buybar .btn, .buybar form { margin: 0; white-space: nowrap; }
+    .buybar .add-cart-form { display: flex; }
+    body.has-buybar { padding-bottom: 72px; } /* évite que la barre masque le pied de page */
+}
+
 /* Bandeau cross-sell "matériel GTA 6". */
 .gear-banner { display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; flex-wrap: wrap;
     border-radius: 16px; padding: 1.1rem 1.3rem; margin: 2rem 0; border: 1px solid rgba(255,46,136,.28); }

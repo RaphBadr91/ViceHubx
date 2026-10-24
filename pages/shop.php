@@ -111,6 +111,7 @@ require ROOT_PATH . '/includes/header.php';
     <span class="eyebrow"><?= vhx_icon('bag') ?> ViceHub X</span>
     <h1><?= e(t('page_shop_title')) ?></h1>
     <p class="muted" style="max-width:720px"><?= e(t('shop_intro')) ?></p>
+    <p style="margin:.6rem 0 0"><?= launch_countdown_chip() ?></p>
     <?= trust_row() ?>
 
     <div class="shop-filters" role="tablist" aria-label="<?= e(t('page_shop_title')) ?>">
