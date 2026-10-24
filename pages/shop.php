@@ -165,7 +165,7 @@ require ROOT_PATH . '/includes/header.php';
                     <?php endif; ?>
                 </a>
                 <div class="product__body">
-                    <span class="product__cat"><?= e($cats[$p['category']] ?? $p['category']) ?></span>
+                    <span class="product__cat"><?= e($cats[$p['category']] ?? $p['category']) ?><?php if (!empty($p['featured'])): ?> · <span style="color:#ff2e88;font-weight:700">🔥 <?= lang() === 'fr' ? 'Populaire' : 'Popular' ?></span><?php endif; ?></span>
                     <h3 class="product__title">
                         <a href="<?= e(with_lang(url('pages/product.php?slug=' . urlencode($p['slug'])))) ?>"><?= e($p['name']) ?></a>
                     </h3>

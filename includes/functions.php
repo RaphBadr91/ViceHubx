@@ -1072,13 +1072,17 @@ function get_products(?string $category = null, ?int $limit = null, ?string $sub
         $sql .= " AND subcategory = ?";
         $args[] = $subcategory;
     }
-    $sql .= " ORDER BY sort ASC, id ASC";
-    if ($limit !== null) {
-        $sql .= ' LIMIT ' . (int) $limit;
+    $limitSql = $limit !== null ? ' LIMIT ' . (int) $limit : '';
+    // Best-sellers (featured) d'abord → conversion. Repli si la colonne n'existe pas.
+    try {
+        $stmt = db()->prepare($sql . ' ORDER BY featured DESC, sort ASC, id ASC' . $limitSql);
+        $stmt->execute($args);
+        return $stmt->fetchAll();
+    } catch (Throwable $e) {
+        $stmt = db()->prepare($sql . ' ORDER BY sort ASC, id ASC' . $limitSql);
+        $stmt->execute($args);
+        return $stmt->fetchAll();
     }
-    $stmt = db()->prepare($sql);
-    $stmt->execute($args);
-    return $stmt->fetchAll();
 }
 
 /**
@@ -1711,6 +1715,7 @@ function article_deal_cta(array $article, string $hay = ''): string
         . '<span class="art-cta__tag">🛒 ' . ($fr ? 'Notre reco matériel pour GTA 6' : 'Our GTA 6 gear pick') . '</span>'
         . '<h3>' . e((string) $p['title']) . '</h3>'
         . '<p>' . e((string) $p['description']) . '</p>'
+        . '<p style="margin:.1rem 0 .5rem">' . launch_countdown_chip() . '</p>'
         . '<div class="art-cta__btns">'
         . '<a class="btn btn--primary" href="' . e($buy) . '" target="_blank" rel="sponsored nofollow noopener">' . ($fr ? 'Voir sur Amazon' : 'View on Amazon') . ' ↗</a>'
         . '<a class="btn btn--ghost" href="' . e($dealsUrl) . '">' . ($fr ? 'Tout le matériel' : 'All the gear') . '</a>'
