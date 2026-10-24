@@ -202,7 +202,11 @@ require __DIR__ . '/includes/header.php';
     // Schema VideoObject : rend la bande-annonce éligible aux résultats vidéo
     // enrichis de Google (requête « GTA 6 trailer », fort volume). La date peut
     // être ajustée dans Admin → Réglages (clé trailer_date).
+    // uploadDate DOIT être une date-heure ISO 8601 AVEC fuseau horaire (exigence
+    // Google pour le schema VideoObject) — ex. 2025-05-06T12:00:00+00:00.
     $__vidDate = trim((string) get_setting('trailer_date', '')) ?: '2025-05-06';
+    $__vidTs   = strtotime($__vidDate) ?: strtotime('2025-05-06');
+    $__vidIso  = date('c', $__vidTs);
     echo '<script type="application/ld+json">' . json_encode([
         '@context'     => 'https://schema.org',
         '@type'        => 'VideoObject',
@@ -211,7 +215,7 @@ require __DIR__ . '/includes/header.php';
             ? 'La bande-annonce de Grand Theft Auto VI : Vice City, Jason et Lucia, dans l\'État de Leonida. Analyse image par image et actus sur ViceHub X.'
             : 'The Grand Theft Auto VI trailer: Vice City, Jason and Lucia, in the state of Leonida. Frame-by-frame analysis and news on ViceHub X.',
         'thumbnailUrl' => ['https://i.ytimg.com/vi/' . $yt_id . '/maxresdefault.jpg'],
-        'uploadDate'   => $__vidDate,
+        'uploadDate'   => $__vidIso,
         'embedUrl'     => 'https://www.youtube.com/embed/' . $yt_id,
         'contentUrl'   => 'https://www.youtube.com/watch?v=' . $yt_id,
         'publisher'    => ['@type' => 'Organization', 'name' => 'ViceHub X'],
