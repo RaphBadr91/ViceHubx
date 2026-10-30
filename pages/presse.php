@@ -10,7 +10,7 @@ $press_email = (string) (get_setting('contact_email', '') ?: 'presse@vicehubx.fr
 
 $SEO_TITLE = ($fr ? 'Presse & Partenariats' : 'Press & Partnerships') . ' — ' . APP_NAME;
 $SEO_DESC  = $fr
-    ? 'Kit média ViceHub X : audience, opportunités de partenariat, sponsoring et contact presse pour le média GTA VI n°1.'
+    ? 'Kit média ViceHub X : audience, opportunités de partenariat, sponsoring et contact presse pour ce média fan indépendant.'
     : 'ViceHub X media kit: audience, partnership opportunities, sponsoring and press contact.';
 $SEO_OG_IMAGE = cdn_url('downtown.png');
 require ROOT_PATH . '/includes/header.php';
@@ -26,9 +26,15 @@ require ROOT_PATH . '/includes/header.php';
         <div class="ref glass"><div class="big"><?= $nArticles ?>+</div><small><?= $fr ? 'articles publiés' : 'published articles' ?></small></div>
         <div class="ref glass"><div class="big"><?= $nMembers ?>+</div><small><?= $fr ? 'membres' : 'members' ?></small></div>
         <div class="ref glass"><div class="big"><?= $nPosts ?>+</div><small><?= $fr ? 'messages forum' : 'forum posts' ?></small></div>
-        <div class="ref glass"><div class="big">4</div><small><?= $fr ? 'langues' : 'languages' ?></small></div>
+        <div class="ref glass"><div class="big">2</div><small><?= $fr ? 'langues' : 'languages' ?></small></div>
     </div>
 
+    <div class="lore-block glass" style="margin-top:1.8rem">
+        <h2><?= $fr ? 'Ressource rédactionnelle : préparer le lancement' : 'Editorial resource: preparing for launch' ?></h2>
+        <p><?= $fr ? 'Notre fiche distingue préchargement, date prévue et accès effectif au jeu. Elle précise ses sources, sa dernière vérification et ses limites régionales.' : 'Our checklist separates preloading, the scheduled release and actual game access, with sources, a verification date and regional limitations.' ?></p>
+        <a class="btn btn--primary" href="<?= e(with_lang(url('pages/gta-6-launch-live.php'))) ?>"><?= $fr ? 'Consulter la fiche de lancement' : 'Read the launch checklist' ?></a>
+        <p><?= $fr ? 'Une citation relève du choix indépendant de votre rédaction. Aucun achat de lien ni échange obligatoire. ViceHub X ne détient pas de statut officiel Rockstar et ne revendique pas la création de la carte State of Leonida intégrée au site.' : 'Any citation is your editorial decision. No paid links or required exchanges. ViceHub X has no official Rockstar status and does not claim authorship of the State of Leonida map embedded on the site.' ?></p>
+    </div>
     <div class="lore-block glass" style="margin-top:1.8rem">
         <h2>📣 <?= $fr ? 'Opportunités de partenariat' : 'Partnership opportunities' ?></h2>
         <div class="lore-grid">
