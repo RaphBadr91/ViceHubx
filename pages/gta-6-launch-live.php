@@ -5,7 +5,9 @@
  */
 require_once dirname(__DIR__) . '/config/config.php';
 $fr = lang() === 'fr';
-$self = rtrim(BASE_URL, '/') . '/gta-6-launch-live';
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$base = defined('BASE_URL') && BASE_URL !== '' ? rtrim(BASE_URL, '/') : $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'vicehubx.com');
+$self = $base . '/gta-6-launch-live';
 $CANONICAL = $self . ($fr ? '' : '?lang=en');
 $HREFLANG_ALT = ['fr' => $self, 'en' => $self . '?lang=en'];
 $modDate = '2026-10-30';
