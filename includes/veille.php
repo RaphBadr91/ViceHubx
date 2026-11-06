@@ -401,15 +401,17 @@ function veille_auto_tick(): void
     } catch (Throwable $e) { return; }
     veille_fetch_batch(6); // charge légère : 6 sources par cycle (rotation), pas 50
     if (!veille_is_auto()) { return; }
-    // Plafond QUOTIDIEN : 2-3 articles auto max par jour (réglage veille_auto_max, défaut 3).
-    // 1 par cycle (30 min) → étalé dans la journée ; on prend les plus frais (« meilleurs »).
+    // Plafond QUOTIDIEN volontairement BAS (réglage veille_auto_max, défaut 1).
+    // Objectif : sortir du filtre « contenu à grande échelle » de Google. On publie
+    // peu mais mieux ; 1 par cycle (30 min) → au plus 1/jour par défaut, le plus frais.
     $today = date('Y-m-d');
     if (get_setting('veille_pub_day', '') !== $today) {
         set_setting('veille_pub_day', $today);
         set_setting('veille_pub_count', '0');
     }
     $count = (int) get_setting('veille_pub_count', '0');
-    $max   = max(1, min(10, (int) (get_setting('veille_auto_max', '3') ?: 3)));
+    $max   = max(0, min(10, (int) (get_setting('veille_auto_max', '1') ?: 1)));
+    if ($max <= 0) { return; }                          // 0 = veille auto en pause
     if ($count >= $max) { return; }                    // quota du jour atteint
     $gen = veille_auto_generate(1);                     // 1 article par cycle
     if ($gen > 0) { set_setting('veille_pub_count', (string) ($count + $gen)); }

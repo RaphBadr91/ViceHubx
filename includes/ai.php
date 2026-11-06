@@ -881,7 +881,7 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
     }
     $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
     // Publié → maintenant ; Programmé (pending) → prochain créneau CRON ; Brouillon → sans date.
-    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));
+    $interval = max(1, (int) get_setting('ai_auto_interval', '48'));
     $pub = $status === 'published'
         ? date('Y-m-d H:i:s')
         : ($status === 'pending' ? ai_next_slot($interval) : null);
@@ -1115,7 +1115,9 @@ function ai_auto_run(int $budgetSeconds = 130): array
     if ($drained > 0) { $msgs[] = "{$drained} article(s) généré(s) (file)"; }
 
     // 2) PUBLICATION PROGRAMMÉE — respecte la DATE de chaque article.
-    $interval = max(1, (int) get_setting('ai_auto_interval', '6'));
+    // Intervalle LENT par défaut (48 h) : on espace fortement la génération auto
+    // pour que Google reprenne confiance (anti « scaled content abuse »).
+    $interval = max(1, (int) get_setting('ai_auto_interval', '48'));
     $autoOn   = (int) get_setting('ai_auto_enabled', '0') === 1;
     $now      = time();
 
@@ -1150,11 +1152,26 @@ function ai_auto_run(int $budgetSeconds = 130): array
         } catch (Throwable $e) { $msgs[] = 'erreur API : ' . $e->getMessage(); }
     }
 
-    // 3) TRADUCTION EN — si activée, traduit quelques articles FR encore sans VO
-    //    anglaise (les nouveaux publiés gardent ainsi une version EN au fil de l'eau).
+    // 3) TRADUCTION EN — rythme LENT (anti « contenu à grande échelle » Google).
+    //    Plafond QUOTIDIEN (ai_tr_daily_max, défaut 2) : les versions EN sortent au
+    //    compte-gouttes au lieu de vider le backlog d'un coup (ce qui avait créé
+    //    ~1000 pages EN d'un bloc). Le bouton « Traduire » de l'admin reste illimité.
     if ((int) get_setting('ai_tr_auto', '0') === 1 && ai_untranslated_count() > 0) {
-        $tr = ai_translate_missing((int) max(20, $budgetSeconds / 3));
-        if ($tr > 0) { $msgs[] = "{$tr} article(s) traduit(s) en anglais"; }
+        $trToday = date('Y-m-d');
+        if (get_setting('ai_tr_day', '') !== $trToday) {
+            set_setting('ai_tr_day', $trToday);
+            set_setting('ai_tr_count', '0');
+        }
+        $trMax   = max(0, min(20, (int) (get_setting('ai_tr_daily_max', '2') ?: 2)));
+        $trCount = (int) get_setting('ai_tr_count', '0');
+        if ($trMax > 0 && $trCount < $trMax) {
+            // Petit budget : ~1 article par cycle → filet lent et régulier.
+            $tr = ai_translate_missing((int) max(20, min(60, $budgetSeconds / 4)));
+            if ($tr > 0) {
+                set_setting('ai_tr_count', (string) ($trCount + $tr));
+                $msgs[] = "{$tr} article(s) traduit(s) en anglais";
+            }
+        }
     }
 
     // 4) RÉSEAUX SOCIAUX — poste les nouveaux articles publiés sur Facebook/Instagram.
