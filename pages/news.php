@@ -4,8 +4,11 @@ $SEO_TITLE = (lang() === 'fr' ? 'GTA 6 : actualités et news en continu' : 'GTA 
 $SEO_DESC  = lang() === 'fr'
     ? 'Toute l’actualité GTA VI : annonces, analyses et infos en continu sur ViceHub X.'
     : 'All the GTA VI news: announcements, analysis and continuous coverage on ViceHub X.';
-$articles = get_articles(['category' => 'news', 'lang' => lang()]);
+// 24 articles par page (avant : TOUS les articles, corps compris, à chaque visite).
+[$__page, $__pages, $__off] = list_page(count_articles(['category' => 'news', 'lang' => lang()]), 24);
+$articles = get_articles(['category' => 'news', 'lang' => lang(), 'limit' => 24, 'offset' => $__off]);
 $SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195952_3890268b-70b3-4fd3-9ceb-2fd14ae82cd3_min.webp';
+if ($__page > 1 && isset($SEO_TITLE)) { $SEO_TITLE = 'Page ' . $__page . ' · ' . $SEO_TITLE; }
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
@@ -28,6 +31,7 @@ require ROOT_PATH . '/includes/header.php';
             </article>
         <?php endforeach; ?>
     </div>
+    <?= pagination_html($__page, $__pages, url('pages/news.php')) ?>
     <?php else: ?>
         <p class="muted"><?= e(t('no_content')) ?></p>
     <?php endif; ?>

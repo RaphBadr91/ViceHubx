@@ -984,9 +984,18 @@ function get_categories(): array
 /**
  * Articles publiés, filtrables par catégorie (slug) et langue.
  */
+/**
+ * Liste d'articles publiés. Par défaut SANS le corps (MEDIUMTEXT) ni le prompt
+ * image : les listes n'affichent que titre/extrait/image. Charger le corps de
+ * centaines d'articles à chaque page gonflait fortement le temps de réponse.
+ * Passer 'with_body' => true si le corps est réellement nécessaire.
+ */
 function get_articles(array $filters = []): array
 {
-    $sql = "SELECT a.*, c.slug AS category_slug, c.name AS category_name
+    $cols = !empty($filters['with_body'])
+        ? 'a.*'
+        : 'a.id, a.category_id, a.lang, a.title, a.slug, a.excerpt, a.meta_title, a.meta_description, a.badge, a.image, a.author_id, a.source_id, a.status, a.published_at, a.created_at';
+    $sql = "SELECT $cols, c.slug AS category_slug, c.name AS category_name
             FROM articles a
             LEFT JOIN categories c ON c.id = a.category_id
             WHERE a.status = 'published'";
@@ -1009,11 +1018,65 @@ function get_articles(array $filters = []): array
     $sql .= ' ORDER BY a.published_at DESC, a.id DESC';
     if (!empty($filters['limit'])) {
         $sql .= ' LIMIT ' . (int) $filters['limit'];
+        if (!empty($filters['offset'])) {
+            $sql .= ' OFFSET ' . max(0, (int) $filters['offset']);
+        }
     }
 
     $stmt = db()->prepare($sql);
     $stmt->execute($params);
     return $stmt->fetchAll();
+}
+
+/** Nombre d'articles publiés (mêmes filtres catégorie/langue que get_articles). */
+function count_articles(array $filters = []): int
+{
+    $sql = "SELECT COUNT(*) FROM articles a LEFT JOIN categories c ON c.id = a.category_id WHERE a.status = 'published'";
+    $params = [];
+    if (!empty($filters['category'])) { $sql .= ' AND c.slug = ?'; $params[] = $filters['category']; }
+    if (!empty($filters['lang']))     { $sql .= ' AND a.lang = ?';  $params[] = $filters['lang']; }
+    $stmt = db()->prepare($sql);
+    $stmt->execute($params);
+    return (int) $stmt->fetchColumn();
+}
+
+/**
+ * Pagination des listes (News / Guides / Leaks) : liens crawlables ?page=N.
+ * Retourne [page courante, nb pages, offset].
+ */
+function list_page(int $total, int $perPage): array
+{
+    $pages = max(1, (int) ceil($total / max(1, $perPage)));
+    $page  = max(1, min($pages, (int) ($_GET['page'] ?? 1)));
+    // Anti-doublon : ?page=1, ?page=999, ?page=abc → 301 vers l'URL correcte.
+    if (isset($_GET['page']) && PHP_SAPI !== 'cli' && ((string) $_GET['page'] !== (string) $page || $page === 1)) {
+        $q = $_GET;
+        unset($q['page']);
+        if ($page > 1) { $q['page'] = $page; }
+        $path = strtok((string) ($_SERVER['REQUEST_URI'] ?? '/'), '?');
+        header('Location: ' . $path . ($q ? '?' . http_build_query($q) : ''), true, 301);
+        exit;
+    }
+    return [$page, $pages, ($page - 1) * $perPage];
+}
+
+/** Liens Précédent / Suivant + numéros (balises <a> simples, suivies par Google). */
+function pagination_html(int $page, int $pages, string $baseUrl): string
+{
+    if ($pages <= 1) { return ''; }
+    $fr  = lang() === 'fr';
+    $sep = str_contains($baseUrl, '?') ? '&' : '?';
+    $u   = static fn(int $p): string => with_lang($p <= 1 ? $baseUrl : $baseUrl . $sep . 'page=' . $p);
+    $out = '<nav class="pager" aria-label="Pagination" style="display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin:2rem 0">';
+    if ($page > 1) { $out .= '<a class="btn btn--ghost" rel="prev" href="' . e($u($page - 1)) . '">← ' . ($fr ? 'Précédent' : 'Previous') . '</a>'; }
+    $from = max(1, $page - 2); $to = min($pages, $page + 2);
+    for ($p = $from; $p <= $to; $p++) {
+        $out .= $p === $page
+            ? '<span class="btn" aria-current="page">' . $p . '</span>'
+            : '<a class="btn btn--ghost" href="' . e($u($p)) . '">' . $p . '</a>';
+    }
+    if ($page < $pages) { $out .= '<a class="btn btn--ghost" rel="next" href="' . e($u($page + 1)) . '">' . ($fr ? 'Suivant' : 'Next') . ' →</a>'; }
+    return $out . '</nav>';
 }
 
 function get_article_by_slug(string $slug): ?array
@@ -1962,12 +2025,50 @@ function product_buy_button(array $p, bool $small = true): string
         . e(t('shop_buy')) . $merchant . ' ↗</a>';
 }
 
+/**
+ * Réglages : TOUTE la table est chargée en 1 seule requête par page, puis servie
+ * depuis la mémoire (avant : 1 requête SQL par appel, des dizaines par page →
+ * temps de réponse serveur gonflé). set_setting() met le cache à jour.
+ */
+function &vhx_settings_cache(): array
+{
+    static $cache = null;
+    if ($cache === null) {
+        $cache = ['v' => [], 'big' => [], 'ok' => false];
+        try {
+            // 1 requête : valeurs des petits réglages + NOMS des gros (file de briefs IA…),
+            // ces derniers étant lus à la demande par get_setting().
+            $rows = db()->query(
+                'SELECT `key`, CASE WHEN CHAR_LENGTH(value) > 2048 THEN NULL ELSE value END AS v,
+                        (CHAR_LENGTH(value) > 2048) AS big
+                 FROM settings'
+            )->fetchAll(PDO::FETCH_NUM);
+            foreach ($rows as $r) {
+                if ((int) $r[2] === 1) { $cache['big'][(string) $r[0]] = true; }
+                else { $cache['v'][(string) $r[0]] = $r[1]; }
+            }
+            $cache['ok'] = true;
+        } catch (Throwable $e) {
+            // préchargement impossible → get_setting() lira chaque clé en base
+        }
+    }
+    return $cache;
+}
+
 function get_setting(string $key, ?string $default = null): ?string
 {
-    $stmt = db()->prepare('SELECT value FROM settings WHERE `key` = ? LIMIT 1');
-    $stmt->execute([$key]);
-    $row = $stmt->fetch();
-    return $row['value'] ?? $default;
+    $c = &vhx_settings_cache();
+    // Lecture FRAÎCHE en base : tâches de fond (verrous/compteurs partagés entre
+    // processus), gros réglages non préchargés, ou préchargement en échec.
+    $fresh = PHP_SAPI === 'cli' || defined('VHX_BG') || ignore_user_abort()
+        || isset($c['big'][$key]) || !$c['ok'];
+    if ($fresh) {
+        $stmt = db()->prepare('SELECT value FROM settings WHERE `key` = ? LIMIT 1');
+        $stmt->execute([$key]);
+        $row = $stmt->fetch();
+        return $row['value'] ?? $default;
+    }
+    return array_key_exists($key, $c['v']) ? ($c['v'][$key] ?? $default) : $default;
 }
 
 /** Enregistre/écrase un réglage. */
@@ -1978,6 +2079,9 @@ function set_setting(string $key, string $value): void
          ON DUPLICATE KEY UPDATE value = VALUES(value)'
     );
     $stmt->execute([$key, $value]);
+    $c = &vhx_settings_cache();
+    if (strlen($value) > 2048) { $c['big'][$key] = true; unset($c['v'][$key]); }
+    else { $c['v'][$key] = $value; unset($c['big'][$key]); }
 }
 
 /**
@@ -2140,6 +2244,8 @@ function vhx_auto_heartbeat(): void
         }
         @set_time_limit(0);
         @ignore_user_abort(true);
+        // Tâches de fond : réglages relus en base (verrous partagés entre processus).
+        if (!defined('VHX_BG')) { define('VHX_BG', true); }
         try {
             if (defined('ROOT_PATH')) {
                 if (is_file(ROOT_PATH . '/includes/ai.php'))     { require_once ROOT_PATH . '/includes/ai.php'; }

@@ -28,3 +28,6 @@ __pycache__/
 # Cache aperçus filigranés
 /public/assets/img/shop/cache/*
 !/public/assets/img/shop/cache/.gitkeep
+
+# Cache des images de partage (social-img.php), régénéré automatiquement
+/storage/cache/

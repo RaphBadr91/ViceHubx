@@ -4,8 +4,11 @@ $SEO_TITLE = (lang() === 'fr' ? 'Leaks GTA 6 : fuites vérifiées et classées' 
 $SEO_DESC  = lang() === 'fr'
     ? 'Leaks GTA VI classés par fiabilité : confirmé, probable, rumeur, analyse ou faux.'
     : 'GTA VI leaks ranked by reliability: confirmed, likely, rumor, analysis or fake.';
-$leaks = get_articles(['category' => 'leaks', 'lang' => lang()]);
+// 24 articles par page (avant : TOUS les articles, corps compris, à chaque visite).
+[$__page, $__pages, $__off] = list_page(count_articles(['category' => 'leaks', 'lang' => lang()]), 24);
+$leaks = get_articles(['category' => 'leaks', 'lang' => lang(), 'limit' => 24, 'offset' => $__off]);
 $SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195951_25bd4f6c-d921-4d3a-8e54-388b8167ae10_min.webp';
+if ($__page > 1 && isset($SEO_TITLE)) { $SEO_TITLE = 'Page ' . $__page . ' · ' . $SEO_TITLE; }
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
@@ -34,6 +37,7 @@ require ROOT_PATH . '/includes/header.php';
             </article>
         <?php endforeach; ?>
     </div>
+    <?= pagination_html($__page, $__pages, url('pages/leaks-lab.php')) ?>
     <?php else: ?>
         <p class="muted"><?= e(t('no_content')) ?></p>
     <?php endif; ?>

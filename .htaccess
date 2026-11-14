@@ -35,6 +35,10 @@ AddDefaultCharset UTF-8
     # Flux RSS (syndication + auto-post réseaux) et clé de vérification IndexNow.
     RewriteRule ^feed\.xml$ feed.php [L,QSA]
     RewriteRule ^([a-f0-9]{32})\.txt$ indexnow-key.php?k=$1 [L]
+    # favicon.ico demandé à la racine par les navigateurs et Google (avant : 404).
+    RewriteRule ^favicon\.ico$ public/assets/img/favicon-32.png [L]
+    # ads.txt dynamique (réglage AdSense de l'admin) — avant : 404 répétées.
+    RewriteRule ^ads\.txt$ ads-txt.php [L]
 
     # ======================================================================
     #  URL PROPRES (sans /pages/ ni .php)

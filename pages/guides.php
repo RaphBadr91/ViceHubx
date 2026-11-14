@@ -4,8 +4,11 @@ $SEO_TITLE = (lang() === 'fr' ? 'Guides GTA 6 : astuces, soluces et conseils' : 
 $SEO_DESC  = lang() === 'fr'
     ? 'Guides GTA VI : prise en main, argent, conduite et astuces pour progresser vite.'
     : 'GTA VI guides: getting started, money, driving and tips to progress fast.';
-$articles = get_articles(['category' => 'guides', 'lang' => lang()]);
+// 24 articles par page (avant : TOUS les articles, corps compris, à chaque visite).
+[$__page, $__pages, $__off] = list_page(count_articles(['category' => 'guides', 'lang' => lang()]), 24);
+$articles = get_articles(['category' => 'guides', 'lang' => lang(), 'limit' => 24, 'offset' => $__off]);
 $SEO_OG_IMAGE = 'https://d8j0ntlcm91z4.cloudfront.net/user_3DO7HqDJu2i1Hy0ZwCkmP0PQX9E/hf_20261022_195952_54df222b-93d5-4bb0-bf80-214d86be2fd9_min.webp';
+if ($__page > 1 && isset($SEO_TITLE)) { $SEO_TITLE = 'Page ' . $__page . ' · ' . $SEO_TITLE; }
 require ROOT_PATH . '/includes/header.php';
 ?>
 <section class="section">
@@ -25,6 +28,7 @@ require ROOT_PATH . '/includes/header.php';
             </article>
         <?php endforeach; ?>
     </div>
+    <?= pagination_html($__page, $__pages, url('pages/guides.php')) ?>
     <?php else: ?>
         <p class="muted"><?= e(t('no_content')) ?></p>
     <?php endif; ?>
