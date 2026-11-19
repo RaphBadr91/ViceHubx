@@ -25,6 +25,7 @@ $admin_nav = [
     ['tiktok.php',    '🎵 TikTok'],
     ['products.php',  'Boutique'],
     ['deals.php',     '🛒 Deals Amazon'],
+    ['seo-cleanup.php', '🧹 Nettoyage SEO'],
     ['orders.php',    'Commandes'],
     ['fanarts.php',   'Fan-arts'],
     ['events.php',    'Événements'],

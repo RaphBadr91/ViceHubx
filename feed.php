@@ -12,7 +12,7 @@ $lng  = (isset($_GET['lang']) && $_GET['lang'] === 'en') ? 'en' : 'fr';
 
 try {
     $q = db()->prepare(
-        "SELECT title, slug, excerpt, image, published_at
+        "SELECT id, title, slug, excerpt, image, published_at
          FROM articles WHERE status='published' AND lang=?
          ORDER BY published_at DESC LIMIT 30"
     );
@@ -21,6 +21,8 @@ try {
 } catch (Throwable $e) {
     $arts = [];
 }
+$__noidx = articles_noindex_ids(); // pages retirées de l'index : hors flux
+if ($__noidx) { $arts = array_values(array_filter($arts, static fn($a) => !isset($__noidx[(int) $a['id']]))); }
 
 header('Content-Type: application/rss+xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

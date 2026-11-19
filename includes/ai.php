@@ -879,6 +879,18 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
     if ($chk->fetchColumn()) {
         return null;
     }
+    // Anti-doublon de SUJET : avant, seuls les 40 derniers titres étaient vérifiés, d'où
+    // des dizaines d'articles quasi identiques (néon, coop, stockage…) que Google refuse
+    // d'indexer. On compare désormais à TOUS les articles de la langue.
+    if (function_exists('prune_closest_title')) {
+        $dupLang = (($data['lang'] ?? 'fr') === 'en') ? 'en' : 'fr';
+        $dupMax  = (float) (get_setting('ai_dup_threshold', '0.5') ?: 0.5);
+        [$dupSim, $dupSlug] = prune_closest_title((string) $data['title'], $dupLang);
+        if ($dupSim >= $dupMax) {
+            set_setting('ai_dup_last', date('Y-m-d H:i') . ' — « ' . mb_substr((string) $data['title'], 0, 120) . ' » trop proche de ' . $dupSlug . ' (' . round($dupSim, 2) . ')');
+            return null;
+        }
+    }
     $status = in_array($status, ['draft', 'pending', 'published'], true) ? $status : 'draft';
     // Publié → maintenant ; Programmé (pending) → prochain créneau CRON ; Brouillon → sans date.
     $interval = max(1, (int) get_setting('ai_auto_interval', '48'));

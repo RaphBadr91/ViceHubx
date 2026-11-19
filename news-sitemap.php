@@ -13,7 +13,7 @@ $abs    = static fn (string $p): string => $base . '/' . ltrim($p, '/');
 
 try {
     $arts = db()->query(
-        "SELECT title, slug, published_at, lang, image
+        "SELECT id, title, slug, published_at, lang, image
          FROM articles
          WHERE status = 'published' AND published_at >= (NOW() - INTERVAL 48 HOUR)
          ORDER BY published_at DESC LIMIT 1000"
@@ -21,6 +21,8 @@ try {
 } catch (Throwable $e) {
     $arts = [];
 }
+$__noidx = articles_noindex_ids(); // pages retirées de l'index : hors sitemap actualités
+if ($__noidx) { $arts = array_values(array_filter($arts, static fn($a) => !isset($__noidx[(int) $a['id']]))); }
 
 header('Content-Type: application/xml; charset=UTF-8');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";

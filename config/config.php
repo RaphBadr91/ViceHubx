@@ -115,6 +115,7 @@ if (session_status() === PHP_SESSION_NONE) {
 /* ------------------------------------------------------------------ */
 require_once ROOT_PATH . '/config/database.php';
 require_once ROOT_PATH . '/includes/functions.php';
+require_once ROOT_PATH . '/includes/prune.php'; // nettoyage SEO (doublons / pages minces)
 
 // Connexion automatique « Rester connecté » (uniquement si le cookie est présent
 // et qu'aucune session n'est active) — jeton vérifié en base.

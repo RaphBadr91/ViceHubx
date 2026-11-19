@@ -19,6 +19,9 @@ $is_preview = $article && $article['status'] !== 'published'
     && function_exists('is_admin') && is_logged_in() && is_admin();
 if ($is_preview) {
     $ROBOTS = 'noindex, nofollow';
+} elseif ($article && isset(articles_noindex_ids()[(int) $article['id']])) {
+    // Page trop mince retirée de l'index (outil Nettoyage SEO) : reste lisible, liens suivis.
+    $ROBOTS = 'noindex, follow';
 }
 
 // Article introuvable ou non publié → 404 propre (sauf aperçu admin)

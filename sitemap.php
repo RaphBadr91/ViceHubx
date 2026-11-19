@@ -63,6 +63,9 @@ try {
 } catch (Throwable $e) {
     $arts = [];
 }
+// Pages minces retirées de l'index (outil Nettoyage SEO) : hors sitemap.
+$__noidx = articles_noindex_ids();
+if ($__noidx) { $arts = array_values(array_filter($arts, static fn($a) => !isset($__noidx[(int) $a['id']]))); }
 // Slug de la VO anglaise indexée par article FR source (pour relier les paires).
 $enBySource = [];
 foreach ($arts as $a) {

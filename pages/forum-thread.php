@@ -39,6 +39,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $posts = get_thread_posts($id);
+// Sujet de moins de 4 messages = page trop mince pour Google : lisible, mais hors index.
+if (count($posts) < 4 && empty($ROBOTS)) { $ROBOTS = 'noindex, follow'; }
 $SEO_TITLE = $thread['title'] . ' — ' . (lang() === 'fr' ? 'Forum' : 'Forum') . ' ' . APP_NAME;
 $SEO_DESC  = mb_substr(strip_tags($posts[0]['body'] ?? $thread['title']), 0, 160);
 $role_badge = ['admin' => '👑', 'editor' => '📝', 'contributor' => '✍️'];
