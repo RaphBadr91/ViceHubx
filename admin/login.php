@@ -18,8 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $username = trim((string) ($_POST['username'] ?? ''));
         $password = (string) ($_POST['password'] ?? '');
-        $stmt = db()->prepare('SELECT id, username, password_hash FROM users WHERE username = ? LIMIT 1');
-        $stmt->execute([$username]);
+        // Nom d'utilisateur OU e-mail (avant : nom d'utilisateur seulement → échec si on tapait son e-mail).
+        $stmt = db()->prepare('SELECT id, username, password_hash FROM users WHERE username = ? OR email = ? LIMIT 1');
+        $stmt->execute([$username, mb_strtolower($username)]);
         $user = $stmt->fetch();
         if ($user && password_verify($password, $user['password_hash'])) {
             throttle_clear('admin_login');
@@ -67,6 +68,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </label>
             <button class="btn btn--primary" type="submit" style="justify-content:center"><?= e(t('admin_signin')) ?></button>
         </form>
+        <p class="muted" style="text-align:center;margin:1rem 0 0;font-size:.88rem">
+            Nom d'utilisateur ou e-mail accepté ·
+            <a class="link-all" href="<?= e(url('pages/mot-de-passe-oublie.php')) ?>">Mot de passe oublié ?</a>
+        </p>
     </div>
 </div>
 </body>
