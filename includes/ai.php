@@ -686,22 +686,51 @@ function ai_blog_cat_id(): int
 /** Tons rédactionnels (pour toucher un maximum de lecteurs). Bilingue FR/EN. */
 function ai_tones(string $lang = 'fr'): array
 {
+    // Registres PROFESSIONNELS uniquement (style rédaction, cohérent d'un article à l'autre).
+    // Les clés historiques sont conservées pour les menus et réglages de l'admin.
     if ($lang === 'en') {
         return [
-            'journalistique' => 'JOURNALISTIC TONE: factual, structured and credible, like a major gaming outlet (IGN, GameSpot). Put facts in perspective, cite numbers, stay neutral and professional.',
-            'joueur'         => 'GAMER TONE: direct, enthusiastic, "controller-level". Talk about gameplay, fun and hype, with a few natural gaming expressions.',
-            'connaisseur'    => 'CONNOISSEUR TONE: GTA saga expert. Precise references to previous entries, sharp analysis, mastered vocabulary, historical context.',
-            'passionne'      => 'PASSIONATE TONE: vibrant and nostalgic about Vice City, emotional, conveying love for the franchise and building anticipation.',
-            'geek'           => 'GEEK TONE: technical depth (RAGE engine, 60 fps, physics, NPC AI, ray tracing), easter eggs, theories and hidden trailer details.',
+            'journalistique' => 'NEWS DESK REGISTER: factual, concise, inverted pyramid. Lead with what happened, then context and implications.',
+            'joueur'         => 'PRACTICAL GUIDE REGISTER: clear, actionable and organised by steps or criteria. Speak to the reader directly, without hype.',
+            'connaisseur'    => 'ANALYSIS REGISTER: expert perspective on the series and the industry, careful reasoning, precise references to previous entries.',
+            'passionne'      => 'FEATURE REGISTER: polished long-form editorial on culture and setting, measured and elegant, never gushing.',
+            'geek'           => 'TECHNICAL REGISTER: precise and sober on engine, performance and hardware, with exact terminology and no speculation dressed as fact.',
         ];
     }
     return [
-        'journalistique' => 'TON JOURNALISTIQUE : factuel, structuré et crédible, façon grand média gaming (IGN, JVC). Mets les faits en perspective, cite des chiffres, reste neutre et pro.',
-        'joueur'         => 'TON JOUEUR : direct, enthousiaste, « à hauteur de manette ». Parle d\'expérience de jeu, de fun, de hype, avec quelques expressions gaming naturelles.',
-        'connaisseur'    => 'TON CONNAISSEUR : expert de la saga GTA. Références précises aux opus précédents, analyse fine, vocabulaire maîtrisé, mise en contexte historique.',
-        'passionne'      => 'TON PASSIONNÉ : vibrant et nostalgique de Vice City, chargé d\'émotion, qui transmet l\'amour de la licence et fait monter l\'attente.',
-        'geek'           => 'TON GEEK : pointu sur la technique (moteur RAGE, 60 fps, physique, IA des PNJ, ray tracing), les easter eggs, les théories et les détails cachés des trailers.',
+        'journalistique' => 'REGISTRE ACTUALITÉ : factuel, concis, pyramide inversée. D\'abord ce qui s\'est passé, puis le contexte et les conséquences.',
+        'joueur'         => 'REGISTRE GUIDE PRATIQUE : clair, concret, organisé par étapes ou critères. Tu t\'adresses au lecteur directement, sans emphase.',
+        'connaisseur'    => 'REGISTRE ANALYSE : regard expert sur la saga et l\'industrie, raisonnement rigoureux, références précises aux opus précédents.',
+        'passionne'      => 'REGISTRE DOSSIER : article de fond soigné sur la culture et l\'univers du jeu, mesuré et élégant, jamais dithyrambique.',
+        'geek'           => 'REGISTRE TECHNIQUE : précis et sobre sur le moteur, les performances et le matériel, vocabulaire exact, aucune spéculation présentée comme un fait.',
     ];
+}
+
+/** Le jeu est-il sorti ? (date de sortie réglable dans l'admin, RELEASE_DATE par défaut) */
+function ai_is_postlaunch(): bool
+{
+    $d = function_exists('get_setting') ? (string) (get_setting('release_date', defined('RELEASE_DATE') ? RELEASE_DATE : '2026-11-19') ?: '2026-11-19') : '2026-11-19';
+    $ts = strtotime($d) ?: strtotime('2026-11-19');
+    return time() >= $ts;
+}
+
+/**
+ * Titre « propre » : retire les mots racoleurs que l'IA ajoutait systématiquement
+ * (Révélé, Confirmé, Décrypté, Everything We Know…), source de titres tous identiques.
+ */
+function ai_clean_title(string $t): string
+{
+    // Uniquement des retraits SÛRS (la grammaire du titre reste intacte) : un mot racoleur
+    // en fin de titre, juste avant « : » / « - », ou un segment final « : Everything We Know ».
+    // Les consignes de rédaction font l'essentiel ; ceci n'est qu'un filet de sécurité.
+    $w = '(?:officially\s+)?(?:revealed|confirmed|decoded|unveiled|exposed|r[ée]v[ée]l[ée]e?s?|confirm[ée]e?s?|d[ée]crypt[ée]e?s?|d[ée]voil[ée]e?s?)';
+    $c = $t;
+    $c = preg_replace('/\s*[:\x{2013}\x{2014}|\-]\s*(?:everything\s+we\s+(?:actually\s+)?know|tout\s+ce\s+qu[\x{2019}\']on\s+sait)\s*$/iu', '', $c) ?? $c;
+    $c = preg_replace('/\s+' . $w . '\s*(?=[:\x{2013}\x{2014}|])/iu', '', $c) ?? $c;   // « Soundtrack Revealed: » → « Soundtrack: »
+    $c = preg_replace('/\s*[:\x{2013}\x{2014}|\-]?\s+' . $w . '\s*$/iu', '', $c) ?? $c; // « … Decoded » en fin
+    $c = preg_replace('/(\d+)\s+' . $w . '\s+/iu', '$1 ', $c) ?? $c;                   // « 19 Confirmed Vehicles » → « 19 Vehicles »
+    $c = trim(preg_replace('/\s{2,}/u', ' ', $c) ?? $c, " \t\n\r\0\x0B,;:-");
+    return mb_strlen($c) >= 15 ? $c : $t;
 }
 
 /** Résout une langue : 'fr'/'en' fixe, ou 'both' → alterne selon l'index. */
@@ -757,76 +786,88 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
     $titles = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['title'], 0, 100), $used)), 0, 40) : [];
     $metas  = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['excerpt'], 0, 120), $used)), 0, 20) : [];
 
-    $facts = 'game developed by Rockstar Games (publisher Take-Two); 1st trailer December 2023, 2nd trailer 2025; '
-        . 'release announced November 19, 2026 on PS5 and Xbox Series X|S; Standard ($79.99) and Ultimate ($99.99) editions; '
-        . 'dual protagonists Jason Duval & Lucia Caminos (Lucia = first female lead of the main series); fictional state of '
-        . 'Leonida (inspired by Florida) and return of Vice City; RAGE engine; radio stations incl. V-Rock. Everything else '
-        . '(detailed map, exact vehicles, PC date, online content) is NOT confirmed: treat it as rumor.';
+    $launched = ai_is_postlaunch();
+    $factsEn = 'GTA VI is developed by Rockstar Games (publisher Take-Two Interactive). Trailer 1: December 2023; trailer 2: May 2025. '
+        . ($launched
+            ? 'The game RELEASED on November 19, 2026 on PlayStation 5 and Xbox Series X|S (no PC version at launch). '
+            : 'Release scheduled for November 19, 2026 on PlayStation 5 and Xbox Series X|S. ')
+        . 'Standard ($79.99) and Ultimate ($99.99) editions. Protagonists: Jason Duval and Lucia Caminos (Lucia is the first female lead of the main series). '
+        . 'Setting: the fictional state of Leonida, inspired by Florida, including Vice City. Engine: RAGE. Radio stations include V-Rock.';
+    $factsFr = 'GTA VI est développé par Rockstar Games (éditeur Take-Two Interactive). Trailer 1 : décembre 2023 ; trailer 2 : mai 2025. '
+        . ($launched
+            ? 'Le jeu EST SORTI le 19 novembre 2026 sur PlayStation 5 et Xbox Series X|S (pas de version PC au lancement). '
+            : 'Sortie prévue le 19 novembre 2026 sur PlayStation 5 et Xbox Series X|S. ')
+        . 'Éditions Standard (79,99 $) et Ultimate (99,99 $). Protagonistes : Jason Duval et Lucia Caminos (Lucia est la première héroïne de la série principale). '
+        . 'Cadre : l\'État fictif de Leonida, inspiré de la Floride, avec Vice City. Moteur : RAGE. Radios, dont V-Rock.';
 
     if ($lang === 'en') {
         $avoid = '';
         if ($titles) {
-            $avoid = "\n\n⛔ ALREADY USED ON THE SITE — do NOT reuse or paraphrase (find a 100% different TITLE and META, targeting OTHER keywords):\n"
-                . "Existing titles:\n- " . implode("\n- ", $titles) . "\n"
-                . ($metas ? "Existing metas:\n- " . implode("\n- ", $metas) . "\n" : '');
+            $avoid = "\n\nTITLES ALREADY ON THE SITE (your article must take a clearly different angle and must not paraphrase any of them):\n- "
+                . implode("\n- ", $titles) . "\n";
         }
-        $system = 'You are a SENIOR SEO writer for ViceHub X, an INDEPENDENT, UNOFFICIAL fan media about GTA VI and Vice City. '
-            . 'You write flawless, rich, fluent ENGLISH. '
-            . "\n\nGOLDEN RULE — RELIABILITY: publish ONLY VERIFIED information. NEVER invent a date, price, name, feature or "
-            . 'statement. ALWAYS clearly separate CONFIRMED FACTS from rumors: any unofficial info must be explicitly framed '
-            . 'as "rumor", "unconfirmed" or "according to leaks". No speculation presented as fact. When in doubt, stay '
-            . 'general or present it as community discussion. '
-            . "\n\nCONFIRMED FACTS (use as-is): " . $facts
-            . "\n\nGoal: a REFERENCE article, accurate and useful, worthy of Google's #1 spot and an AI Overview. "
-            . 'Write like a PASSIONATE HUMAN (never mention AI). ' . $tones[$toneKey];
-        $user = "Write a COMPLETE, ORIGINAL article of about 2000 words on: \"{$topic}\".\n\n"
-            . "Rules:\n"
-            . "- ABSOLUTE RELIABILITY: state only VERIFIED facts. Any unofficial info = framed as rumor/leak (\"according to rumors…\", \"unconfirmed\"). Never invent a date, price, name or feature.\n"
-            . "- 100% UNIQUE TITLE and META DESCRIPTION: never the same as another article. Each article targets DIFFERENT keywords/angle to capture maximum Google searches (long tail).\n"
-            . "- ~2000 words, rich, no filler, SEO-optimized (natural keywords: GTA 6, GTA VI, Vice City, Leonida).\n"
-            . "- PREMIUM structure: (1) strong 2-3 sentence hook; (2) a <ul> 'Key takeaways' TL;DR of 4-5 bullets right after the hook (wins featured snippet & AI Overview); (3) 5-7 DENSE <h2> sections (with <h3>/<h4>), full of facts, numbers and concrete examples, NO filler; (4) AT LEAST ONE comparison <table> (with <thead>/<tbody>/<tr>/<th>/<td>) whenever the topic allows (editions/prices, PS5 vs Xbox, GTA 6 vs GTA 5, specs); (5) for any date/trailer/timeline topic, ONE chronological <ol> timeline; (6) a <blockquote> for each uncertain claim, starting with 'Confirmed:' or 'Rumor / unconfirmed:'; (7) a final <h2>Sources & official</h2> with a short <ul> of where to verify (Rockstar Newswire, official channels) as PLAIN TEXT; (8) a final <h2>FAQ</h2> with 3-4 <h3>Question?</h3><p>Answer</p>.\n"
-            . "- ALLOWED tags only: <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td> <figure> <figcaption>. NO <a>, NO <h1>, NO markdown.\n"
-            . "- Write like a PASSIONATE HUMAN: NEVER say you are an AI, add NO technical marker. Do NOT end with \"===END===\" or any separator: the last FAQ <p> ends the article.\n"
+        $system = 'You are a senior editor at ViceHub X, an independent publication covering GTA VI (not affiliated with Rockstar Games). '
+            . 'You write precise, idiomatic, professional English.'
+            . "\n\nHOUSE STYLE: a professional editorial desk comparable to Eurogamer, IGN or GameSpot. Neutral, exact, measured. "
+            . 'No hype, no exclamation marks, no emojis, no clickbait, no superlatives without evidence, no filler sentences. '
+            . 'Short paragraphs of 2 to 4 sentences, each one carrying information. Never mention AI or how the text was produced.'
+            . "\n\nACCURACY: state only verified facts. VERIFIED FACTS: " . $factsEn
+            . "\nYou have NO reliable knowledge of the game's actual content (missions, story events, map details, vehicles, weapons, "
+            . 'in-game prices, cheats, collectibles, online mode, patches, sales figures). NEVER describe such specifics unless they appear '
+            . 'in the source material quoted in the topic below. Without source material, write context, analysis, series history or '
+            . 'practical advice that does not depend on unverified details. Anything unconfirmed must be explicitly labelled "unverified".'
+            . "\n\nREGISTER: " . $tones[$toneKey];
+        $user = "Topic: \"{$topic}\"\n\n"
+            . "Write an original article for ViceHub X.\n"
+            . "- LENGTH follows substance: 700 to 1,400 words. A short precise article beats a long padded one. Never pad.\n"
+            . "- STRUCTURE: (1) a 2-3 sentence lede that answers the reader's main question immediately; (2) a <ul> of 3-5 key points; "
+            . "(3) 3 to 6 <h2> sections with descriptive headings (use <h3> when useful); (4) a <table> ONLY when comparing real data; "
+            . "(5) <blockquote> ONLY for an official quote or to flag an unverified claim (start it with \"Unverified:\"); "
+            . "(6) a final <h2>Sources</h2> listing ONLY sources actually named in the topic or facts (e.g. Rockstar Newswire), as plain text, omitted if there are none; "
+            . "(7) a <h2>FAQ</h2> with 2-3 genuine reader questions, only if useful.\n"
+            . "- TITLE: max 60 characters, specific and descriptive, main keyword first, then what the article actually delivers. "
+            . "FORBIDDEN in titles: Revealed, Confirmed, Decoded, Unveiled, Everything We Know, Ultimate, Insane, Shocking, emojis, ALL CAPS, and the year unless the topic is time-bound.\n"
+            . "- META DESCRIPTION: 140-160 characters, a factual summary of what the reader gets. No hype.\n"
+            . "- ALLOWED TAGS ONLY: <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td>. No <a>, no <h1>, no markdown, no closing separator.\n"
             . $avoid . "\n"
             . "STRICT RESPONSE FORMAT (nothing else):\n"
-            . 'LINE 1 = compact JSON: {"categorie":"news|guides|leaks|blog|trailers","titre":"UNIQUE SEO title <=62 chars IN ENGLISH: MAIN KEYWORD FIRST, + the year 2026 and/or a number when relevant, + one power word (Confirmed, Revealed, Guide, Everything We Know)","extrait":"meta description 150-160 chars IN ENGLISH: main keyword within the first 100 chars, include a number or date, and a mini call-to-action (Here is, We break it down)","theme_image":"one word among: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"ENGLISH prompt for a photorealistic Higgsfield illustration, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . 'LINE 1 = compact JSON: {"categorie":"news|guides|leaks|blog|trailers","titre":"title in English, max 60 characters, rules above","extrait":"meta description in English, 140-160 characters","theme_image":"one word among: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"English prompt for a photorealistic editorial illustration, GTA VI Vice City atmosphere, cinematic 16:9, no text"}' . "\n"
             . "LINE 2 = exactly: ===CORPS===\n"
-            . "THEN = the article body in HTML (~2000 words, IN ENGLISH).";
+            . "THEN = the article body in HTML, in English.";
     } else {
         $avoid = '';
         if ($titles) {
-            $avoid = "\n\n⛔ DÉJÀ UTILISÉS SUR LE SITE — INTERDIT de reprendre ou paraphraser (trouve un TITRE et une META 100% différents, ciblant d'AUTRES mots-clés) :\n"
-                . "Titres existants :\n- " . implode("\n- ", $titles) . "\n"
-                . ($metas ? "Metas existantes :\n- " . implode("\n- ", $metas) . "\n" : '');
+            $avoid = "\n\nTITRES DÉJÀ PRÉSENTS SUR LE SITE (ton article doit prendre un angle nettement différent et n'en paraphraser aucun) :\n- "
+                . implode("\n- ", $titles) . "\n";
         }
-        $system = 'Tu es rédacteur SEO SENIOR pour ViceHub X, média de fans INDÉPENDANT et NON OFFICIEL sur GTA VI '
-            . 'et Vice City. Tu écris un français impeccable, riche et fluide. '
-            . "\n\nRÈGLE D'OR — FIABILITÉ : tu ne publies QUE des informations VÉRIFIÉES. Tu N'INVENTES JAMAIS de "
-            . 'date, prix, nom, fonctionnalité ou déclaration. Tu distingues TOUJOURS clairement les FAITS CONFIRMÉS '
-            . 'des rumeurs : toute information non officielle doit être explicitement présentée comme « rumeur », '
-            . '« non confirmé » ou « selon des fuites ». Aucune spéculation présentée comme un fait. En cas de doute, '
-            . 'reste général ou présente-le comme un débat de la communauté. '
-            . "\n\nFAITS CONFIRMÉS (utilisables tels quels) : jeu développé par Rockstar Games (éditeur Take-Two) ; "
-            . '1er trailer en décembre 2023, 2e trailer en 2025 ; sortie annoncée le 19 novembre 2026 sur PS5 et '
-            . 'Xbox Series X|S ; éditions Standard (79,99$) et Ultimate (99,99$) ; duo de protagonistes Jason Duval & '
-            . 'Lucia Caminos (Lucia = 1re protagoniste féminine de la série principale) ; État fictif de Leonida '
-            . '(inspiré de la Floride) et retour de Vice City ; moteur RAGE ; radios dont V-Rock. Tout le reste '
-            . '(carte détaillée, véhicules précis, dates PC, contenu online) n\'est PAS confirmé : traite-le en rumeur. '
-            . "\n\nObjectif : un article de RÉFÉRENCE, exact et utile, qui mérite la 1re place Google et une AI Overview. "
-            . 'Écris comme un HUMAIN passionné (jamais de mention d\'IA). ' . $tones[$toneKey];
-        $user = "Rédige un ARTICLE COMPLET et ORIGINAL d'environ 2000 mots sur : « {$topic} ».\n\n"
-            . "Règles :\n"
-            . "- FIABILITÉ ABSOLUE : n'affirme que des faits VÉRIFIÉS. Toute info non officielle = présentée comme rumeur/fuite (« selon des rumeurs… », « non confirmé »). Jamais d'invention de date, prix, nom ou fonctionnalité.\n"
-            . "- TITRE et META DESCRIPTION 100% UNIQUES : jamais le même titre ni la même meta qu'un autre article du site. Chaque article vise des mots-clés/angle DIFFÉRENTS pour capter un maximum de recherches Google (longue traîne).\n"
-            . "- ~2000 mots, riche, sans remplissage, optimisé SEO (mots-clés naturels : GTA 6, GTA VI, Vice City, Leonida).\n"
-            . "- Structure PREMIUM : (1) accroche forte 2-3 phrases ; (2) un <ul> « L'essentiel » (TL;DR) de 4-5 puces juste après l'accroche (capte le featured snippet & l'AI Overview) ; (3) 5 à 7 sections <h2> DENSES (avec <h3>/<h4>), pleines de faits, chiffres et exemples concrets, SANS remplissage ; (4) AU MOINS UN <table> comparatif (avec <thead>/<tbody>/<tr>/<th>/<td>) dès que le sujet s'y prête (éditions/prix, PS5 vs Xbox, GTA 6 vs GTA 5, config) ; (5) pour tout sujet date/trailer/chronologie, UNE frise chronologique <ol> ; (6) un <blockquote> pour chaque info incertaine, commençant par « Confirmé : » ou « Rumeur / non confirmé : » ; (7) une section finale <h2>Sources & officiel</h2> avec un court <ul> d'où vérifier (Rockstar Newswire, comptes officiels) en TEXTE ; (8) une section finale <h2>FAQ</h2> avec 3-4 <h3>Question ?</h3><p>Réponse</p>.\n"
-            . "- Balises AUTORISÉES uniquement : <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td> <figure> <figcaption>. AUCUN <a>, AUCUN <h1>, AUCUN markdown.\n"
-            . "- Écris comme un HUMAIN passionné : n'indique JAMAIS que tu es une IA, et n'ajoute AUCUN marqueur technique. NE TERMINE PAS par « ===FIN=== » ni par un quelconque séparateur : le dernier <p> de la FAQ clôt l'article.\n"
+        $system = 'Tu es rédacteur en chef adjoint de ViceHub X, média indépendant consacré à GTA VI (sans lien avec Rockstar Games). '
+            . 'Tu écris un français précis, sobre et professionnel.'
+            . "\n\nCHARTE ÉDITORIALE : une rédaction professionnelle comparable à Eurogamer, IGN ou Gamekult. Neutre, exacte, mesurée. "
+            . 'Pas d\'emphase, pas de points d\'exclamation, pas d\'emojis, pas de titres racoleurs, pas de superlatifs non étayés, aucune phrase de remplissage. '
+            . 'Paragraphes courts de 2 à 4 phrases, chacun porteur d\'information. Ne mentionne jamais l\'IA ni la façon dont le texte a été produit.'
+            . "\n\nEXACTITUDE : n'affirme que des faits vérifiés. FAITS VÉRIFIÉS : " . $factsFr
+            . "\nTu n'as AUCUNE connaissance fiable du contenu réel du jeu (missions, scénario, détails de la carte, véhicules, armes, "
+            . 'prix en jeu, codes de triche, objets à collectionner, mode en ligne, correctifs, chiffres de ventes). Ne décris JAMAIS ces éléments '
+            . 's\'ils ne figurent pas dans les éléments de source cités dans le sujet ci-dessous. Sans source, écris du contexte, de l\'analyse, '
+            . 'l\'histoire de la saga ou des conseils pratiques qui ne dépendent pas de détails non vérifiés. Toute information non confirmée est signalée « non vérifié ».'
+            . "\n\nREGISTRE : " . $tones[$toneKey];
+        $user = "Sujet : « {$topic} »\n\n"
+            . "Rédige un article original pour ViceHub X.\n"
+            . "- LONGUEUR selon la matière : 700 à 1 400 mots. Un article court et précis vaut mieux qu'un long article délayé. Ne remplis jamais.\n"
+            . "- STRUCTURE : (1) un chapeau de 2-3 phrases qui répond tout de suite à la question principale du lecteur ; (2) un <ul> de 3 à 5 points clés ; "
+            . "(3) 3 à 6 sections <h2> aux intertitres descriptifs (avec <h3> si utile) ; (4) un <table> UNIQUEMENT pour comparer des données réelles ; "
+            . "(5) un <blockquote> UNIQUEMENT pour une citation officielle ou pour signaler une information non vérifiée (commence-le par « Non vérifié : ») ; "
+            . "(6) une section finale <h2>Sources</h2> listant SEULEMENT les sources réellement citées dans le sujet ou les faits (ex. Rockstar Newswire), en texte simple, omise s'il n'y en a pas ; "
+            . "(7) une <h2>FAQ</h2> de 2-3 vraies questions de lecteurs, seulement si elle est utile.\n"
+            . "- TITRE : 60 caractères maximum, précis et descriptif, mot-clé principal en tête, puis ce que l'article apporte réellement. "
+            . "INTERDITS dans le titre : Révélé, Confirmé, Décrypté, Dévoilé, Tout ce qu'on sait, Ultime, Choc, Incroyable, emojis, MAJUSCULES, et l'année sauf si le sujet est daté.\n"
+            . "- META DESCRIPTION : 140-160 caractères, résumé factuel de ce que le lecteur va trouver. Sans emphase.\n"
+            . "- BALISES AUTORISÉES UNIQUEMENT : <p> <h2> <h3> <h4> <ul> <ol> <li> <strong> <em> <blockquote> <table> <thead> <tbody> <tr> <th> <td>. Aucun <a>, aucun <h1>, aucun markdown, aucun séparateur final.\n"
             . $avoid . "\n"
             . "FORMAT DE RÉPONSE STRICT (rien d'autre) :\n"
-            . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre SEO UNIQUE <=62 car. : MOT-CLÉ PRINCIPAL EN TÊTE, + si pertinent l\'année 2026 et/ou un chiffre, + un mot fort (Confirmé, Révélé, Guide, Tout ce qu\'on sait)","extrait":"meta description 150-160 car. : mot-clé principal dans les 100 premiers caractères, avec un chiffre ou une date, et un mini appel à l\'action (Découvrez, On fait le point)","theme_image":"un mot parmi: night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration photorealiste Higgsfield, GTA VI Vice City neon cinematic 16:9, no text"}' . "\n"
+            . 'LIGNE 1 = JSON compact : {"categorie":"news|guides|leaks|blog|trailers","titre":"titre en français, 60 caractères max, règles ci-dessus","extrait":"meta description en français, 140-160 caractères","theme_image":"un mot parmi : night, city, beach, car, police, heli, marina, storm, casino, nightlife, drift, sunset, market, plane, swamp","prompt_image":"prompt EN ANGLAIS pour une illustration éditoriale photoréaliste, ambiance GTA VI Vice City, cinématique 16:9, sans texte"}' . "\n"
             . "LIGNE 2 = exactement : ===CORPS===\n"
-            . "PUIS = le corps de l'article en HTML (~2000 mots).";
+            . "PUIS = le corps de l'article en HTML.";
     }
 
     $raw = anthropic_complete($system, $user, 6500);
@@ -844,7 +885,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
         throw new RuntimeException('En-tête/corps IA incomplet.');
     }
 
-    $title   = trim((string) $json['titre']);
+    $title   = ai_clean_title(trim((string) $json['titre']));
     $excerpt = clean_ai_markers(mb_substr(trim((string) ($json['extrait'] ?? '')), 0, 200));
     // Nettoie tout marqueur IA résiduel (===FIN===…) : le lecteur ne doit jamais le voir.
     $body    = clean_ai_markers(strip_tags($bodyHtml, '<p><h2><h3><h4><ul><ol><li><strong><em><blockquote><br><table><thead><tbody><tr><th><td><figure><figcaption>'));
@@ -1020,7 +1061,7 @@ function ai_brief_add_rich(string $topic, string $status = 'published', string $
     $topic  = trim($topic);
     if ($topic === '') { return 0; }
     $q = json_decode((string) get_setting('ai_brief_queue', '[]'), true) ?: [];
-    $q[] = ['t' => mb_substr($topic, 0, 400), 's' => $status, 'l' => $lang,
+    $q[] = ['t' => mb_substr($topic, 0, 1800), 's' => $status, 'l' => $lang,   // sujet + résumé source
             'img' => mb_substr($img, 0, 500), 'src' => mb_substr($src, 0, 120)];
     set_setting('ai_brief_queue', json_encode(array_slice($q, 0, 100), JSON_UNESCAPED_UNICODE));
     return 1;
@@ -1152,7 +1193,11 @@ function ai_auto_run(int $budgetSeconds = 130): array
     // produit 1 article frais par intervalle.
     $last       = (int) get_setting('ai_auto_last', '0');
     $stillSched = (int) db()->query("SELECT COUNT(*) FROM articles WHERE status='pending' AND published_at IS NOT NULL")->fetchColumn();
-    if ($autoOn && $stillSched === 0 && ($last === 0 || ($now - $last) >= $interval * 3600)) {
+    // Après la sortie : plus de sujets tirés au hasard dans la liste d'avant-sortie (l'IA
+    // inventerait le contenu du jeu). Les articles automatiques viennent alors uniquement
+    // de la veille (vraies infos sourcées). Réactivable : réglage ai_random_topics = 1.
+    $randomOk = !ai_is_postlaunch() || (int) get_setting('ai_random_topics', '0') === 1;
+    if ($autoOn && $randomOk && $stillSched === 0 && ($last === 0 || ($now - $last) >= $interval * 3600)) {
         $st = get_setting('ai_auto_status', 'published') === 'draft' ? 'draft' : 'published';
         $autoTone = (string) get_setting('ai_auto_tone', 'multi');
         $autoLang = (string) get_setting('ai_auto_lang', 'fr');

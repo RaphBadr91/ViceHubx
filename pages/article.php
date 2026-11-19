@@ -192,7 +192,10 @@ require ROOT_PATH . '/includes/header.php';
 
     <div style="margin:.8rem 0 1rem;display:flex;gap:.6rem;align-items:center;flex-wrap:wrap">
         <?= badge_html($article['badge']) ?>
-        <span class="muted" style="font-size:.85rem"><?= e(fmt_date($article['published_at'])) ?></span>
+        <span class="muted" style="font-size:.85rem">
+            <?= lang() === 'fr' ? 'Par' : 'By' ?> <a href="<?= e(with_lang(url('pages/a-propos.php'))) ?>" style="color:inherit;text-decoration:underline"><?= lang() === 'fr' ? 'la rédaction ViceHub X' : 'the ViceHub X editorial team' ?></a>
+            · <time datetime="<?= e($pub_iso) ?>"><?= e(fmt_date($article['published_at'])) ?></time>
+        </span>
     </div>
 
     <h1 style="font-size:clamp(1.9rem,5vw,3rem);margin:0 0 1rem;text-transform:none"><?= e($article['title']) ?></h1>
@@ -205,6 +208,18 @@ require ROOT_PATH . '/includes/header.php';
                 <figcaption style="position:absolute;left:0;right:0;bottom:0;padding:.5rem .9rem;background:linear-gradient(transparent,rgba(0,0,0,.78));color:#fff;font-size:.78rem;border-radius:0 0 18px 18px;text-align:right">Source : <?= e($__srcCredit) ?></figcaption>
             <?php endif; ?>
         </figure>
+    <?php endif; ?>
+
+    <?php
+    // Article écrit AVANT la sortie du jeu : on prévient honnêtement le lecteur (et Google)
+    // que certaines informations, alors présentées comme rumeurs, ont pu évoluer.
+    $__rel = strtotime((string) (get_setting('release_date', RELEASE_DATE) ?: RELEASE_DATE)) ?: strtotime('2026-11-19');
+    if (time() >= $__rel && !empty($article['published_at']) && strtotime((string) $article['published_at']) < $__rel): ?>
+        <p class="muted" role="note" style="font-size:.88rem;border-left:3px solid rgba(255,46,136,.6);padding:.55rem .9rem;margin:0 0 1.4rem;background:rgba(255,255,255,.03);border-radius:0 10px 10px 0">
+            <?= lang() === 'fr'
+                ? 'Article publié avant la sortie de GTA 6 le 19 novembre 2026. Certaines informations, présentées alors comme des rumeurs, ont pu être confirmées ou démenties depuis.'
+                : 'This article was published before GTA 6 launched on November 19, 2026. Some details reported as rumors at the time may since have been confirmed or ruled out.' ?>
+        </p>
     <?php endif; ?>
 
     <div class="article-body"><?= $safe_body ?></div>

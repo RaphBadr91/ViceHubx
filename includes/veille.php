@@ -46,6 +46,9 @@ function veille_ensure_tables(): void
         try { db()->exec("ALTER TABLE competitor_sources ADD COLUMN IF NOT EXISTS lang ENUM('fr','en') NOT NULL DEFAULT 'en'"); } catch (Throwable $e) {}
         try { db()->exec("ALTER TABLE competitor_items ADD COLUMN IF NOT EXISTS lang ENUM('fr','en') NOT NULL DEFAULT 'en'"); } catch (Throwable $e) {}
         try { db()->exec("ALTER TABLE competitor_items ADD COLUMN IF NOT EXISTS image_url VARCHAR(500) DEFAULT NULL"); } catch (Throwable $e) {}
+        // Résumé de l'article source : donné à l'IA comme matière factuelle (avant : titre seul
+        // → l'IA délayait ou inventait pour atteindre la longueur demandée).
+        try { db()->exec("ALTER TABLE competitor_items ADD COLUMN IF NOT EXISTS summary TEXT DEFAULT NULL"); } catch (Throwable $e) {}
     } catch (Throwable $e) { /* droits DDL limités */ }
 }
 
@@ -178,7 +181,22 @@ function veille_item_image(SimpleXMLElement $it): string
     return '';
 }
 
-/** Parse un flux RSS 2.0 ou Atom → [ [title, url, date|null, image], ... ]. */
+/** Texte brut du résumé d'un item RSS/Atom (description / content), 1 200 caractères max. */
+function veille_item_summary($it): string
+{
+    $html = (string) ($it->description ?? '');
+    if ($html === '' && isset($it->summary)) { $html = (string) $it->summary; }
+    if ($html === '') {
+        $content = $it->children('http://purl.org/rss/1.0/modules/content/');
+        if ($content && isset($content->encoded)) { $html = (string) $content->encoded; }
+        elseif (isset($it->content)) { $html = (string) $it->content; }
+    }
+    $txt = html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $txt = trim(preg_replace('/\s+/u', ' ', $txt) ?? '');
+    return mb_substr($txt, 0, 1200);
+}
+
+/** Parse un flux RSS 2.0 ou Atom → [ [title, url, date|null, image, résumé], ... ]. */
 function veille_parse_feed(string $xml): array
 {
     $out = [];
@@ -193,7 +211,7 @@ function veille_parse_feed(string $xml): array
             $link  = trim((string) $it->link);
             $date  = trim((string) $it->pubDate);
             if ($title !== '' && $link !== '') {
-                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($it)];
+                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($it), veille_item_summary($it)];
             }
         }
         return $out;
@@ -209,7 +227,7 @@ function veille_parse_feed(string $xml): array
             }
             $date = trim((string) ($e->updated ?? $e->published ?? ''));
             if ($title !== '' && $link !== '') {
-                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($e)];
+                $out[] = [$title, $link, $date !== '' ? date('Y-m-d H:i:s', strtotime($date) ?: time()) : null, veille_item_image($e), veille_item_summary($e)];
             }
         }
     }
@@ -228,7 +246,7 @@ function veille_parse_sitemap(string $xml): array
         $loc = trim((string) $u->loc);
         if ($loc === '') { continue; }
         $mod = trim((string) $u->lastmod);
-        $out[] = [veille_title_from_url($loc), $loc, $mod !== '' ? date('Y-m-d H:i:s', strtotime($mod) ?: time()) : null, ''];
+        $out[] = [veille_title_from_url($loc), $loc, $mod !== '' ? date('Y-m-d H:i:s', strtotime($mod) ?: time()) : null, '', ''];
     }
     return $out;
 }
@@ -242,14 +260,26 @@ function veille_fetch_source(array $src): int
     $items = ($src['type'] === 'sitemap') ? veille_parse_sitemap($body) : veille_parse_feed($body);
     if (!$items) { return 0; }
     $lang = in_array($src['lang'] ?? 'en', ['fr', 'en'], true) ? ($src['lang'] ?? 'en') : 'en';
-    $ins = db()->prepare(
-        'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang, image_url) VALUES (?, ?, ?, ?, ?, ?)'
-    );
+    try {
+        $ins = db()->prepare(
+            'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang, image_url, summary) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        );
+        $withSummary = true;
+    } catch (Throwable $e) {
+        $ins = db()->prepare(
+            'INSERT IGNORE INTO competitor_items (source_id, title, url, published_at, lang, image_url) VALUES (?, ?, ?, ?, ?, ?)'
+        );
+        $withSummary = false;
+    }
     $new = 0;
-    foreach (array_slice($items, 0, 80) as [$title, $url, $date, $img]) {
+    foreach (array_slice($items, 0, 80) as $row) {
+        [$title, $url, $date, $img] = $row;
+        $sum = (string) ($row[4] ?? '');
         if (!veille_is_gta6($title)) { continue; }   // ne conserve QUE les sujets GTA 6
         try {
-            $ins->execute([(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date, $lang, ($img !== '' ? mb_substr((string) $img, 0, 500) : null)]);
+            $vals = [(int) $src['id'], mb_substr($title, 0, 300), mb_substr($url, 0, 500), $date, $lang, ($img !== '' ? mb_substr((string) $img, 0, 500) : null)];
+            if ($withSummary) { $vals[] = $sum !== '' ? $sum : null; }
+            $ins->execute($vals);
             if ($ins->rowCount() > 0) { $new++; }
         } catch (Throwable $e) { /* url trop longue / doublon */ }
     }
@@ -358,21 +388,34 @@ function veille_auto_generate(int $max = 3): int
     try {
         // Fraîcheur : on ne réécrit que l'actu RÉCENTE (les plus frais = « meilleurs »
         // pour être premier), et on récupère l'image + le nom de la source.
-        $q = db()->prepare(
-            "SELECT i.id, i.title, i.lang, i.image_url, s.name AS source_name
+        $sql = "SELECT i.id, i.title, i.lang, i.image_url, %s s.name AS source_name
              FROM competitor_items i LEFT JOIN competitor_sources s ON s.id = i.source_id
              WHERE i.status = 'new'
                AND (i.published_at >= NOW() - INTERVAL 3 DAY
                     OR (i.published_at IS NULL AND i.seen_at >= NOW() - INTERVAL 1 DAY))
-             ORDER BY i.published_at DESC, i.id DESC LIMIT ?"
-        );
-        $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
-        $q->execute();
+             ORDER BY i.published_at DESC, i.id DESC LIMIT ?";
+        try {
+            $q = db()->prepare(sprintf($sql, 'i.summary,'));
+            $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
+            $q->execute();
+        } catch (Throwable $e) {                       // colonne summary absente (droits DDL)
+            $q = db()->prepare(sprintf($sql, ''));
+            $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
+            $q->execute();
+        }
         foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $it) {
             $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? ($it['lang'] ?? 'en') : 'en';
+            $srcN  = trim((string) ($it['source_name'] ?? ''));
+            $sum   = trim((string) ($it['summary'] ?? ''));
+            // Le sujet transmis à l'IA contient la MATIÈRE FACTUELLE de la source (résumé),
+            // pas seulement son titre : l'article s'appuie sur des faits, sans rien inventer.
             $topic = $lang === 'fr'
-                ? $it['title'] . ' — actu GTA 6, réécrite à notre manière (angle ViceHub X), 100% originale'
-                : $it['title'] . ' — GTA 6 news, rewritten our way (ViceHub X angle), 100% original';
+                ? $it['title'] . ($srcN !== '' ? ' (source : ' . $srcN . ')' : '')
+                    . ($sum !== '' ? "\nÉléments rapportés par la source, seule base factuelle autorisée pour les détails : " . $sum : '')
+                    . "\nConsigne : article original, angle ViceHub X ; ne reprends pas les phrases de la source et cite-la dans la section Sources."
+                : $it['title'] . ($srcN !== '' ? ' (source: ' . $srcN . ')' : '')
+                    . ($sum !== '' ? "\nFacts reported by the source, the only factual basis allowed for specifics: " . $sum : '')
+                    . "\nInstruction: original article, ViceHub X angle; do not reuse the source's sentences and credit it in the Sources section.";
             $img = (string) ($it['image_url'] ?? '');
             $src = (string) ($it['source_name'] ?? '');
             if (function_exists('ai_brief_add_rich')) {
