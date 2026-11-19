@@ -59,10 +59,16 @@ if ($act === 'add_source') {
     $flash = $n > 0
         ? ['ok', "{$n} article(s) lancé(s) en réécriture (" . $vhxStatusLabel($status) . "). Ils apparaîtront dans « Articles » au fil de leur génération — plus aucun ne se perd."]
         : ['err', 'Aucun sujet sélectionné.'];
+} elseif ($act === 'set_quota') {
+    foreach (['fr', 'en'] as $__l) {
+        set_setting('veille_max_' . $__l, (string) max(0, min(4, (int) ($_POST['q_' . $__l] ?? 1))));
+    }
+    $__q = veille_lang_quotas();
+    $flash = ['ok', "Rythme enregistré : {$__q['fr']} article(s) en français et {$__q['en']} en anglais par jour, sur des sujets différents."];
 } elseif ($act === 'toggle_auto') {
     set_setting('veille_auto', ($_POST['veille_auto'] ?? '') === '1' ? '1' : '0');
     $flash = ['ok', veille_is_auto()
-        ? '🟢 Auto-publication ACTIVÉE : les meilleurs sujets GTA 6 récents sont réécrits à notre plume et publiés automatiquement (2-3 par jour max).'
+        ? '🟢 Auto-publication ACTIVÉE : les meilleurs sujets GTA 6 récents sont réécrits à notre plume et publiés automatiquement (selon le rythme FR / EN réglé ci-dessous).'
         : '⚪ Auto-publication désactivée (mode manuel).'];
 }
 
@@ -94,8 +100,20 @@ $pending = count(json_decode((string) get_setting('ai_brief_queue', '[]'), true)
             </form>
         </div>
     </div>
+    <?php $__quota = veille_lang_quotas(); $__done = veille_lang_counts(); ?>
+    <form method="post" style="margin:.9rem 0 0;display:flex;gap:.7rem;align-items:end;flex-wrap:wrap">
+        <?= csrf_field() ?><input type="hidden" name="action" value="set_quota">
+        <?php foreach (['fr' => '🇫🇷 Articles en français / jour', 'en' => '🇬🇧 Articles en anglais / jour'] as $__l => $__lbl): ?>
+            <label style="display:grid;gap:.25rem"><?= e($__lbl) ?>
+                <select name="q_<?= $__l ?>" style="min-width:190px">
+                    <?php for ($__i = 0; $__i <= 4; $__i++): ?><option value="<?= $__i ?>"<?= $__quota[$__l] === $__i ? ' selected' : '' ?>><?= $__i === 0 ? '0 (pause)' : $__i ?></option><?php endfor; ?>
+                </select></label>
+        <?php endforeach; ?>
+        <button class="btn btn--ghost" type="submit">💾 Enregistrer le rythme</button>
+        <span class="muted" style="font-size:.82rem">Aujourd'hui : <?= $__done['fr'] ?>/<?= $__quota['fr'] ?> FR · <?= $__done['en'] ?>/<?= $__quota['en'] ?> EN. Chaque sujet est différent dans les deux langues.</span>
+    </form>
     <?php if (veille_is_auto()): ?>
-        <p class="muted" style="font-size:.82rem;margin:.4rem 0 0">⚠️ En mode auto, les <strong>2-3 meilleurs sujets GTA 6</strong> du jour sont réécrits (notre plume) et <strong>PUBLIÉS automatiquement</strong>, déclenché par le trafic. L'article reprend l'<strong>image de la source</strong> avec le crédit « Source : … » en bas. <em>Réutiliser l'image d'un concurrent peut poser un souci de droits d'auteur — le crédit atténue, mais surveille et remplace si besoin.</em></p>
+        <p class="muted" style="font-size:.82rem;margin:.4rem 0 0">⚠️ En mode auto, les <strong>meilleurs sujets GTA 6 du jour</strong> du jour sont réécrits (notre plume) et <strong>PUBLIÉS automatiquement</strong>, déclenché par le trafic. L'article reprend l'<strong>image de la source</strong> avec le crédit « Source : … » en bas. <em>Réutiliser l'image d'un concurrent peut poser un souci de droits d'auteur — le crédit atténue, mais surveille et remplace si besoin.</em></p>
     <?php endif; ?>
     <?php if ($sources): ?>
     <div style="margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem">

@@ -62,7 +62,8 @@ $has = static fn(string $fn, ...$a): bool => function_exists($fn) && (bool) $fn(
 foreach (['ai.php', 'social.php', 'tiktok.php'] as $__f) { if (is_file(ROOT_PATH . '/includes/' . $__f)) { require_once ROOT_PATH . '/includes/' . $__f; } }
 $autoOn   = (int) get_setting('ai_auto_enabled', '0') === 1;
 $trAuto   = (int) get_setting('ai_tr_auto', '0') === 1;
-$veilleMax = (int) (get_setting('veille_auto_max', '1') ?: 1);
+if (is_file(ROOT_PATH . '/includes/veille.php')) { require_once ROOT_PATH . '/includes/veille.php'; }
+$veilleQ = function_exists('veille_lang_quotas') ? veille_lang_quotas() : ['fr' => 1, 'en' => 0];
 $health = [
     ['Rédaction IA', $has('ai_enabled'), 'Clé Anthropic configurée', 'Clé API manquante', 'admin/settings.php'],
     ['Paiement Stripe', $has('stripe_enabled'), 'Paiements actifs', 'À configurer (mode Test)', 'admin/settings.php'],
@@ -251,8 +252,8 @@ $hello = $hour < 6 ? 'Bonne nuit' : ($hour < 18 ? 'Bonjour' : 'Bonsoir');
                     </a>
                 <?php endforeach; ?>
                 <a href="<?= e(url('admin/ai-articles.php')) ?>">
-                    <span class="dsh-dot <?= $autoOn ? 'ok' : 'warn' ?>" aria-hidden="true"></span>
-                    <span><strong>Rythme de publication</strong><small><?= $autoOn ? 'Auto activé' : 'Auto désactivé' ?> · veille <?= $veilleMax ?>/jour · traduction auto <?= $trAuto ? 'activée' : 'désactivée' ?></small></span>
+                    <span class="dsh-dot <?= get_setting('veille_auto', '0') === '1' ? 'ok' : 'warn' ?>" aria-hidden="true"></span>
+                    <span><strong>Rythme de publication</strong><small><?= get_setting('veille_auto', '0') === '1' ? 'Veille auto activée' : 'Veille auto coupée' ?> · <?= (int) $veilleQ['fr'] ?> FR + <?= (int) $veilleQ['en'] ?> EN/jour · traduction auto <?= $trAuto ? 'activée' : 'désactivée' ?></small></span>
                     <em aria-hidden="true">›</em>
                 </a>
             </div>

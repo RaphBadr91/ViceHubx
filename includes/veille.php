@@ -377,7 +377,7 @@ function veille_is_auto(): bool
  * pour être premier). Plafonné pour ne pas inonder la file ni exploser les coûts IA.
  * Retourne le nombre d'articles mis en génération.
  */
-function veille_auto_generate(int $max = 3): int
+function veille_auto_generate(int $max = 3, ?string $onlyLang = null): int
 {
     veille_ensure_tables();
     if (!function_exists('ai_brief_add')) {
@@ -390,20 +390,25 @@ function veille_auto_generate(int $max = 3): int
         // pour être premier), et on récupère l'image + le nom de la source.
         $sql = "SELECT i.id, i.title, i.lang, i.image_url, %s s.name AS source_name
              FROM competitor_items i LEFT JOIN competitor_sources s ON s.id = i.source_id
-             WHERE i.status = 'new'
+             WHERE i.status = 'new' %s
                AND (i.published_at >= NOW() - INTERVAL 3 DAY
                     OR (i.published_at IS NULL AND i.seen_at >= NOW() - INTERVAL 1 DAY))
              ORDER BY i.published_at DESC, i.id DESC LIMIT ?";
+        // Filtre de langue optionnel + réserve de candidats (certains seront écartés car
+        // déjà traités) : on s'arrête dès que $max articles sont lancés.
+        $langSql = in_array($onlyLang, ['fr', 'en'], true) ? "AND i.lang = '" . $onlyLang . "'" : '';
+        $limit   = max(10, $max * 5);
         try {
-            $q = db()->prepare(sprintf($sql, 'i.summary,'));
-            $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
+            $q = db()->prepare(sprintf($sql, 'i.summary,', $langSql));
+            $q->bindValue(1, $limit, PDO::PARAM_INT);
             $q->execute();
         } catch (Throwable $e) {                       // colonne summary absente (droits DDL)
-            $q = db()->prepare(sprintf($sql, ''));
-            $q->bindValue(1, max(1, $max), PDO::PARAM_INT);
+            $q = db()->prepare(sprintf($sql, '', $langSql));
+            $q->bindValue(1, $limit, PDO::PARAM_INT);
             $q->execute();
         }
         foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $it) {
+            if ($done >= $max) { break; }
             $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? ($it['lang'] ?? 'en') : 'en';
             // Sujet déjà traité sur le site (même langue OU autre langue) : on n'écrit pas
             // de doublon ni de « traduction » déguisée → l'actu est simplement ignorée.
@@ -441,6 +446,32 @@ function veille_auto_generate(int $max = 3): int
  * Tick appelé par le heartbeat public : récupère les nouveaux sujets GTA 6 et, si
  * l'auto-publication est activée, lance NOTRE version. Auto-throttlé (~30 min).
  */
+/** Quotas quotidiens par langue (réglages veille_max_fr / veille_max_en, 0 à 4). */
+function veille_lang_quotas(): array
+{
+    $q = [];
+    foreach (['fr', 'en'] as $l) {
+        $v = get_setting('veille_max_' . $l, null);
+        // Ancien réglage unique (veille_auto_max) : réparti à défaut de quotas par langue.
+        if ($v === null || $v === '') { $v = $l === 'fr' ? '1' : (string) max(0, (int) (get_setting('veille_auto_max', '1') ?: 1) - 1); }
+        $q[$l] = max(0, min(4, (int) $v));
+    }
+    return $q;
+}
+
+/** Articles auto déjà lancés aujourd'hui, par langue (compteurs remis à zéro chaque jour). */
+function veille_lang_counts(): array
+{
+    $today = date('Y-m-d');
+    if (get_setting('veille_pub_day', '') !== $today) {
+        set_setting('veille_pub_day', $today);
+        set_setting('veille_pub_count', '0');
+        set_setting('veille_pub_fr', '0');
+        set_setting('veille_pub_en', '0');
+    }
+    return ['fr' => (int) get_setting('veille_pub_fr', '0'), 'en' => (int) get_setting('veille_pub_en', '0')];
+}
+
 function veille_auto_tick(): void
 {
     try {
@@ -450,18 +481,21 @@ function veille_auto_tick(): void
     } catch (Throwable $e) { return; }
     veille_fetch_batch(6); // charge légère : 6 sources par cycle (rotation), pas 50
     if (!veille_is_auto()) { return; }
-    // Plafond QUOTIDIEN volontairement BAS (réglage veille_auto_max, défaut 1).
-    // Objectif : sortir du filtre « contenu à grande échelle » de Google. On publie
-    // peu mais mieux ; 1 par cycle (30 min) → au plus 1/jour par défaut, le plus frais.
-    $today = date('Y-m-d');
-    if (get_setting('veille_pub_day', '') !== $today) {
-        set_setting('veille_pub_day', $today);
-        set_setting('veille_pub_count', '0');
+    // Quotas QUOTIDIENS PAR LANGUE (ex. 2 FR + 2 EN). 1 article par cycle de 30 min,
+    // dans la langue la plus en retard sur son quota → publication étalée sur la journée.
+    // Chaque sujet est vérifié contre les DEUX langues : un FR ne reprend jamais un EN.
+    $quota = veille_lang_quotas();
+    $done  = veille_lang_counts();
+    $order = array_keys($quota);
+    usort($order, static fn($a, $b) => ($done[$a] / max(1, $quota[$a])) <=> ($done[$b] / max(1, $quota[$b])));
+    foreach ($order as $lang) {
+        if ($quota[$lang] <= 0 || $done[$lang] >= $quota[$lang]) { continue; }
+        $gen = veille_auto_generate(1, $lang);
+        if ($gen > 0) {
+            set_setting('veille_pub_' . $lang, (string) ($done[$lang] + $gen));
+            set_setting('veille_pub_count', (string) (array_sum($done) + $gen));
+            return;                                     // 1 seul article par cycle
+        }
+        // Pas d'actu fraîche et inédite dans cette langue : on tente l'autre.
     }
-    $count = (int) get_setting('veille_pub_count', '0');
-    $max   = max(0, min(10, (int) (get_setting('veille_auto_max', '1') ?: 1)));
-    if ($max <= 0) { return; }                          // 0 = veille auto en pause
-    if ($count >= $max) { return; }                    // quota du jour atteint
-    $gen = veille_auto_generate(1);                     // 1 article par cycle
-    if ($gen > 0) { set_setting('veille_pub_count', (string) ($count + $gen)); }
 }
