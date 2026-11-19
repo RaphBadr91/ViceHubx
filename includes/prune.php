@@ -27,8 +27,40 @@ function prune_stopwords(): array
 }
 
 /** Normalise un titre/slug en jeu de mots-clés (minuscules, sans accents, racine simple). */
-function prune_tokens(string $text): array
+/**
+ * Vocabulaire commun FR → EN (racines normalisées, sans accents, au singulier) :
+ * permet de reconnaître le MÊME SUJET entre un article français et un anglais.
+ */
+function prune_bilingual(): array
 {
+    return [
+        'meteo' => 'weather', 'climat' => 'weather', 'ouragan' => 'hurricane', 'tempete' => 'storm', 'orage' => 'storm',
+        'voiture' => 'car', 'vehicule' => 'vehicle', 'moto' => 'motorcycle', 'motorcycle' => 'motorcycle', 'avion' => 'plane', 'aircraft' => 'plane',
+        'helicoptere' => 'helicopter', 'bateau' => 'boat', 'nautique' => 'boat', 'aerien' => 'plane',
+        'carte' => 'map', 'sortie' => 'release', 'prix' => 'price', 'tarif' => 'price', 'precommande' => 'preorder', 'pre' => 'pre',
+        'bande' => 'soundtrack', 'musique' => 'music', 'musical' => 'music', 'personnage' => 'character', 'protagoniste' => 'protagonist',
+        'antagoniste' => 'antagonist', 'mechant' => 'antagonist', 'ennemi' => 'antagonist', 'rival' => 'antagonist', 'villain' => 'antagonist',
+        'conduite' => 'driving', 'pilotage' => 'driving', 'physique' => 'physic', 'physics' => 'physic', 'graphisme' => 'graphic', 'graphique' => 'graphic',
+        'moteur' => 'engine', 'faune' => 'wildlife', 'animaux' => 'animal', 'creature' => 'animal', 'specie' => 'animal', 'ecosysteme' => 'ecosystem',
+        'activite' => 'activity', 'loisir' => 'activity', 'cooperation' => 'coop', 'cooperatif' => 'coop', 'multijoueur' => 'multiplayer',
+        'annonce' => 'trailer', 'bandeannonce' => 'trailer', 'fuite' => 'leak', 'rumeur' => 'rumor', 'rumour' => 'rumor',
+        'histoire' => 'story', 'scenario' => 'story', 'intrigue' => 'story', 'ville' => 'city', 'plage' => 'beach', 'nuit' => 'night',
+        'esthetique' => 'aesthetic', 'stockage' => 'storage', 'espace' => 'storage', 'taille' => 'size', 'telechargement' => 'download',
+        'joueur' => 'player', 'communaute' => 'community', 'createur' => 'creator', 'chronologie' => 'timeline', 'calendrier' => 'timeline',
+        'economie' => 'economy', 'economique' => 'economy', 'immobilier' => 'estate', 'vente' => 'sale', 'arme' => 'weapon',
+        'braquage' => 'heist', 'mission' => 'mission', 'quete' => 'mission', 'secret' => 'secret', 'cache' => 'hidden', 'cachee' => 'hidden',
+        'detail' => 'detail', 'personnalisation' => 'customization', 'customisation' => 'customization', 'tenue' => 'outfit', 'vetement' => 'outfit',
+        'tatouage' => 'tattoo', 'criminel' => 'crime', 'criminal' => 'crime', 'crime' => 'crime', 'recherche' => 'wanted', 'poursuite' => 'chase',
+        'fond' => 'wallpaper', 'ecran' => 'wallpaper', 'collection' => 'collectible', 'figurine' => 'collectible', 'merchandising' => 'merchandise',
+        'console' => 'console', 'manette' => 'controller', 'casque' => 'headset', 'televiseur' => 'tv', 'television' => 'tv',
+        'sorti' => 'release', 'lancement' => 'launch', 'compte' => 'countdown', 'rebours' => 'countdown', 'record' => 'record', 'vue' => 'view', 'reperee' => 'spotted', 'repere' => 'spotted', 'aperc' => 'spotted', 'deux' => 'two', 'reglage' => 'setting', 'parametre' => 'setting', 'penurie' => 'shortage', 'rupture' => 'shortage',
+    ];
+}
+
+function prune_tokens(string $text, bool $canonical = false): array
+{
+    $text = preg_replace('/\bco[\s-]?op\b/iu', 'coop', $text) ?? $text;
+    $text = preg_replace('/\bbande[\s-]annonces?\b/iu', 'bandeannonce', $text) ?? $text;
     $t = mb_strtolower($text, 'UTF-8');
     if (function_exists('iconv')) {
         $x = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $t);
@@ -41,6 +73,7 @@ function prune_tokens(string $text): array
         if ($w === '' || isset($sw[$w]) || ctype_digit($w) && strlen($w) < 3) { continue; }
         if (strlen($w) > 4 && substr($w, -1) === 's') { $w = substr($w, 0, -1); }   // pluriel simple
         if (strlen($w) < 3 || isset($sw[$w])) { continue; }
+        if ($canonical) { static $bi = null; $bi = $bi ?? prune_bilingual(); $w = $bi[$w] ?? $w; }
         $out[$w] = true;
     }
     return array_keys($out);
@@ -304,14 +337,17 @@ function prune_undo(string $batch): int
 }
 
 /**
- * Garde-fou du générateur IA : l'article le plus proche déjà publié/programmé
- * dans la même langue. @return array [similarité 0-1, slug]
+ * Garde-fou du générateur IA : l'article le plus proche déjà publié/programmé.
+ * $crossLang = true → compare à l'AUTRE langue (vocabulaire commun FR→EN), pour qu'un
+ * article français ne traite pas le même sujet qu'un article anglais, et inversement.
+ * @return array [similarité 0-1, slug]
  */
-function prune_closest_title(string $title, string $lang): array
+function prune_closest_title(string $title, string $lang, bool $crossLang = false): array
 {
+    $target = $crossLang ? ($lang === 'en' ? 'fr' : 'en') : $lang;
     try {
         $st = db()->prepare("SELECT slug, title FROM articles WHERE lang = ? AND status IN ('published','pending')");
-        $st->execute([$lang]);
+        $st->execute([$target]);
         $rows = $st->fetchAll(PDO::FETCH_ASSOC);
     } catch (Throwable $e) {
         return [0.0, ''];
@@ -320,11 +356,11 @@ function prune_closest_title(string $title, string $lang): array
     if ($n === 0) { return [0.0, '']; }
     $df = []; $toks = [];
     foreach ($rows as $k => $r) {
-        $toks[$k] = prune_tokens((string) $r['title']);
+        $toks[$k] = prune_tokens((string) $r['title'], $crossLang);
         foreach ($toks[$k] as $w) { $df[$w] = ($df[$w] ?? 0) + 1; }
     }
     $idf = static fn(string $w): float => log(($n + 1) / (($df[$w] ?? 0) + 0.5));
-    $q = prune_tokens($title);
+    $q = prune_tokens($title, $crossLang);
     $qn = sqrt(array_sum(array_map(static fn($w) => $idf($w) ** 2, $q)));
     if ($qn <= 0) { return [0.0, '']; }
     $qset = array_fill_keys($q, true);
@@ -341,4 +377,15 @@ function prune_closest_title(string $title, string $lang): array
         if ($sim > $best[0]) { $best = [$sim, (string) $rows[$k]['slug']]; }
     }
     return $best;
+}
+
+/** Le sujet est-il déjà traité (même langue OU autre langue) ? → [bool, similarité, slug, 'same'|'cross'] */
+function prune_topic_taken(string $title, string $lang): array
+{
+    $max = (float) (get_setting('ai_dup_threshold', '0.5') ?: 0.5);
+    [$s1, $u1] = prune_closest_title($title, $lang, false);
+    if ($s1 >= $max) { return [true, $s1, $u1, 'same']; }
+    [$s2, $u2] = prune_closest_title($title, $lang, true);
+    if ($s2 >= $max) { return [true, $s2, $u2, 'cross']; }
+    return [false, max($s1, $s2), $s1 >= $s2 ? $u1 : $u2, ''];
 }

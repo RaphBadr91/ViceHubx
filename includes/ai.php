@@ -784,6 +784,12 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
         $used = [];
     }
     $titles = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['title'], 0, 100), $used)), 0, 40) : [];
+    // Sujets déjà traités dans l'AUTRE langue : à éviter aussi (FR et EN = sujets différents).
+    try {
+        $st = db()->prepare("SELECT title FROM articles WHERE lang = ? AND status IN ('published','pending') ORDER BY id DESC LIMIT 25");
+        $st->execute([$lang === 'en' ? 'fr' : 'en']);
+        foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $ot) { $titles[] = mb_substr((string) $ot, 0, 100); }
+    } catch (Throwable $e) { /* sans effet */ }
     $metas  = $used ? array_slice(array_filter(array_map(fn($r) => mb_substr((string) $r['excerpt'], 0, 120), $used)), 0, 20) : [];
 
     $launched = ai_is_postlaunch();
@@ -803,7 +809,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
     if ($lang === 'en') {
         $avoid = '';
         if ($titles) {
-            $avoid = "\n\nTITLES ALREADY ON THE SITE (your article must take a clearly different angle and must not paraphrase any of them):\n- "
+            $avoid = "\n\nTOPICS ALREADY COVERED ON THE SITE, in English or French (choose a clearly different subject, never a translation or paraphrase of these):\n- "
                 . implode("\n- ", $titles) . "\n";
         }
         $system = 'You are a senior editor at ViceHub X, an independent publication covering GTA VI (not affiliated with Rockstar Games). '
@@ -837,7 +843,7 @@ function ai_generate_article(?string $topic = null, ?string $toneKey = null, str
     } else {
         $avoid = '';
         if ($titles) {
-            $avoid = "\n\nTITRES DÉJÀ PRÉSENTS SUR LE SITE (ton article doit prendre un angle nettement différent et n'en paraphraser aucun) :\n- "
+            $avoid = "\n\nSUJETS DÉJÀ TRAITÉS SUR LE SITE, en français ou en anglais (choisis un sujet nettement différent, jamais une traduction ni une paraphrase) :\n- "
                 . implode("\n- ", $titles) . "\n";
         }
         $system = 'Tu es rédacteur en chef adjoint de ViceHub X, média indépendant consacré à GTA VI (sans lien avec Rockstar Games). '
@@ -923,12 +929,13 @@ function ai_save_article(array $data, string $status = 'draft', ?int $authorId =
     // Anti-doublon de SUJET : avant, seuls les 40 derniers titres étaient vérifiés, d'où
     // des dizaines d'articles quasi identiques (néon, coop, stockage…) que Google refuse
     // d'indexer. On compare désormais à TOUS les articles de la langue.
-    if (function_exists('prune_closest_title')) {
+    // + Sujet différent entre les langues : un article FR ne traite pas le sujet d'un article EN.
+    if (function_exists('prune_topic_taken')) {
         $dupLang = (($data['lang'] ?? 'fr') === 'en') ? 'en' : 'fr';
-        $dupMax  = (float) (get_setting('ai_dup_threshold', '0.5') ?: 0.5);
-        [$dupSim, $dupSlug] = prune_closest_title((string) $data['title'], $dupLang);
-        if ($dupSim >= $dupMax) {
-            set_setting('ai_dup_last', date('Y-m-d H:i') . ' — « ' . mb_substr((string) $data['title'], 0, 120) . ' » trop proche de ' . $dupSlug . ' (' . round($dupSim, 2) . ')');
+        [$dupTaken, $dupSim, $dupSlug, $dupKind] = prune_topic_taken((string) $data['title'], $dupLang);
+        if ($dupTaken) {
+            set_setting('ai_dup_last', date('Y-m-d H:i') . ' — « ' . mb_substr((string) $data['title'], 0, 120) . ' » trop proche de '
+                . ($dupKind === 'cross' ? 'l\'article ' . ($dupLang === 'fr' ? 'anglais' : 'français') . ' ' : '') . $dupSlug . ' (' . round($dupSim, 2) . ')');
             return null;
         }
     }

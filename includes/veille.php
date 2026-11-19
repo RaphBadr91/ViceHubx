@@ -405,6 +405,12 @@ function veille_auto_generate(int $max = 3): int
         }
         foreach ($q->fetchAll(PDO::FETCH_ASSOC) as $it) {
             $lang  = in_array($it['lang'] ?? 'en', ['fr', 'en'], true) ? ($it['lang'] ?? 'en') : 'en';
+            // Sujet déjà traité sur le site (même langue OU autre langue) : on n'écrit pas
+            // de doublon ni de « traduction » déguisée → l'actu est simplement ignorée.
+            if (function_exists('prune_topic_taken') && prune_topic_taken((string) $it['title'], $lang)[0]) {
+                veille_set_item_status((int) $it['id'], 'ignored');
+                continue;
+            }
             $srcN  = trim((string) ($it['source_name'] ?? ''));
             $sum   = trim((string) ($it['summary'] ?? ''));
             // Le sujet transmis à l'IA contient la MATIÈRE FACTUELLE de la source (résumé),
